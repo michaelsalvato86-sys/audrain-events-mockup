@@ -207,10 +207,6 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
         <button class="iconbtn" id="installBtn" type="button">Install</button>
       </div>
     </div>
-    <div class="switch" role="group" aria-label="Choose event">
-      <button type="button" id="ev-motorweek" aria-pressed="true">Motor Week</button>
-      <button type="button" id="ev-winterfest" aria-pressed="false">Winterfest</button>
-    </div>
   </header>
 
   <main id="main"></main>
@@ -517,12 +513,12 @@ const views = {
 };
 
 function render(){
-  document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed", b.id==="ev-"+state.event));
-  $("#eventName").textContent = state.event==="winterfest" ? "Winterfest" : "Newport Concours & Motor Week";
+  
+  
   document.querySelectorAll(".tabs button").forEach(b=>{ if(b.dataset.tab===state.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   $("#alertCount").hidden = state.seen;
-  $("#main").innerHTML = state.event==="winterfest" ? winterfest() : views[state.tab]();
-  stopQR(); if(state.event!=="winterfest" && state.tab==="tickets" && state.wallet.length) startQR();
+  $("#main").innerHTML = views[state.tab]();
+  stopQR(); if(state.tab==="tickets" && state.wallet.length) startQR();
   drawBadge();
   const pin = document.getElementById("photoIn"); if(pin) pin.addEventListener("change", onPhotos);
 }
@@ -638,7 +634,7 @@ function showVenue(k){
 document.addEventListener("click", ev=>{
   const t = ev.target.closest("button, g.pin"); if(!t) return;
   const ds = t.dataset;
-  if(t.id==="ev-motorweek"||t.id==="ev-winterfest"){ state.event = t.id.slice(3); store.set("ae.event",state.event); render(); return; }
+  
   if(ds.tab){ go(ds.tab); return; }
   if(ds.go){ if(ds.go==="itinerary") state.itinMode="mine"; go(ds.go); return; }
   if(ds.mode){ state.itinMode = ds.mode; render(); return; }

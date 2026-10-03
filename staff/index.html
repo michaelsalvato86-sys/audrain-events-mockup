@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Staff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Concours Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: an operations tool for staff on the move - dark-first, high-contrast, big tap targets, team colour as the main signal. Phone column, five-tab bar. */
+:root{
+  --bg:#0c1524; --panel:#14213a; --panel-2:#1b2b49; --fg:#eef1f6; --muted:#9aa7bf; --line:#263a5e;
+  --gold:#c9a14a; --urgent:#e0533f; --ok:#3fae6b; --info:#4a90d9;
+  --display:"Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#eef1f6; --panel:#ffffff; --panel-2:#f3f5f9; --fg:#0f1a2c; --muted:#56627a; --line:#d6dce8; color-scheme:light } }
+:root[data-theme="light"]{ --bg:#eef1f6; --panel:#ffffff; --panel-2:#f3f5f9; --fg:#0f1a2c; --muted:#56627a; --line:#d6dce8; color-scheme:light }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:#0a1220;color:#eef1f6;padding:12px 16px;border-bottom:3px solid var(--team,#c9a14a)}
+.row1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.16em;color:#c9a14a}
+.who{display:flex;align-items:center;gap:8px;border:1px solid #2c3f63;border-radius:999px;padding:5px 10px 5px 6px;background:transparent;color:#eef1f6;font-size:13px;font-weight:600}
+.sw{width:14px;height:14px;border-radius:4px;background:var(--team,#c9a14a);flex:0 0 auto}
+main{flex:1;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:16px}
+h1,h2{font-family:var(--display);font-weight:700;margin:0;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+h1{font-size:30px;line-height:1.05}
+h2{font-size:20px}
+.label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.notice{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.now{padding:16px;display:flex;flex-direction:column;gap:10px;border-left:6px solid var(--team)}
+.now .where{font-family:var(--display);font-size:34px;font-weight:700;line-height:1;text-transform:uppercase}
+.now .when{font-family:var(--mono);font-size:15px}
+.now .task{color:var(--muted)}
+.kv{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.kv b{font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:var(--gold);color:#16120a}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.danger{background:var(--urgent);color:#fff}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.item{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;padding:12px;border-top:1px solid var(--line);align-items:center}
+.item:first-child{border-top:0}
+.t{font-family:var(--mono);font-size:13px}
+.t span{display:block;color:var(--muted);font-size:11px}
+.ti{font-weight:700;line-height:1.25}
+.sub{font-size:12.5px;color:var(--muted)}
+.pill{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.days button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 12px;font-weight:700;font-size:13px}
+.days button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#16120a}
+.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.team{background:var(--panel);border:1px solid var(--line);border-top:5px solid var(--c);border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:4px;min-width:0}
+.team .n{font-family:var(--display);font-size:19px;font-weight:700;text-transform:uppercase;line-height:1.05}
+.team[aria-pressed="true"]{box-shadow:0 0 0 2px var(--c)}
+.roster .item{grid-template-columns:auto minmax(0,1fr) auto}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;color:#0c1524;background:var(--c)}
+.chan{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chan button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.chan button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.msgs{display:flex;flex-direction:column;gap:10px;min-height:280px}
+.msg{max-width:84%;display:flex;flex-direction:column;gap:3px}
+.msg .bub{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:9px 12px}
+.msg.me{align-self:flex-end}
+.msg.me .bub{background:var(--gold);color:#16120a;border-color:var(--gold);border-radius:14px 14px 4px 14px}
+.msg .by{font-size:11.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.msg.me .by{justify-content:flex-end}
+.msg.loc .bub{border-left:4px solid var(--info)}
+.compose{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:var(--bg);padding-top:8px}
+.compose input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 12px}
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.mapbox svg{display:block;width:100%;height:auto}
+.alert{display:grid;grid-template-columns:6px minmax(0,1fr);gap:12px;padding:12px;border-top:1px solid var(--line)}
+.alert:first-child{border-top:0}
+.alert .bar{border-radius:4px;background:var(--info)}
+.alert.urgent .bar{background:var(--urgent)}
+.alert.done{opacity:.55}
+.field{display:flex;flex-direction:column;gap:4px}
+.field select,.field input,.field textarea{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 10px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#0a1220;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid #1d2c48}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs button{position:relative;background:none;border:0;color:#8c99b3;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 2px}
+.tabs button svg{width:22px;height:22px}
+.tabs button[aria-current="page"]{color:#c9a14a}
+.dotc{position:absolute;top:0;right:22%;background:var(--urgent);color:#fff;border-radius:999px;font-size:10px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--panel);width:100%;max-width:480px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0a1220;color:#eef1f6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="row1">
+      <div class="brand"><small>Audrain Concours</small>Staff</div>
+      <button class="who" type="button" id="whoBtn"><span class="sw"></span><span id="whoTxt">Gates</span></button>
+    </div>
+  </header>
+  <main id="main"></main>
+  <div class="tabs"><nav aria-label="Staff sections">
+    <button type="button" data-tab="shift" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>My shift</button>
+    <button type="button" data-tab="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16v11H9l-5 4z"/></svg>Chat<span class="dotc" id="chatDot">4</span></button>
+    <button type="button" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Posts</button>
+    <button type="button" data-tab="team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 6 5"/></svg>Teams</button>
+    <button type="button" data-tab="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alerts<span class="dotc" id="alertDot">2</span></button>
+  </nav></div>
+</div>
+<div class="scrim" id="scrim" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><h2 id="sheetTitle"></h2><div id="sheetBody" style="display:flex;flex-direction:column;gap:12px"></div></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+// Sample staffing plan built on the real 2026 Week at a Glance. Teams, posts and people are illustrative.
+const TEAMS = {
+  ops:     {name:"Operations Desk", short:"Ops", c:"#c9a14a", lead:"Ops Director", radio:"Ch 1", base:"opstent", size:4},
+  gates:   {name:"Gates & Ticketing", short:"Gates", c:"#4a90d9", lead:"Gate Lead", radio:"Ch 2", base:"maingate", size:18},
+  parking: {name:"Parking & Shuttle", short:"Parking", c:"#3fae6b", lead:"Parking Lead", radio:"Ch 3", base:"lotb", size:14},
+  vip:     {name:"VIP & Hospitality", short:"VIP", c:"#b07ad6", lead:"Hospitality Lead", radio:"Ch 4", base:"lounge", size:12},
+  field:   {name:"Show Field & Judging", short:"Field", c:"#e08a3c", lead:"Field Marshal", radio:"Ch 5", base:"field", size:16},
+  guest:   {name:"Guest Services & Will Call", short:"Guest", c:"#e0533f", lead:"Guest Services Lead", radio:"Ch 6", base:"willcall", size:8},
+  town:    {name:"Town Events & Seminars", short:"Town", c:"#3fb6b2", lead:"Town Events Lead", radio:"Ch 7", base:"casino", size:10}
+};
+const POSTS = {
+  opstent:  {name:"Ops Tent", where:"Fort Adams, inside the main gate", x:150, y:150},
+  maingate: {name:"Main Gate", where:"Fort Adams entrance road", x:250, y:250},
+  vipgate:  {name:"VIP Gate", where:"Fort Adams, east lawn entrance", x:300, y:170},
+  lotb:     {name:"Lot B", where:"Fort Adams parking, reserved lots", x:330, y:300},
+  landing:  {name:"Shuttle Landing", where:"Fort Adams harbor dock", x:70, y:250},
+  field:    {name:"Show Field", where:"Fort Adams parade lawn", x:170, y:90},
+  lounge:   {name:"VIP Lounge", where:"Fort Adams, east lawn tent", x:270, y:110},
+  stage:    {name:"Awards Stage", where:"Fort Adams, north end of the field", x:110, y:60},
+  willcall: {name:"Will Call", where:"Audrain Automobile Museum, 222 Bellevue Ave", town:true},
+  casino:   {name:"Casino Theatre", where:"9 Freebody St", town:true},
+  village:  {name:"Motor Week Village", where:"International Tennis Hall of Fame, 194 Bellevue Ave", town:true},
+  rough:    {name:"Rough Point", where:"680 Bellevue Ave", town:true},
+  ithf:     {name:"Gala, Tennis Hall of Fame", where:"194 Bellevue Ave", town:true}
+};
+// Shifts per team per day: [day, start, end, post, task, event]
+const SHIFTS = {
+  gates: [
+    ["2026-10-02","10:00","17:00","village","Scan Village entry; badge printing for website buyers","Motor Week Village"],
+    ["2026-10-03","07:00","07:30","opstent","Briefing; collect scanners and radios",""],
+    ["2026-10-03","07:30","12:00","maingate","Scan Cars & Coffee, then Supercar Concours entry","Supercar Concours"],
+    ["2026-10-03","12:00","12:30","opstent","Break",""],
+    ["2026-10-03","12:30","15:30","vipgate","VIP wristbands and re-entry","Supercar Concours"],
+    ["2026-10-04","06:00","06:30","opstent","Briefing; scanner battery check",""],
+    ["2026-10-04","06:30","12:00","maingate","Coffee at the Concours, then main gate scanning","Concours d'Elegance"],
+    ["2026-10-04","12:30","16:00","maingate","Re-entry and exit count","Concours d'Elegance"]
+  ],
+  parking: [
+    ["2026-10-03","06:30","11:00","lotb","Reserved lot scanning, direct overflow to Lot C","Supercar Concours"],
+    ["2026-10-03","11:00","15:30","landing","Harbor shuttle boarding times","Supercar Concours"],
+    ["2026-10-04","06:00","12:00","lotb","Reserved lot scanning","Concours d'Elegance"],
+    ["2026-10-04","12:00","17:00","landing","Shuttle return wave and exit","Concours d'Elegance"]
+  ],
+  vip: [
+    ["2026-10-02","10:30","16:30","rough","Greet and seat, The Gathering","The Gathering"],
+    ["2026-10-03","18:00","24:00","ithf","Gala arrivals and seating","Casino Royale Gala"],
+    ["2026-10-04","08:00","16:00","lounge","VIP lounge host","Concours d'Elegance"]
+  ],
+  field: [
+    ["2026-10-03","06:00","10:00","field","Supercar placement by class","Supercar Concours"],
+    ["2026-10-04","05:30","08:30","field","Entrant arrival and placement","Concours d'Elegance"],
+    ["2026-10-04","08:30","14:00","field","Judging escorts","Concours d'Elegance"],
+    ["2026-10-04","14:00","16:00","stage","Awards drive-up line","Concours d'Elegance"]
+  ],
+  guest: [
+    ["2026-10-01","10:00","17:00","willcall","Will Call desk",""],
+    ["2026-10-02","10:00","17:00","willcall","Will Call desk",""],
+    ["2026-10-03","10:00","17:00","willcall","Will Call desk",""],
+    ["2026-10-04","07:00","16:00","maingate","Lost and found, guest questions","Concours d'Elegance"]
+  ],
+  town: [
+    ["2026-10-02","14:00","15:45","casino","Seminar door and scanning","Seminar: The Future of the Emory Outlaw"],
+    ["2026-10-03","12:00","17:45","casino","Seminar doors: Style, 'Cars' at 20, Pegaso","Seminars"],
+    ["2026-10-03","10:00","16:00","village","Village floor","Motor Week Village"]
+  ],
+  ops: [
+    ["2026-10-03","05:30","18:00","opstent","Dispatch and radio net","Supercar Concours"],
+    ["2026-10-04","05:00","18:00","opstent","Dispatch and radio net","Concours d'Elegance"]
+  ]
+};
+const ROSTER_ROLES = ["Lead","Deputy lead","Staff","Staff","Staff","Staff","Volunteer","Volunteer"];
+const SAMPLE_NAMES = ["Sample Lead","Sample Deputy","Staff A","Staff B","Staff C","Staff D","Volunteer A","Volunteer B"];
+const CHANNELS = {
+  all:   {name:"All staff", note:"Leads post, everyone reads"},
+  team:  {name:"My team", note:""},
+  leads: {name:"Leads", note:"Team leads and Ops"},
+  ops:   {name:"Ops Desk", note:"Direct line to dispatch"}
+};
+const SEED = {
+  all: [
+    {by:"Ops Director", team:"ops", t:"06:52", txt:"Gates open 07:30 for Cars & Coffee. Radios on, check in at your post."},
+    {by:"Ops Director", team:"ops", t:"09:40", txt:"Weather holding. Rain plan not in effect."}
+  ],
+  team: [
+    {by:"Gate Lead", team:"gates", t:"07:05", txt:"Main Gate: 4 scanners on lane 1-4, VIP lane on the right."},
+    {by:"Staff B", team:"gates", t:"07:41", txt:"Lane 3 scanner reconnecting, using offline mode.", loc:false},
+    {by:"Gate Lead", team:"gates", t:"07:44", txt:"Shared location: Main Gate, lane 3", loc:true}
+  ],
+  leads: [{by:"Parking Lead", team:"parking", t:"08:10", txt:"Lot B at 80%. Sending overflow to Lot C."}],
+  ops: [{by:"Ops Desk", team:"ops", t:"08:15", txt:"Need anything at your post? Message here."}]
+};
+const ALERTS0 = [
+  {id:1, lvl:"urgent", t:"10:12", to:"Gates", txt:"Main Gate line over 15 minutes. Two staff from VIP Gate move to Main Gate lanes 5 and 6 now.", ack:false},
+  {id:2, lvl:"info", t:"09:55", to:"Your shift", txt:"Your next post: VIP Gate at 12:30. Leave Ops Tent break at 12:25.", ack:false},
+  {id:3, lvl:"info", t:"09:30", to:"All staff", txt:"Bellevue Car Display starts 11:00. Expect traffic on Bellevue Ave until 13:30.", ack:true}
+];
+
+const store = { get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+const state = {
+  tab: store.get("st.tab","shift"), team: store.get("st.team","gates"), day:"2026-10-03",
+  chan:"team", msgs: store.get("st.msgs", SEED), alerts: store.get("st.alerts", ALERTS0),
+  checkin: store.get("st.checkin", {}), viewTeam:null, chatSeen:false
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = t => { const [h,m]=t.split(":").map(Number); return ((h%12)||12)+":"+String(m).padStart(2,"0")+((h>=12&&h<24)?" PM":" AM"); };
+const dname = d => new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+const T = () => TEAMS[state.team];
+const myShifts = () => (SHIFTS[state.team]||[]);
+const DAYS = () => [...new Set(myShifts().map(s=>s[0]))];
+// Demo clock: pretend it is Saturday 10:15 during the event so "now" and "next" read correctly.
+const DEMO_NOW = {d:"2026-10-03", t:"10:15"};
+const mins = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
+function nowNext(){
+  const list = myShifts().filter(s=>s[0]===DEMO_NOW.d);
+  const n = mins(DEMO_NOW.t);
+  const cur = list.find(s=>mins(s[1])<=n && n<mins(s[2]));
+  const nxt = list.find(s=>mins(s[1])>n);
+  return {cur: cur || list[0] || myShifts()[0], nxt};
+}
+
+const views = {
+  shift(){
+    const {cur, nxt} = nowNext(); const tm = T();
+    if(!state.day || !DAYS().includes(state.day)) state.day = DAYS().includes(DEMO_NOW.d) ? DEMO_NOW.d : DAYS()[0];
+    const key = cur ? cur.join("|") : ""; const done = state.checkin[key];
+    const p = cur ? POSTS[cur[3]] : null;
+    return `<div class="view">
+      <div class="notice">Mockup. Sample staffing plan on the 2026 schedule. Demo clock: Sat Oct 3, 10:15 AM.</div>
+      ${cur ? `<section class="panel now">
+        <div class="label">Be here now</div>
+        <div class="where">${esc(p.name)}</div>
+        <div class="when">${fmt(cur[1])} to ${fmt(cur[2])} · ${dname(cur[0])}</div>
+        <div class="task">${esc(cur[4])}${cur[5] ? " · " + esc(cur[5]) : ""}</div>
+        <div class="kv"><span><b>Team</b> ${esc(tm.name)}</span><span><b>Lead</b> ${esc(tm.lead)}</span><span><b>Radio</b> ${tm.radio}</span></div>
+        <div class="sub">${esc(p.where)}</div>
+        <div class="btns">${done ? `<span class="pill" style="background:var(--ok);color:#fff">Checked in ${done}</span>` : `<button class="btn ok" type="button" data-checkin="${esc(key)}">Check in at post</button>`}<button class="btn ghost" type="button" data-showpost="${cur[3]}">Show on map</button><button class="btn ghost" type="button" data-tab="chat">Team chat</button></div>
+      </section>` : `<div class="notice">No shift assigned for this team.</div>`}
+      ${nxt ? `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:4px"><div class="label">Next</div><div class="ti">${esc(POSTS[nxt[3]].name)} at ${fmt(nxt[1])}</div><div class="sub">${esc(nxt[4])}. You'll get an alert 15 minutes before with walking time.</div></section>` : ""}
+      <section style="display:flex;flex-direction:column;gap:10px">
+        <h2>My schedule</h2>
+        <div class="days" role="group" aria-label="Day">${DAYS().map(d=>`<button type="button" data-day="${d}" aria-pressed="${d===state.day}">${dname(d)}</button>`).join("")}</div>
+        <div class="list">${myShifts().filter(s=>s[0]===state.day).map(s=>`<div class="item"><div class="t">${fmt(s[1])}<span>to ${fmt(s[2])}</span></div><div><div class="ti">${esc(POSTS[s[3]].name)}</div><div class="sub">${esc(s[4])}</div></div><button class="btn ghost" type="button" data-showpost="${s[3]}" style="padding:7px 10px">Map</button></div>`).join("")}</div>
+      </section>
+    </div>`;
+  },
+  chat(){
+    state.chatSeen = true; $("#chatDot").hidden = true;
+    const ch = CHANNELS[state.chan], list = state.msgs[state.chan] || [];
+    const chName = state.chan==="team" ? T().name : ch.name;
+    return `<div class="view">
+      <div class="chan" role="group" aria-label="Channels">${Object.entries(CHANNELS).map(([k,c])=>`<button type="button" data-chan="${k}" aria-pressed="${k===state.chan}">${k==="team"?`<span class="sw" style="background:${T().c}"></span>${esc(T().short)}`:esc(c.name)}</button>`).join("")}</div>
+      <div><h2>${esc(chName)}</h2><div class="sub">${esc(state.chan==="team" ? T().radio + " · " + T().size + " people" : ch.note)}</div></div>
+      <div class="msgs" id="msgs">${list.map(m=>{ const mine = m.me; const c = TEAMS[m.team]?.c || "#888"; return `<div class="msg${mine?" me":""}${m.loc?" loc":""}"><div class="by">${mine?"":`<span class="sw" style="background:${c}"></span>`}${esc(m.by)} · ${m.t}</div><div class="bub">${m.loc?"📍 ":""}${esc(m.txt)}</div></div>`; }).join("")}</div>
+      <form class="compose" id="composeForm"><button type="button" class="btn ghost" data-shareloc="1" aria-label="Share my location" style="padding:8px 10px">Pin</button><input id="msgIn" placeholder="Message ${esc(chName)}" autocomplete="off"><button class="btn" type="submit">Send</button></form>
+    </div>`;
+  },
+  map(){
+    const byPost = {}; Object.entries(TEAMS).forEach(([k,t])=>{ (byPost[t.base] = byPost[t.base] || []).push(k); });
+    const pins = Object.entries(POSTS).filter(([k,p])=>!p.town).map(([k,p])=>{
+      const teams = byPost[k] || []; const c = teams.length ? TEAMS[teams[0]].c : "#8c99b3"; const mine = (SHIFTS[state.team]||[]).some(s=>s[3]===k);
+      return `<g data-showpost="${k}" tabindex="0" role="button" aria-label="${esc(p.name)}" style="cursor:pointer">
+        ${mine ? `<circle cx="${p.x}" cy="${p.y}" r="20" fill="none" stroke="${T().c}" stroke-width="3" stroke-dasharray="4 3"/>` : ""}
+        <circle cx="${p.x}" cy="${p.y}" r="13" fill="${c}" stroke="#0a1220" stroke-width="2"/>
+        <text x="${p.x}" y="${p.y+28}" text-anchor="middle" font-family="Figtree, sans-serif" font-size="11" font-weight="700" fill="var(--fg)">${esc(p.name)}</text></g>`; }).join("");
+    return `<div class="view">
+      <h2>Fort Adams posts</h2>
+      <div class="mapbox"><svg viewBox="0 0 400 360" role="img" aria-label="Schematic of staff posts at Fort Adams">
+        <rect width="400" height="360" fill="#1d3a5a" opacity=".35"/>
+        <path d="M40 30 H360 V330 H200 C 120 330 60 300 40 250 Z" fill="var(--panel-2)" stroke="var(--line)"/>
+        <path d="M110 60 h120 v80 h-120z" fill="none" stroke="var(--line)" stroke-dasharray="4 4"/>
+        <text x="170" y="128" text-anchor="middle" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">parade lawn</text>
+        <text x="392" y="352" text-anchor="end" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">Schematic, not to scale</text>
+        ${pins}
+      </svg></div>
+      <div class="sub">Dashed ring = your posts today. Pin colour = team stationed there.</div>
+      <div id="postCard"></div>
+      <h2>Town posts</h2>
+      <div class="list">${Object.entries(POSTS).filter(([k,p])=>p.town).map(([k,p])=>`<div class="item" style="grid-template-columns:minmax(0,1fr) auto"><div><div class="ti">${esc(p.name)}</div><div class="sub">${esc(p.where)}</div></div><button class="btn ghost" type="button" data-showpost="${k}" style="padding:7px 10px">Details</button></div>`).join("")}</div>
+    </div>`;
+  },
+  team(){
+    const vt = state.viewTeam;
+    return `<div class="view">
+      <h2>Team designations</h2>
+      <div class="teams">${Object.entries(TEAMS).map(([k,t])=>`<button type="button" class="team" style="--c:${t.c}" data-viewteam="${k}" aria-pressed="${vt===k}"><span class="n">${esc(t.name)}</span><span class="sub">${t.size} people · ${t.radio}</span><span class="sub">Base: ${esc(POSTS[t.base].name)}</span>${k===state.team?`<span class="pill" style="background:${t.c};color:#0c1524;align-self:flex-start">Your team</span>`:""}</button>`).join("")}</div>
+      ${vt ? `<section style="display:flex;flex-direction:column;gap:10px"><h2>${esc(TEAMS[vt].name)} roster</h2>
+        <div class="list roster">${ROSTER_ROLES.slice(0, Math.min(8, TEAMS[vt].size)).map((r,i)=>`<div class="item" style="--c:${TEAMS[vt].c}"><div class="av">${SAMPLE_NAMES[i].split(" ").map(w=>w[0]).join("")}</div><div><div class="ti">${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}</div><div class="sub">${r} · ${esc(POSTS[(SHIFTS[vt]||[[0,0,0,TEAMS[vt].base]])[Math.min(i,(SHIFTS[vt]||[1]).length-1)][3]].name)}</div></div><button class="btn ghost" type="button" data-dm="${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}" style="padding:7px 10px">Message</button></div>`).join("")}</div>
+        <div class="sub">Showing ${Math.min(8,TEAMS[vt].size)} of ${TEAMS[vt].size}. Names are placeholders.</div></section>` : `<div class="notice">Tap a team to see its roster, posts and radio channel.</div>`}
+    </div>`;
+  },
+  alerts(){
+    $("#alertDot").hidden = true;
+    return `<div class="view">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Dispatch alerts</h2><button class="btn" type="button" data-compose="1">Send alert</button></div>
+      <div class="list">${state.alerts.map(a=>`<div class="alert ${a.lvl}${a.ack?" done":""}"><div class="bar"></div><div style="display:flex;flex-direction:column;gap:6px"><div class="sub">${a.lvl==="urgent"?`<span class="pill" style="background:var(--urgent);color:#fff">Urgent</span> `:""}${a.t} · to ${esc(a.to)}</div><div class="ti">${esc(a.txt)}</div>${a.ack?`<div class="sub">Acknowledged</div>`:`<div><button class="btn ok" type="button" data-ack="${a.id}" style="padding:7px 12px">Acknowledge</button></div>`}</div></div>`).join("")}</div>
+      <div class="notice">Shift alerts are automatic: 15 minutes before every post change, with where to go and walking time. Leads and Ops can send to a team, a post or everyone.</div>
+    </div>`;
+  }
+};
+
+function render(){
+  document.documentElement.style.setProperty("--team", T().c);
+  $("#whoTxt").textContent = T().short;
+  document.querySelectorAll(".tabs button").forEach(b=>{ if(b.dataset.tab===state.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  $("#alertDot").hidden = !state.alerts.some(a=>!a.ack);
+  $("#alertDot").textContent = state.alerts.filter(a=>!a.ack).length;
+  $("#main").innerHTML = views[state.tab]();
+  const f = document.getElementById("composeForm"); if(f) f.addEventListener("submit", sendMsg);
+  const m = document.getElementById("msgs"); if(m) m.lastElementChild?.scrollIntoView({block:"nearest"});
+}
+function go(t){ state.tab = t; store.set("st.tab",t); render(); window.scrollTo(0,0); }
+function now(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function sendMsg(ev){
+  ev.preventDefault(); const i = $("#msgIn"); const txt = i.value.trim(); if(!txt) return;
+  (state.msgs[state.chan] = state.msgs[state.chan] || []).push({by:"You", team:state.team, t:now(), txt, me:true});
+  store.set("st.msgs", state.msgs); render(); const n = $("#msgIn"); if(n) n.focus();
+}
+let tt=null; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,2600); }
+let lastFocus=null;
+function openSheet(title, html){ lastFocus=document.activeElement; $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#scrim").hidden=false; const f=$("#sheetBody button, #sheetBody select"); if(f) f.focus(); }
+function closeSheet(){ $("#scrim").hidden=true; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+
+function showPost(k){
+  const p = POSTS[k]; const teams = Object.entries(TEAMS).filter(([tk,t])=>t.base===k || (SHIFTS[tk]||[]).some(s=>s[3]===k));
+  const mine = myShifts().filter(s=>s[3]===k);
+  const html = `<div class="sub">${esc(p.where)}</div>
+    <div class="label">Teams at this post</div>
+    <div class="btns">${teams.map(([tk,t])=>`<span class="pill" style="background:${t.c};color:#0c1524">${esc(t.short)}</span>`).join("") || `<span class="sub">None assigned</span>`}</div>
+    ${mine.length ? `<div class="label">You are here</div><div class="list">${mine.map(s=>`<div class="item" style="grid-template-columns:auto minmax(0,1fr)"><div class="t">${fmt(s[1])}</div><div><div class="ti">${dname(s[0])}</div><div class="sub">${esc(s[4])}</div></div></div>`).join("")}</div>` : ""}
+    <a class="btn ghost" style="text-align:center;text-decoration:none" href="https://maps.google.com/?q=${encodeURIComponent((p.town?p.where:"Fort Adams State Park")+", Newport RI")}" target="_blank" rel="noopener">Directions</a>
+    <div class="btns" style="justify-content:flex-end"><button class="btn" type="button" data-close="1">Done</button></div>`;
+  openSheet(p.name, html);
+}
+
+document.addEventListener("click", ev=>{
+  const t = ev.target.closest("button, g[data-showpost]"); if(!t) return; const ds = t.dataset;
+  if(ds.tab){ go(ds.tab); return; }
+  if(ds.day){ state.day = ds.day; render(); return; }
+  if(ds.checkin){ const d=new Date(); state.checkin[ds.checkin] = d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); store.set("st.checkin",state.checkin); toast("Checked in. Your lead can see you're at your post."); render(); return; }
+  if(ds.showpost){ showPost(ds.showpost); return; }
+  if(ds.chan){ state.chan = ds.chan; render(); return; }
+  if(ds.shareloc){ (state.msgs[state.chan] = state.msgs[state.chan]||[]).push({by:"You", team:state.team, t:now(), txt:"Shared location: " + POSTS[nowNext().cur[3]].name, me:true, loc:true}); store.set("st.msgs",state.msgs); render(); return; }
+  if(ds.viewteam){ state.viewTeam = state.viewTeam===ds.viewteam ? null : ds.viewteam; render(); return; }
+  if(ds.dm){ state.chan = "ops"; go("chat"); toast("Direct messages open in Ops Desk for this demo"); return; }
+  if(ds.ack){ const a = state.alerts.find(x=>x.id==ds.ack); a.ack = true; store.set("st.alerts",state.alerts); toast("Acknowledged. Ops can see you've got it."); render(); return; }
+  if(ds.compose){ openSheet("Send alert", `<div class="field"><label class="label" for="aTo">Send to</label><select id="aTo"><option>All staff</option>${Object.values(TEAMS).map(x=>`<option>${esc(x.name)}</option>`).join("")}${Object.values(POSTS).map(p=>`<option>Everyone at ${esc(p.name)}</option>`).join("")}</select></div>
+      <div class="field"><label class="label" for="aLvl">Priority</label><select id="aLvl"><option value="info">Info</option><option value="urgent">Urgent</option></select></div>
+      <div class="field"><label class="label" for="aTxt">Message</label><textarea id="aTxt" rows="3" placeholder="Where to be, when, and what to do"></textarea></div>
+      <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-close="1">Cancel</button><button class="btn" type="button" data-sendalert="1">Send</button></div>`); return; }
+  if(ds.sendalert){ const txt = $("#aTxt").value.trim(); if(!txt){ toast("Write the alert first"); return; } state.alerts.unshift({id:Date.now(), lvl:$("#aLvl").value, t:now(), to:$("#aTo").value, txt, ack:false}); store.set("st.alerts",state.alerts); closeSheet(); toast("Alert sent"); render(); return; }
+  if(ds.close){ closeSheet(); return; }
+  if(t.id==="whoBtn"){ openSheet("Switch team (demo)", `<p class="sub">Staff sign in and see their own team. For the demo, pick any team to see its shifts, posts and chat.</p><div class="teams">${Object.entries(TEAMS).map(([k,x])=>`<button type="button" class="team" style="--c:${x.c}" data-pickteam="${k}" aria-pressed="${k===state.team}"><span class="n">${esc(x.name)}</span><span class="sub">${x.radio}</span></button>`).join("")}</div>`); return; }
+  if(ds.pickteam){ state.team = ds.pickteam; store.set("st.team",state.team); state.day=null; closeSheet(); toast("Now viewing as " + T().name); render(); return; }
+});
+document.addEventListener("keydown", ev=>{ if(ev.key==="Escape" && !$("#scrim").hidden) closeSheet(); if((ev.key==="Enter"||ev.key===" ") && ev.target.matches && ev.target.matches("g[data-showpost]")){ ev.preventDefault(); showPost(ev.target.dataset.showpost); } });
+$("#scrim").addEventListener("click", ev=>{ if(ev.target.id==="scrim") closeSheet(); });
+if(!views[state.tab]) state.tab="shift";
+render();
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
