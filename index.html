@@ -230,30 +230,68 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 (function(){
 const SP = s => "https://www.showpass.com/" + s + "/";
 const VENUES = {
-  fort:   {name:"Fort Adams State Park", short:"Fort Adams", addr:"90 Fort Adams Dr", x:92,  y:318, get:"Reserved parking on site, or the harbor shuttle from downtown."},
-  casino: {name:"Casino Theatre", short:"Casino Theatre", addr:"9 Freebody St, off Bellevue Ave", x:300, y:236, get:"About 10 minutes on foot from Thames Street."},
-  rough:  {name:"Rough Point", short:"Rough Point", addr:"680 Bellevue Ave", x:332, y:392, get:"Drive or rideshare down Bellevue Avenue."},
-  brew:   {name:"Newport Craft Brewing & Distilling", short:"Newport Craft", addr:"293 JT Connell Hwy", x:282, y:58, get:"North end of town, on-site parking."},
-  forty1: {name:"Forty 1° North", short:"Forty 1° North", addr:"351 Thames St", x:222, y:214, get:"Downtown waterfront, walkable from Thames Street."},
-  reef:   {name:"The Reef", short:"The Reef", addr:"Bowen's Wharf", x:236, y:186, get:"Downtown waterfront, walkable from Thames Street."}
+  fort:     {name:"Fort Adams State Park", short:"Fort Adams", addr:"90 Fort Adams Dr, Newport", x:92, y:318, lx:20, ly:-17, anchor:"start", get:"Reserved parking on site, or the harbor shuttle from downtown."},
+  museum:   {name:"Audrain Automobile Museum", short:"Audrain Museum", addr:"222 Bellevue Ave, Newport", x:300, y:204, lx:20, ly:-14, anchor:"start", get:"Bellevue Avenue, a short walk from Thames Street. Will Call is here."},
+  ithf:     {name:"International Tennis Hall of Fame (Motor Week Village)", short:"The Village", addr:"194 Bellevue Ave, Newport", x:320, y:238, lx:20, ly:4, anchor:"start", get:"Bellevue Avenue. Includes the Von Auersperg Building (Broad Arrow) and the Casino Theatre."},
+  casino:   {name:"Casino Theatre", short:"Casino Theatre", addr:"9 Freebody St, Newport", x:292, y:270, lx:-20, ly:4, anchor:"end", get:"Behind the Tennis Hall of Fame, off Bellevue Avenue."},
+  bellevue: {name:"Bellevue Avenue", short:"Bellevue Ave display", addr:"Bellevue Avenue, Newport", x:318, y:322, lx:-20, ly:4, anchor:"end", get:"Along Bellevue Avenue. Free to walk."},
+  rough:    {name:"Rough Point", short:"Rough Point", addr:"680 Bellevue Ave, Newport", x:332, y:392, lx:-20, ly:4, anchor:"end", get:"South end of Bellevue Avenue. Drive or rideshare."},
+  brew:     {name:"Newport Craft Brewing & Distilling", short:"Newport Craft", addr:"293 JT Connell Hwy, Newport", x:282, y:58, lx:-20, ly:4, anchor:"end", get:"North end of town, on-site parking."},
+  reef:     {name:"The Reef", short:"The Reef", addr:"Bowen's Wharf, Newport", x:236, y:180, lx:-20, ly:4, anchor:"end", get:"Downtown waterfront, walkable from Thames Street."},
+  forty1:   {name:"Forty 1\u00b0 North", short:"Forty 1\u00b0 North", addr:"351 Thames St, Newport", x:222, y:220, lx:-20, ly:8, anchor:"end", get:"Downtown waterfront, walkable from Thames Street."},
+  second:   {name:"Second Beach (Tour d'Elegance start)", short:"Second Beach", addr:"Sachuest Point Rd, Middletown", x:378, y:120, lx:0, ly:-20, anchor:"middle", get:"Middletown, east of Newport. The tour finishes at the Audrain Museum."}
 };
-// Sample content: the 2026 program, used to show how 2027 will work.
+// Source: the official 2026 Week at a Glance (audrainconcours.com/2026-week-at-a-glance), read 2026-10-03.
+// Plus two seminars listed on Showpass but not on the website (sem-racing, sem-design).
+// kind: ticketed | free | members | invite | info. Prices only where the 2026 Showpass listing gives one.
+const AC = s => "https://www.audrainconcours.com/" + s + "/";
+const MUS = "https://www.audrainautomuseum.org/tickets/";
 const EVENTS = [
-  {id:"leno", d:"2026-09-30", t:"20:00", title:"Jay Leno Stand-Up Comedy", v:"brew", price:150, url:SP("jay-leno-stand-up-comedy-2026"), cap:"few"},
-  {id:"wine", d:"2026-10-01", t:"14:00", title:"Wine by the Water", v:"forty1", price:200, url:SP("2026-wine-by-the-water"), cap:"ok"},
-  {id:"gathering", d:"2026-10-02", t:"11:00", title:"The Gathering", v:"rough", price:450, url:SP("2026-the-gathering"), cap:"few"},
-  {id:"sem-emory", d:"2026-10-02", t:"13:15", title:"Seminar: The Future of the Emory Outlaw, with Jay Leno & Rod Emory", v:"casino", price:60, url:null, cap:"ok"},
-  {id:"sem-racing", d:"2026-10-02", t:"15:30", title:"Seminar: The Future of Racing, from Great-Great Grandpa's Attic to Tomorrow", v:"casino", price:60, url:SP("seminar-the-future-of-racing-from-great-great-grandpas-attic-to-tomorrow"), cap:"ok"},
-  {id:"whisky", d:"2026-10-02", t:"19:00", title:"Whisky by the Water, hosted by The Macallan", v:"reef", price:269.86, url:SP("whisky-by-the-water-hosted-by-the-macallan"), cap:"ok"},
-  {id:"sem-spike", d:"2026-10-03", t:"09:00", title:"Seminar: Spike's Car Radio with Spike Feresten & Jonny Lieberman", v:"casino", price:60, url:null, cap:"ok"},
-  {id:"supercar", d:"2026-10-03", t:"10:05", title:"Supercar Concours d'Elegance", v:"fort", price:250, from:true, url:SP("2026-super-car-concours-delegance"), cap:"few"},
-  {id:"sem-hyper", d:"2026-10-03", t:"11:30", title:"Seminar: Supercars & Hypercars, Moving Forward & Looking Back", v:"fort", price:60, url:null, cap:"ok"},
-  {id:"sem-style", d:"2026-10-03", t:"12:30", title:"Seminar: Style, Brand Identity & Customer Passion", v:"casino", price:60, url:SP("seminar-style-brand-identity-customer-passion-on-the-road-wrist"), cap:"ok"},
-  {id:"hilltop", d:"2026-10-03", t:"14:00", title:"Hilltop Hangout", v:"brew", price:120, url:SP("2026-hilltop-hangout"), cap:"ok"},
-  {id:"sem-design", d:"2026-10-03", t:"15:00", title:"Seminar: A Life in Design, Creating Objects of Desire & Necessity", v:"casino", price:60, url:SP("seminar-a-life-in-design-creating-objects-of-desire-necessity"), cap:"full"},
-  {id:"sem-pegaso", d:"2026-10-03", t:"16:30", title:"Seminar: The Most Exotic Car of the 1950s, Pegaso", v:"casino", price:60, url:SP("seminar-the-most-exotic-car-of-the-1950s-pegaso"), cap:"ok"},
-  {id:"yoga", d:"2026-10-04", t:"07:30", title:"Yoga at the Concours", v:"fort", price:20, url:SP("2026-yoga-at-the-concours"), cap:"ok"},
-  {id:"main", d:"2026-10-04", t:"08:30", title:"Concours d'Elegance", v:"fort", price:250, from:true, url:SP("2026-concours-delegance-presented-by-a-lange-sohne"), cap:"few", lange:true}
+  {id:"wc-30", d:"2026-09-30", t:"10:00", e:"15:00", title:"Will Call", v:"museum", kind:"info"},
+  {id:"mus-30", d:"2026-09-30", t:"10:00", e:"15:00", title:"Audrain Automobile Museum", v:"museum", kind:"ticketed", link:MUS},
+  {id:"members", d:"2026-09-30", t:"16:00", e:"19:00", title:"Members Cocktail Party", v:"museum", kind:"members"},
+  {id:"leno", d:"2026-09-30", t:"20:00", title:"Jay Leno Stand-Up Comedy Show", v:"brew", kind:"ticketed", price:150, url:SP("jay-leno-stand-up-comedy-2026"), cap:"few"},
+
+  {id:"wc-01", d:"2026-10-01", t:"10:00", e:"17:00", title:"Will Call", v:"museum", kind:"info"},
+  {id:"ba-prev-01", d:"2026-10-01", t:"10:00", e:"17:00", title:"Broad Arrow Auction Preview", v:"ithf", kind:"free", link:AC("broad-arrow-auctions"), note:"Von Auersperg Building"},
+  {id:"mus-01", d:"2026-10-01", t:"10:00", e:"17:00", title:"Audrain Automobile Museum", v:"museum", kind:"ticketed", link:MUS},
+  {id:"hat", d:"2026-10-01", t:"11:00", e:"14:30", title:"Audrain Hat Luncheon", v:"rough", kind:"ticketed", link:"https://www.audrainautomuseum.org/second-annual-audrain-hat-luncheon"},
+  {id:"wine", d:"2026-10-01", t:"14:00", e:"16:30", title:"Wine by the Water", v:"forty1", kind:"ticketed", price:200, url:SP("2026-wine-by-the-water")},
+  {id:"sc-tour", d:"2026-10-01", t:"14:00", e:"16:00", title:"Supercar Tour", v:"fort", kind:"ticketed", link:AC("supercar-tour")},
+
+  {id:"greghill", d:"2026-10-02", t:"05:30", e:"10:00", title:"The Greg Hill Show, Live", v:"brew", kind:"free"},
+  {id:"wc-02", d:"2026-10-02", t:"10:00", e:"17:00", title:"Will Call", v:"museum", kind:"info"},
+  {id:"ba-prev-02", d:"2026-10-02", t:"10:00", e:"17:00", title:"Broad Arrow Auction Preview", v:"ithf", kind:"free", link:AC("broad-arrow-auctions"), note:"Von Auersperg Building"},
+  {id:"mus-02", d:"2026-10-02", t:"10:00", e:"16:00", title:"Audrain Automobile Museum", v:"museum", kind:"ticketed", link:MUS},
+  {id:"village-02", d:"2026-10-02", t:"10:00", e:"17:00", title:"Motor Week Village", v:"ithf", kind:"ticketed", link:AC("the-village")},
+  {id:"gathering", d:"2026-10-02", t:"11:00", e:"16:00", title:"The Gathering", presenter:"Bank of America", v:"rough", kind:"ticketed", price:450, url:SP("2026-the-gathering"), cap:"few"},
+  {id:"spike-pod", d:"2026-10-02", t:"12:00", title:"Spike Podcast at The Gathering", v:"rough", kind:"ticketed", price:450, url:SP("2026-the-gathering"), note:"Included with The Gathering"},
+  {id:"sem-emory", d:"2026-10-02", t:"14:30", e:"15:30", title:"Seminar: The Future of the Emory Outlaw", v:"casino", kind:"ticketed", price:60, url:SP("seminar-performance-technology-moving-forward-looking-back")},
+  {id:"sem-racing", d:"2026-10-02", t:"15:30", title:"Seminar: The Future of Racing, from Great-Great Grandpa's Attic to Tomorrow", v:"casino", kind:"ticketed", price:60, url:SP("seminar-the-future-of-racing-from-great-great-grandpas-attic-to-tomorrow"), note:"Casino Theatre · listed on Showpass"},
+  {id:"autograph", d:"2026-10-02", t:"15:30", e:"16:30", title:"Autograph Signing", v:"ithf", kind:"free", note:"The Village"},
+  {id:"ba-auction", d:"2026-10-02", t:"16:00", title:"Broad Arrow Auction", v:"ithf", kind:"ticketed", link:AC("broad-arrow-auctions"), note:"Von Auersperg Building"},
+  {id:"whisky", d:"2026-10-02", t:"19:00", e:"23:00", title:"Whisky by the Water", presenter:"hosted by The Macallan", v:"reef", kind:"ticketed", price:269.86, url:SP("whisky-by-the-water-hosted-by-the-macallan")},
+
+  {id:"cars-coffee", d:"2026-10-03", t:"07:30", e:"09:30", title:"Cars & Coffee", v:"fort", kind:"free", link:AC("cars-coffee")},
+  {id:"tour", d:"2026-10-03", t:"08:00", e:"11:00", title:"Audrain Tour d'Elegance", v:"second", kind:"ticketed", link:AC("concours"), note:"Second Beach to the Audrain Museum"},
+  {id:"sem-spike", d:"2026-10-03", t:"09:00", e:"10:00", title:"Seminar: Spike's Car Radio Live", v:"fort", kind:"ticketed", price:60, url:SP("seminar-spikes-car-radio-with-spike-feresten-johnny-lieberman-surprise-guests")},
+  {id:"wc-03", d:"2026-10-03", t:"10:00", e:"17:00", title:"Will Call", v:"museum", kind:"info"},
+  {id:"supercar", d:"2026-10-03", t:"10:00", e:"15:00", title:"Supercar Concours", v:"fort", kind:"ticketed", price:250, from:true, url:SP("2026-super-car-concours-delegance"), cap:"few"},
+  {id:"mus-03", d:"2026-10-03", t:"10:00", e:"16:00", title:"Audrain Automobile Museum", v:"museum", kind:"ticketed", link:MUS},
+  {id:"village-03", d:"2026-10-03", t:"10:00", e:"16:00", title:"Motor Week Village", v:"ithf", kind:"ticketed", link:AC("the-village")},
+  {id:"bellevue", d:"2026-10-03", t:"11:00", e:"13:30", title:"Bellevue Car Display", v:"bellevue", kind:"free", link:AC("bellevue-car-display")},
+  {id:"sem-hyper", d:"2026-10-03", t:"11:30", e:"12:30", title:"Seminar: Supercars & Hypercars", v:"fort", kind:"ticketed", price:60, url:SP("seminar-supercars-hypercars-moving-forward-looking-back-2")},
+  {id:"sem-style", d:"2026-10-03", t:"12:30", e:"13:30", title:"Seminar: Style, Brand Identity & Customer Passion", v:"casino", kind:"ticketed", price:60, url:SP("seminar-style-brand-identity-customer-passion-on-the-road-wrist")},
+  {id:"hilltop", d:"2026-10-03", t:"14:00", e:"18:00", title:"Hilltop Hangout at Newport Craft", v:"brew", kind:"ticketed", price:120, url:SP("2026-hilltop-hangout")},
+  {id:"sem-cars", d:"2026-10-03", t:"15:00", e:"16:00", title:"Seminar: 'Cars' at 20", v:"casino", kind:"ticketed", cap:"full"},
+  {id:"sem-design", d:"2026-10-03", t:"15:00", title:"Seminar: A Life in Design, Creating Objects of Desire & Necessity", v:"casino", kind:"ticketed", price:60, url:SP("seminar-a-life-in-design-creating-objects-of-desire-necessity"), note:"Casino Theatre · listed on Showpass"},
+  {id:"sem-pegaso", d:"2026-10-03", t:"16:30", e:"17:30", title:"Seminar: The Most Exotic Car of the 1950s, Pegaso", v:"casino", kind:"ticketed", price:60, url:SP("seminar-the-most-exotic-car-of-the-1950s-pegaso")},
+  {id:"gala", d:"2026-10-03", t:"18:30", e:"24:00", title:"Audrain Casino Royale Gala", presenter:"Broad Arrow", v:"ithf", kind:"invite", link:"https://www.audrainautomuseum.org/audrain-casino-royale-gala/"},
+
+  {id:"coffee", d:"2026-10-04", t:"06:30", e:"08:30", title:"Coffee at the Concours", v:"fort", kind:"free", link:AC("concours")},
+  {id:"yoga", d:"2026-10-04", t:"07:30", e:"08:30", title:"Yoga at the Concours", v:"fort", kind:"ticketed", price:20, url:SP("2026-yoga-at-the-concours")},
+  {id:"main", d:"2026-10-04", t:"08:30", e:"16:00", title:"Audrain Newport Concours d'Elegance", presenter:"A. Lange & S\u00f6hne", v:"fort", kind:"ticketed", price:250, from:true, url:SP("2026-concours-delegance-presented-by-a-lange-sohne"), cap:"few"},
+  {id:"mus-04", d:"2026-10-04", t:"10:00", e:"16:00", title:"Audrain Automobile Museum", v:"museum", kind:"ticketed", link:MUS}
 ];
 const PASSES = [
   {id:"ga2", t:"Two-Day General Admission", d:"Fort Adams, Saturday and Sunday", price:450, url:SP("2026-concours-two-day-general-admission-ticket")},
@@ -278,7 +316,7 @@ const FEATURED = [
 const DAYS = [...new Set(EVENTS.map(e=>e.d))];
 const CAP = {ok:["","Available"], few:["few","Few left"], full:["full","Sold out"]};
 const money = n => "$" + (Number.isInteger(n) ? n.toLocaleString("en-US") : n.toFixed(2));
-const priceLabel = e => (e.from ? "From " : "") + money(e.price);
+const priceLabel = e => e.kind==="free" ? "Free" : e.kind==="members" ? "Members" : e.kind==="invite" ? "Invitation" : e.kind==="info" ? "" : (typeof e.price==="number" ? (e.from ? "From " : "") + money(e.price) : "Tickets");
 
 const store = {
   get(k,f){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; }catch(e){ return f; } },
@@ -293,7 +331,7 @@ const state = {
   event: store.get("ae.event","motorweek"),
   tab: store.get("ae.tab","home"),
   day: DAYS[0], venue:"all", itinMode: "mine",
-  saved: new Set(store.get("ae.saved",["main","supercar"])),
+  saved: new Set(store.get("ae.saved",["main","supercar","cars-coffee"]).filter(id=>EVENTS.some(e=>e.id===id))),
   wallet: store.get("ae.wallet", START_WALLET),
   open: 0,
   uploads: [],
@@ -303,7 +341,8 @@ const state = {
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dayParts = d => { const dt = new Date(d+"T12:00:00"); return {wd: dt.toLocaleDateString("en-US",{weekday:"short"}), long: dt.toLocaleDateString("en-US",{weekday:"long", month:"long", day:"numeric"}), n: dt.getDate(), mon: dt.toLocaleDateString("en-US",{month:"short"})}; };
-const fmtTime = t => { const [h,m] = t.split(":").map(Number); return {hm: ((h%12)||12)+":"+String(m).padStart(2,"0"), ap: h>=12?"PM":"AM"}; };
+const fmtTime = t => { const [h,m] = t.split(":").map(Number); return {hm: ((h%12)||12)+":"+String(m).padStart(2,"0"), ap: (h>=12&&h<24)?"PM":"AM"}; };
+const endLabel = e => { if(!e.e) return ""; const f = fmtTime(e.e); return "Until " + f.hm + " " + f.ap; };
 const booked = id => state.wallet.some(w=>w.kind==="event" && w.ref===id);
 const saveWallet = () => store.set("ae.wallet", state.wallet);
 let serialN = store.get("ae.serialN", 5200);
@@ -312,17 +351,21 @@ const newSerial = code => { serialN += 7; store.set("ae.serialN", serialN); retu
 const STAR = on => `<svg viewBox="0 0 24 24" fill="${on?"currentColor":"none"}" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
 
 function row(e, showDay){
-  const tm = fmtTime(e.t), dp = dayParts(e.d), c = CAP[e.cap], v = VENUES[e.v], b = booked(e.id), on = state.saved.has(e.id) || b;
+  const tm = fmtTime(e.t), dp = dayParts(e.d), c = CAP[e.cap||"ok"], v = VENUES[e.v], b = booked(e.id), on = state.saved.has(e.id) || b;
   let btn;
   if(b) btn = `<button class="buy ghost" type="button" data-showticket="${e.id}">View ticket</button>`;
+  else if(e.kind==="free") btn = e.link ? `<a class="buy ghost" href="${e.link}" target="_blank" rel="noopener">Details</a>` : `<span class="chip">Free</span>`;
+  else if(e.kind==="members") btn = `<span class="chip">Members</span>`;
+  else if(e.kind==="invite") btn = `<a class="buy ghost" href="${e.link}" target="_blank" rel="noopener">Details</a>`;
+  else if(e.kind==="info") btn = `<span class="chip">Info</span>`;
   else if(e.cap==="full") btn = `<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`;
   else btn = `<button class="buy" type="button" data-buy="${e.id}">Buy</button>`;
   return `<div class="row">
     <div class="time">${tm.hm}<span>${showDay ? dp.wd : tm.ap}</span></div>
     <div class="info">
       <div class="title">${esc(e.title)}</div>
-      ${e.lange ? `<div><span class="chip lange">Presented by A. Lange &amp; Söhne</span></div>` : ""}
-      <div class="meta">${b ? `<span class="chip booked">Booked</span>` : ""}<span>${esc(v.short)}</span><span class="dot ${c[0]}">${c[1]}</span></div>
+      ${e.presenter ? `<div><span class="chip lange">${/^hosted/.test(e.presenter) ? "Hosted" + esc(e.presenter.slice(6)) : "Presented by " + esc(e.presenter)}</span></div>` : ""}
+      <div class="meta">${b ? `<span class="chip booked">Booked</span>` : ""}<span>${esc(e.note || v.short)}</span>${e.e ? `<span>${endLabel(e)}</span>` : ""}${e.kind==="ticketed" ? `<span class="dot ${c[0]}">${c[1]}</span>` : ""}</div>
     </div>
     <div class="actions">
       <button class="save" type="button" data-save="${e.id}" aria-pressed="${on}" aria-label="${on?"Remove from":"Add to"} my itinerary">${STAR(on)}</button>
@@ -345,12 +388,12 @@ const views = {
   home(){
     const next = EVENTS.filter(e=>state.saved.has(e.id)||booked(e.id)).slice(0,3);
     return `<div class="view">
-      <div class="notice">Mockup. Sample content from the 2026 program; 2027 dates to be announced.</div>
+      <div class="notice">Mockup. Full 2026 Week at a Glance as sample content; 2027 dates to be announced. Availability shown is illustrative.</div>
       <section class="hero">
         <div class="eyebrow">Newport, Rhode Island</div>
         <h1>Audrain Newport Concours &amp; Motor Week</h1>
         <p>A week of cars, conversation and Newport, ending on the lawn at Fort Adams.</p>
-        <div class="stats"><div><b>${EVENTS.length}</b>events</div><div><b>${Object.keys(VENUES).length}</b>venues</div><div><b>${DAYS.length}</b>days</div></div>
+        <div class="stats"><div><b>${EVENTS.filter(e=>e.kind!=="info").length}</b>listings</div><div><b>${Object.keys(VENUES).length}</b>venues</div><div><b>${DAYS.length}</b>days</div></div>
       </section>
       <button class="pay" type="button" data-shop="1" style="background:var(--btn);color:var(--btn-fg)">Buy tickets</button>
       <section class="section">
@@ -391,11 +434,11 @@ const views = {
   },
   map(){
     const pins = Object.entries(VENUES).map(([k,v])=>{
-      const n = EVENTS.filter(e=>e.v===k).length, right = v.x>250;
+      const n = EVENTS.filter(e=>e.v===k).length;
       return `<g class="pin" data-venue="${k}" tabindex="0" role="button" aria-label="${esc(v.name)}, ${n} events" style="cursor:pointer">
         <circle cx="${v.x}" cy="${v.y}" r="15" fill="#0f2340" stroke="#b8913a" stroke-width="2"/>
         <text x="${v.x}" y="${v.y+4.5}" text-anchor="middle" font-family="Figtree, sans-serif" font-size="12" font-weight="700" fill="#f7f0de">${n}</text>
-        <text x="${v.x + (right?-20:20)}" y="${v.y-17}" text-anchor="${right?"end":"start"}" font-family="Figtree, sans-serif" font-size="11.5" font-weight="600" fill="var(--fg)">${esc(v.short)}</text>
+        <text x="${v.x + v.lx}" y="${v.y + v.ly}" text-anchor="${v.anchor}" font-family="Figtree, sans-serif" font-size="11" font-weight="600" fill="var(--fg)">${esc(v.short)}</text>
       </g>`;}).join("");
     return `<div class="view">
       <div class="mapbox"><svg viewBox="0 0 400 440" role="img" aria-label="Schematic map of Newport event venues">
@@ -405,6 +448,8 @@ const views = {
         <path d="M110 300 C 140 280 160 270 196 262" fill="none" stroke="var(--line)" stroke-width="6"/>
         <path d="M222 200 C 190 230 150 270 104 312" fill="none" stroke="#b8913a" stroke-width="2" stroke-dasharray="5 5"/>
         <text x="150" y="236" font-family="Figtree, sans-serif" font-size="11" fill="var(--muted)" transform="rotate(-40 150 236)">harbor shuttle</text>
+        <path d="M378 120 C 350 150 330 180 300 204" fill="none" stroke="#b8913a" stroke-width="1.5" stroke-dasharray="2 4"/>
+        <path d="M300 204 L320 238 L292 270 L318 322 L332 392" fill="none" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
         <text x="40" y="150" font-family="Bodoni Moda, Georgia, serif" font-style="italic" font-size="16" fill="var(--muted)">Newport Harbor</text>
         <text x="392" y="430" text-anchor="end" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">Schematic, not to scale</text>
         ${pins}
@@ -507,10 +552,10 @@ function checkout(item){
     const priced = typeof cart.price === "number";
     openSheet(cart.title, `
       <p class="price">${esc(cart.sub)}</p>
-      <div class="qty"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="qtyOut">${cart.qty}</output><button type="button" data-q="1" aria-label="More">+</button><span class="price">${priced ? (cart.from?"from ":"") + money(cart.price*cart.qty) : "2027 price TBA"}</span></div>
+      <div class="qty"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="qtyOut">${cart.qty}</output><button type="button" data-q="1" aria-label="More">+</button><span class="price">${priced ? (cart.from?"from ":"") + money(cart.price*cart.qty) : (cart.kind==="addon" ? "2027 price TBA" : "Price on the ticket page")}</span></div>
       ${cart.kind==="addon" ? `<label class="price" for="attachSel">Attach to</label><select id="attachSel">${state.wallet.filter(w=>w.kind==="pass").map(w=>`<option>${esc(w.label)} · ${w.serial}</option>`).join("") || "<option>Your next pass</option>"}</select>` : ""}
       <button class="pay" type="button" data-pay="1">Pay with Apple Pay or card (demo)</button>
-      ${cart.url ? `<a class="buy ghost" href="${cart.url}" target="_blank" rel="noopener">Open the 2026 page on Showpass</a>` : ""}
+      ${cart.url ? `<a class="buy ghost" href="${cart.url}" target="_blank" rel="noopener">Open the 2026 ticket page</a>` : ""}
       <p class="price">Demo only: no payment is taken. In the app, each ticket is issued with its own serial and lands in My Tickets.</p>
       <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`);
   };
@@ -582,11 +627,11 @@ document.addEventListener("click", ev=>{
   if(ds.mode){ state.itinMode = ds.mode; render(); return; }
   if(ds.day){ state.day = ds.day; render(); return; }
   if(ds.save){ const id=ds.save; if(booked(id)){ toast("Booked events stay in your itinerary"); return; } state.saved.has(id)?state.saved.delete(id):state.saved.add(id); store.set("ae.saved",[...state.saved]); toast(state.saved.has(id)?"Added to your itinerary. We'll remind you before it starts.":"Removed from your itinerary"); render(); return; }
-  if(ds.buy){ const e = EVENTS.find(x=>x.id===ds.buy), dp = dayParts(e.d), tm = fmtTime(e.t); checkout({kind:"event", ref:e.id, code:"EV", title:e.title, sub:`${dp.wd} ${tm.hm} ${tm.ap} · ${VENUES[e.v].short}`, price:e.price, from:e.from, url:e.url}); return; }
+  if(ds.buy){ const e = EVENTS.find(x=>x.id===ds.buy), dp = dayParts(e.d), tm = fmtTime(e.t); checkout({kind:"event", ref:e.id, code:"EV", title:e.title, sub:`${dp.wd} ${tm.hm} ${tm.ap} · ${VENUES[e.v].short}`, price:(typeof e.price==="number"?e.price:null), from:e.from, url:e.url||e.link}); return; }
   if(ds.buypass){ const p = PASSES.find(x=>x.id===ds.buypass); checkout({kind:"pass", ref:p.id, code:"PS", title:p.t, sub:p.d, price:p.price, url:p.url}); return; }
   if(ds.addon){ const a = ADDONS.find(x=>x.id===ds.addon); checkout({kind:"addon", ref:a.id, code:a.code, title:a.t, sub:`${a.use} · add-on`, price:null}); return; }
   if(ds.shop){ openSheet("Buy tickets", `<div class="eyebrow">Passes</div><div class="list">${PASSES.map(p=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${p.t}</div><div class="meta">${p.d}</div></div><div class="actions"><button class="buy" type="button" data-buypass="${p.id}">${money(p.price)}</button></div></div>`).join("")}</div>
-    <div class="eyebrow">Events</div><div class="list">${EVENTS.map(e=>{const dp=dayParts(e.d),tm=fmtTime(e.t);return `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${esc(e.title)}</div><div class="meta"><span>${dp.wd} ${tm.hm} ${tm.ap}</span><span>${esc(VENUES[e.v].short)}</span></div></div><div class="actions">${e.cap==="full"?`<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`:`<button class="buy" type="button" data-buy="${e.id}">${priceLabel(e)}</button>`}</div></div>`}).join("")}</div>
+    <div class="eyebrow">Events</div><div class="list">${EVENTS.filter(e=>e.kind==="ticketed" && e.id!=="spike-pod").map(e=>{const dp=dayParts(e.d),tm=fmtTime(e.t);return `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${esc(e.title)}</div><div class="meta"><span>${dp.wd} ${tm.hm} ${tm.ap}</span><span>${esc(VENUES[e.v].short)}</span></div></div><div class="actions">${e.cap==="full"?`<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`:`<button class="buy" type="button" data-buy="${e.id}">${priceLabel(e)}</button>`}</div></div>`}).join("")}</div>
     <div class="eyebrow">Add-ons</div><div class="list">${ADDONS.map(a=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${a.t}</div><div class="meta">${a.use}</div></div><div class="actions"><button class="buy" type="button" data-addon="${a.id}">Add</button></div></div>`).join("")}</div>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Close</button></div>`); return; }
   if(ds.link){ openSheet("Link a website order", `<p>Bought tickets on the Audrain website? Link the order and every ticket appears here with the same serials as your badge.</p>
