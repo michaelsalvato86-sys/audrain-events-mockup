@@ -1,0 +1,28 @@
+{
+ "name": "Audrain Events",
+ "short_name": "Audrain",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#0f2340",
+ "theme_color": "#0f2340",
+ "description": "Schedule, map and tickets for Audrain Newport Concours & Motor Week and Winterfest.",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

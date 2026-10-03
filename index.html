@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f2340">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Audrain">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Audrain Events</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone-first app shell - sticky header with event switcher and alerts bell, one scrolling view, fixed five-tab bar. Centered 480px column on wider screens. */
+:root{
+  --navy:#0f2340; --gold:#b8913a; --gold-soft:#e9dcbc;
+  --ivory:#f7f3ea; --card:#fffdf8; --ink:#14213a; --muted:#5d6678; --line:#e3dccb;
+  --ok:#2f7d4f; --warn:#b26a12; --full:#a33a2b;
+  --bg:var(--ivory); --fg:var(--ink); --surface:var(--card); --bar:var(--navy); --bar-fg:#f3ead6; --btn:var(--navy); --btn-fg:#f7f0de;
+  --display:"Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b1628; --fg:#ece5d4; --surface:#13223a; --line:#26375a; --muted:#9aa6bd;
+  --bar:#07101e; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b1628; --fg:#ece5d4; --surface:#13223a; --line:#26375a; --muted:#9aa6bd;
+  --bar:#07101e; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bar);color:var(--bar-fg);padding:12px 16px 10px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mark{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.01em;min-width:0}
+.mark small{display:block;font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.tools{display:flex;gap:8px;flex:0 0 auto}
+.iconbtn{position:relative;border:1px solid rgba(233,220,188,.4);background:transparent;color:var(--bar-fg);border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.iconbtn svg{width:18px;height:18px}
+.badge{position:absolute;top:-4px;right:-4px;background:var(--gold);color:#16120a;border-radius:999px;font-size:10px;font-weight:800;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px}
+.switch{display:flex;gap:6px;margin-top:12px}
+.switch button{flex:1;border:1px solid rgba(233,220,188,.3);background:transparent;color:var(--bar-fg);border-radius:10px;padding:8px 6px;font-size:13px;font-weight:600}
+.switch button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#16120a}
+
+main{flex:1;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:20px}
+.notice{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;color:var(--fg)}
+h1{font-size:30px;line-height:1.08}
+h2{font-size:21px}
+h3{font-size:17px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.hero{position:relative;border-radius:16px;overflow:hidden;color:#f7f0de;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:18px;background:var(--navy) url("photos/field.jpg") center 30%/cover}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,35,64,.05) 20%,rgba(15,35,64,.92) 85%)}
+.hero > *{position:relative}
+.hero h1{color:#fbf5e6}
+.hero p{margin:6px 0 0;color:#e2dac6;font-size:14px}
+.stats{display:flex;gap:18px;font-size:12px;color:#e2dac6;margin-top:10px}
+.stats b{display:block;font-family:var(--display);font-size:20px;color:#fbf5e6}
+.section{display:flex;flex-direction:column;gap:10px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.link{background:none;border:0;padding:0;color:var(--gold);font-weight:600;font-size:13px}
+
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;padding:12px;border-top:1px solid var(--line);align-items:start}
+.row:first-child{border-top:0}
+.time{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;padding-top:2px}
+.time span{display:block;font-size:11px;color:var(--muted)}
+.info{min-width:0;display:flex;flex-direction:column;gap:4px}
+.title{font-weight:600;line-height:1.3}
+.meta{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.chip{font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:999px;padding:2px 8px;border:1px solid var(--line);display:inline-block}
+.chip.lange{border-color:var(--gold);color:var(--gold)}
+.chip.booked{background:var(--ok);border-color:var(--ok);color:#fff}
+.dot{display:inline-flex;align-items:center;gap:5px}
+.dot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.dot.few::before{background:var(--warn)} .dot.full::before{background:var(--full)}
+.actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.mini{display:flex;gap:2px}
+.save{background:none;border:0;padding:3px;line-height:1;color:var(--muted);display:grid;place-items:center}
+.save svg{width:20px;height:20px}
+.save[aria-pressed="true"]{color:var(--gold)}
+.buy{display:inline-block;text-decoration:none;background:var(--btn);color:var(--btn-fg);border:0;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;white-space:nowrap;text-align:center}
+.buy.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.days button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;text-align:center;min-width:58px}
+.days button b{display:block;font-family:var(--display);font-size:20px;line-height:1.1}
+.days button span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.days button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#f7f0de}
+.days button[aria-pressed="true"] span{color:var(--gold-soft)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{flex:1;border:0;background:transparent;padding:8px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#f7f0de}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:7px 10px;font-size:13px;font:inherit;font-size:13px}
+.daylabel{font-family:var(--display);font-size:18px;font-weight:700;margin:2px 0 -2px}
+
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card .t{font-weight:700;line-height:1.25}
+.card .d{font-size:12.5px;color:var(--muted);flex:1}
+.card .p{font-family:var(--display);font-size:19px}
+
+.mapbox{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.mapbox svg{display:block;width:100%;height:auto}
+.venue{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.addr{font-size:12.5px;color:var(--muted)}
+
+.wallet{display:flex;flex-direction:column;gap:10px}
+.tk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid var(--gold);background:var(--surface);border-radius:12px;padding:12px;text-align:left;width:100%}
+.tk .t{font-weight:700}
+.tk .s{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tk[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.ticket{background:var(--navy);color:#f3ead6;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+.ticket .tn{font-family:var(--display);font-size:22px;color:#fbf5e6}
+.ticket .eyebrow{color:var(--gold)}
+.qrwrap{background:#fff;border-radius:12px;padding:10px;position:relative}
+.qrwrap canvas{display:block;width:196px;height:196px;image-rendering:pixelated}
+.sample{position:absolute;left:0;right:0;top:44%;transform:rotate(-14deg);font-weight:800;letter-spacing:.2em;color:rgba(163,58,43,.85);font-size:20px;pointer-events:none}
+.serial{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--gold-soft)}
+.timer{font-size:12px;color:#d6cdb6}
+.walletbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.walletbtns span{font-size:12px;border:1px solid rgba(233,220,188,.4);border-radius:8px;padding:6px 10px;color:#f3ead6}
+
+.feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ph{margin:0;position:relative;border-radius:12px;overflow:hidden;background:var(--line);aspect-ratio:4/5;max-width:100%}
+.ph.wide{grid-column:span 2;aspect-ratio:3/2}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:12px;color:#fbf5e6;background:linear-gradient(180deg,transparent,rgba(10,20,36,.85))}
+.ph .st{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px;background:var(--gold);color:#16120a}
+.upload{border:1.5px dashed var(--gold);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;background:var(--surface)}
+.upload label{background:var(--btn);color:var(--btn-fg);border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer}
+.upload input{position:absolute;width:1px;height:1px;opacity:0}
+.upload input:focus-visible + label{outline:2px solid var(--gold);outline-offset:2px}
+
+.alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px;border-top:1px solid var(--line)}
+.alert:first-child{border-top:0}
+.alert .ic{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--gold-soft);color:#4a3a14}
+.alert .ic svg{width:16px;height:16px}
+.alert .w{font-size:11.5px;color:var(--muted)}
+.pref{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.sw{appearance:none;width:42px;height:24px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:0 0 auto;margin:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.sw:checked{background:var(--ok)} .sw:checked::after{left:21px}
+
+.empty{border:1px dashed var(--line);border-radius:14px;padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;color:var(--muted)}
+.empty h2{color:var(--fg)}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bar);padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs button{background:none;border:0;color:#9fa9bd;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:4px 2px}
+.tabs button svg{width:22px;height:22px}
+.tabs button[aria-current="page"]{color:var(--gold)}
+
+.scrim{position:fixed;inset:0;background:rgba(5,10,20,.55);z-index:9;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);color:var(--fg);width:100%;max-width:480px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sheet ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.sheet p{margin:0}
+.sheetfoot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.qty{display:flex;align-items:center;gap:12px}
+.qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:18px}
+.qty output{font-family:var(--mono);font-size:16px;min-width:20px;text-align:center}
+.pay{background:#000;color:#fff;border:0;border-radius:10px;padding:11px;font-weight:700;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fbf5e6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
+.badgecard{align-self:center;width:230px;max-width:100%;background:#fffdf8;color:#14213a;border-radius:14px;border:1px solid var(--line);box-shadow:0 6px 20px rgba(10,20,40,.18);overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center}
+.badgecard .slot{width:46px;height:8px;border-radius:6px;background:#d8d1c0;margin:10px 0 6px}
+.badgecard .band{width:100%;background:#0f2340;color:#e9dcbc;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:6px}
+.badgecard .nm{font-family:var(--display);font-size:22px;font-weight:700;margin:12px 10px 2px;color:#14213a}
+.badgecard .tier{font-size:12px;font-weight:700;color:#8a6a24;letter-spacing:.08em;text-transform:uppercase}
+.badgecard canvas{width:120px;height:120px;image-rendering:pixelated;margin:10px 0 4px}
+.badgecard .sn{font-family:var(--mono);font-size:11.5px;color:#14213a;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:9px 10px;font:inherit}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark"><small>Audrain</small><span id="eventName">Newport Concours &amp; Motor Week</span></div>
+      <div class="tools">
+        <button class="iconbtn" id="alertsBtn" type="button" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="alertCount">3</span></button>
+        <button class="iconbtn" id="installBtn" type="button">Install</button>
+      </div>
+    </div>
+    <div class="switch" role="group" aria-label="Choose event">
+      <button type="button" id="ev-motorweek" aria-pressed="true">Motor Week</button>
+      <button type="button" id="ev-winterfest" aria-pressed="false">Winterfest</button>
+    </div>
+  </header>
+
+  <main id="main"></main>
+
+  <div class="tabs">
+    <nav aria-label="App sections">
+      <button type="button" data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button type="button" data-tab="itinerary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Itinerary</button>
+      <button type="button" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Map</button>
+      <button type="button" data-tab="tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg>Tickets</button>
+      <button type="button" data-tab="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>Photos</button>
+    </nav>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle"></h2>
+    <div id="sheetBody" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+const SP = s => "https://www.showpass.com/" + s + "/";
+const VENUES = {
+  fort:   {name:"Fort Adams State Park", short:"Fort Adams", addr:"90 Fort Adams Dr", x:92,  y:318, get:"Reserved parking on site, or the harbor shuttle from downtown."},
+  casino: {name:"Casino Theatre", short:"Casino Theatre", addr:"9 Freebody St, off Bellevue Ave", x:300, y:236, get:"About 10 minutes on foot from Thames Street."},
+  rough:  {name:"Rough Point", short:"Rough Point", addr:"680 Bellevue Ave", x:332, y:392, get:"Drive or rideshare down Bellevue Avenue."},
+  brew:   {name:"Newport Craft Brewing & Distilling", short:"Newport Craft", addr:"293 JT Connell Hwy", x:282, y:58, get:"North end of town, on-site parking."},
+  forty1: {name:"Forty 1° North", short:"Forty 1° North", addr:"351 Thames St", x:222, y:214, get:"Downtown waterfront, walkable from Thames Street."},
+  reef:   {name:"The Reef", short:"The Reef", addr:"Bowen's Wharf", x:236, y:186, get:"Downtown waterfront, walkable from Thames Street."}
+};
+// Sample content: the 2026 program, used to show how 2027 will work.
+const EVENTS = [
+  {id:"leno", d:"2026-09-30", t:"20:00", title:"Jay Leno Stand-Up Comedy", v:"brew", price:150, url:SP("jay-leno-stand-up-comedy-2026"), cap:"few"},
+  {id:"wine", d:"2026-10-01", t:"14:00", title:"Wine by the Water", v:"forty1", price:200, url:SP("2026-wine-by-the-water"), cap:"ok"},
+  {id:"gathering", d:"2026-10-02", t:"11:00", title:"The Gathering", v:"rough", price:450, url:SP("2026-the-gathering"), cap:"few"},
+  {id:"sem-emory", d:"2026-10-02", t:"13:15", title:"Seminar: The Future of the Emory Outlaw, with Jay Leno & Rod Emory", v:"casino", price:60, url:null, cap:"ok"},
+  {id:"sem-racing", d:"2026-10-02", t:"15:30", title:"Seminar: The Future of Racing, from Great-Great Grandpa's Attic to Tomorrow", v:"casino", price:60, url:SP("seminar-the-future-of-racing-from-great-great-grandpas-attic-to-tomorrow"), cap:"ok"},
+  {id:"whisky", d:"2026-10-02", t:"19:00", title:"Whisky by the Water, hosted by The Macallan", v:"reef", price:269.86, url:SP("whisky-by-the-water-hosted-by-the-macallan"), cap:"ok"},
+  {id:"sem-spike", d:"2026-10-03", t:"09:00", title:"Seminar: Spike's Car Radio with Spike Feresten & Jonny Lieberman", v:"casino", price:60, url:null, cap:"ok"},
+  {id:"supercar", d:"2026-10-03", t:"10:05", title:"Supercar Concours d'Elegance", v:"fort", price:250, from:true, url:SP("2026-super-car-concours-delegance"), cap:"few"},
+  {id:"sem-hyper", d:"2026-10-03", t:"11:30", title:"Seminar: Supercars & Hypercars, Moving Forward & Looking Back", v:"fort", price:60, url:null, cap:"ok"},
+  {id:"sem-style", d:"2026-10-03", t:"12:30", title:"Seminar: Style, Brand Identity & Customer Passion", v:"casino", price:60, url:SP("seminar-style-brand-identity-customer-passion-on-the-road-wrist"), cap:"ok"},
+  {id:"hilltop", d:"2026-10-03", t:"14:00", title:"Hilltop Hangout", v:"brew", price:120, url:SP("2026-hilltop-hangout"), cap:"ok"},
+  {id:"sem-design", d:"2026-10-03", t:"15:00", title:"Seminar: A Life in Design, Creating Objects of Desire & Necessity", v:"casino", price:60, url:SP("seminar-a-life-in-design-creating-objects-of-desire-necessity"), cap:"full"},
+  {id:"sem-pegaso", d:"2026-10-03", t:"16:30", title:"Seminar: The Most Exotic Car of the 1950s, Pegaso", v:"casino", price:60, url:SP("seminar-the-most-exotic-car-of-the-1950s-pegaso"), cap:"ok"},
+  {id:"yoga", d:"2026-10-04", t:"07:30", title:"Yoga at the Concours", v:"fort", price:20, url:SP("2026-yoga-at-the-concours"), cap:"ok"},
+  {id:"main", d:"2026-10-04", t:"08:30", title:"Concours d'Elegance", v:"fort", price:250, from:true, url:SP("2026-concours-delegance-presented-by-a-lange-sohne"), cap:"few", lange:true}
+];
+const PASSES = [
+  {id:"ga2", t:"Two-Day General Admission", d:"Fort Adams, Saturday and Sunday", price:450, url:SP("2026-concours-two-day-general-admission-ticket")},
+  {id:"vip2", t:"Two-Day VIP", d:"Fort Adams with VIP hospitality, both days", price:900, url:SP("2026-concours-two-day-vip-ticket")},
+  {id:"ai", t:"All-Inclusive", d:"General admission plus the week's events", price:1350, url:SP("2026-all-inclusive-ticket-concours-general-admission")},
+  {id:"vipai", t:"VIP All-Inclusive", d:"VIP access plus the week's events", price:1750, url:SP("2026-vip-all-inclusive-ticket")}
+];
+const ADDONS = [
+  {id:"park", code:"PK", t:"Reserved parking", d:"Assigned lot at Fort Adams. Scanned at the lot entrance.", use:"Per day"},
+  {id:"shuttle", code:"SH", t:"Harbor shuttle", d:"Water shuttle from downtown to Fort Adams with a boarding time.", use:"Round trip"},
+  {id:"lounge", code:"LG", t:"Hospitality upgrade", d:"Add lounge access to a General Admission pass.", use:"Both days"},
+  {id:"merch", code:"MR", t:"Merch pickup", d:"Order ahead and collect at the Fort Adams shop.", use:"One pickup"}
+];
+const FEATURED = [
+  {src:"photos/field.jpg", cap:"The show field at Fort Adams", wide:false},
+  {src:"photos/alfa.jpg", cap:"Pre-war Alfa Romeo on the lawn", wide:false},
+  {src:"photos/hilltop.jpg", cap:"Hilltop Hangout at Newport Craft", wide:true},
+  {src:"photos/lawn.jpg", cap:"Modern classics at The Gathering", wide:false},
+  {src:"photos/stage.jpg", cap:"On stage at Motor Week", wide:false},
+  {src:"photos/wine.jpg", cap:"Wine by the Water", wide:true}
+];
+const DAYS = [...new Set(EVENTS.map(e=>e.d))];
+const CAP = {ok:["","Available"], few:["few","Few left"], full:["full","Sold out"]};
+const money = n => "$" + (Number.isInteger(n) ? n.toLocaleString("en-US") : n.toFixed(2));
+const priceLabel = e => (e.from ? "From " : "") + money(e.price);
+
+const store = {
+  get(k,f){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; }catch(e){ return f; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+// Wallet starts with one sample pass so the scannable entry is visible on first open.
+const START_WALLET = [
+  {kind:"pass", ref:"vip2", label:"Two-Day VIP", sub:"Sat & Sun · Fort Adams", serial:"AC27-VIP-004812"},
+  {kind:"addon", ref:"park", label:"Reserved parking, Lot B", sub:"Sat & Sun · scanned at the lot", serial:"AC27-PK-001377"}
+];
+const state = {
+  event: store.get("ae.event","motorweek"),
+  tab: store.get("ae.tab","home"),
+  day: DAYS[0], venue:"all", itinMode: "mine",
+  saved: new Set(store.get("ae.saved",["main","supercar"])),
+  wallet: store.get("ae.wallet", START_WALLET),
+  open: 0,
+  uploads: [],
+  prefs: store.get("ae.prefs",{remind:true, changes:true, offers:false, weather:true}),
+  seen: store.get("ae.seen", false)
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dayParts = d => { const dt = new Date(d+"T12:00:00"); return {wd: dt.toLocaleDateString("en-US",{weekday:"short"}), long: dt.toLocaleDateString("en-US",{weekday:"long", month:"long", day:"numeric"}), n: dt.getDate(), mon: dt.toLocaleDateString("en-US",{month:"short"})}; };
+const fmtTime = t => { const [h,m] = t.split(":").map(Number); return {hm: ((h%12)||12)+":"+String(m).padStart(2,"0"), ap: h>=12?"PM":"AM"}; };
+const booked = id => state.wallet.some(w=>w.kind==="event" && w.ref===id);
+const saveWallet = () => store.set("ae.wallet", state.wallet);
+let serialN = store.get("ae.serialN", 5200);
+const newSerial = code => { serialN += 7; store.set("ae.serialN", serialN); return `AC27-${code}-${String(serialN).padStart(6,"0")}`; };
+
+const STAR = on => `<svg viewBox="0 0 24 24" fill="${on?"currentColor":"none"}" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
+
+function row(e, showDay){
+  const tm = fmtTime(e.t), dp = dayParts(e.d), c = CAP[e.cap], v = VENUES[e.v], b = booked(e.id), on = state.saved.has(e.id) || b;
+  let btn;
+  if(b) btn = `<button class="buy ghost" type="button" data-showticket="${e.id}">View ticket</button>`;
+  else if(e.cap==="full") btn = `<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`;
+  else btn = `<button class="buy" type="button" data-buy="${e.id}">Buy</button>`;
+  return `<div class="row">
+    <div class="time">${tm.hm}<span>${showDay ? dp.wd : tm.ap}</span></div>
+    <div class="info">
+      <div class="title">${esc(e.title)}</div>
+      ${e.lange ? `<div><span class="chip lange">Presented by A. Lange &amp; Söhne</span></div>` : ""}
+      <div class="meta">${b ? `<span class="chip booked">Booked</span>` : ""}<span>${esc(v.short)}</span><span class="dot ${c[0]}">${c[1]}</span></div>
+    </div>
+    <div class="actions">
+      <button class="save" type="button" data-save="${e.id}" aria-pressed="${on}" aria-label="${on?"Remove from":"Add to"} my itinerary">${STAR(on)}</button>
+      ${btn}
+      <span class="price">${priceLabel(e)}</span>
+    </div>
+  </div>`;
+}
+
+function winterfest(){
+  return `<div class="view"><div class="empty">
+    <div class="eyebrow">Winterfest</div>
+    <h2>Coming soon</h2>
+    <p>The same app runs every Audrain event. Winterfest's schedule, tickets, map and photos appear here when they're announced.</p>
+    <button class="buy" type="button" data-notify="winterfest">Alert me when tickets go on sale</button>
+  </div></div>`;
+}
+
+const views = {
+  home(){
+    const next = EVENTS.filter(e=>state.saved.has(e.id)||booked(e.id)).slice(0,3);
+    return `<div class="view">
+      <div class="notice">Mockup. Sample content from the 2026 program; 2027 dates to be announced.</div>
+      <section class="hero">
+        <div class="eyebrow">Newport, Rhode Island</div>
+        <h1>Audrain Newport Concours &amp; Motor Week</h1>
+        <p>A week of cars, conversation and Newport, ending on the lawn at Fort Adams.</p>
+        <div class="stats"><div><b>${EVENTS.length}</b>events</div><div><b>${Object.keys(VENUES).length}</b>venues</div><div><b>${DAYS.length}</b>days</div></div>
+      </section>
+      <button class="pay" type="button" data-shop="1" style="background:var(--btn);color:var(--btn-fg)">Buy tickets</button>
+      <section class="section">
+        <div class="section-head"><h2>Your next events</h2><button class="link" type="button" data-go="itinerary">Full itinerary</button></div>
+        ${next.length ? `<div class="list">${next.map(e=>row(e,true)).join("")}</div>` : `<div class="notice">Star any event to add it to your itinerary.</div>`}
+      </section>
+      <section class="section">
+        <div class="section-head"><h2>Passes</h2></div>
+        <div class="cards">${PASSES.map(p=>`<div class="card"><div class="t">${p.t}</div><div class="d">${p.d}</div><div class="p">${money(p.price)}</div><button class="buy" type="button" data-buypass="${p.id}">Buy</button></div>`).join("")}</div>
+      </section>
+      <section class="section">
+        <div class="section-head"><h2>Add to your pass</h2></div>
+        <div class="cards">${ADDONS.map(a=>`<div class="card"><div class="t">${a.t}</div><div class="d">${a.d}</div><div class="price">${a.use} · 2027 price TBA</div><button class="buy" type="button" data-addon="${a.id}">Add</button></div>`).join("")}</div>
+      </section>
+      <section class="section">
+        <div class="section-head"><h2>Featured photos</h2><button class="link" type="button" data-go="photos">Share yours</button></div>
+        <div class="feat">${FEATURED.slice(0,2).map(f=>`<figure class="ph"><img src="${f.src}" alt="${esc(f.cap)}" loading="lazy"><figcaption>${esc(f.cap)}</figcaption></figure>`).join("")}</div>
+      </section>
+    </div>`;
+  },
+  itinerary(){
+    let body;
+    if(state.itinMode==="mine"){
+      const mine = EVENTS.filter(e=>state.saved.has(e.id)||booked(e.id));
+      body = mine.length ? DAYS.filter(d=>mine.some(e=>e.d===d)).map(d=>`<div class="daylabel">${dayParts(d).long}</div><div class="list">${mine.filter(e=>e.d===d).map(e=>row(e,false)).join("")}</div>`).join("")
+        : `<div class="empty"><h2>Your itinerary is empty</h2><p>Star events in the full schedule, or buy a ticket, and they appear here by day with reminders.</p><button class="buy" type="button" data-mode="all">Browse all events</button></div>`;
+    } else {
+      let list = EVENTS.filter(e=>e.d===state.day);
+      if(state.venue!=="all") list = list.filter(e=>e.v===state.venue);
+      body = `<div class="days" role="group" aria-label="Day">${DAYS.map(d=>{const p=dayParts(d);return `<button type="button" data-day="${d}" aria-pressed="${d===state.day}"><span>${p.wd}</span><b>${p.n}</b><span>${p.mon}</span></button>`}).join("")}</div>
+      <div class="filters"><label for="venueSel" class="price">Venue</label><select id="venueSel"><option value="all">All venues</option>${Object.entries(VENUES).map(([k,v])=>`<option value="${k}" ${state.venue===k?"selected":""}>${esc(v.name)}</option>`).join("")}</select></div>
+      ${list.length ? `<div class="list">${list.map(e=>row(e,false)).join("")}</div>` : `<div class="empty"><p>No events at this venue on this day.</p></div>`}`;
+    }
+    return `<div class="view">
+      <div class="seg" role="group" aria-label="Itinerary view"><button type="button" data-mode="mine" aria-pressed="${state.itinMode==="mine"}">My itinerary</button><button type="button" data-mode="all" aria-pressed="${state.itinMode==="all"}">Full schedule</button></div>
+      ${body}
+    </div>`;
+  },
+  map(){
+    const pins = Object.entries(VENUES).map(([k,v])=>{
+      const n = EVENTS.filter(e=>e.v===k).length, right = v.x>250;
+      return `<g class="pin" data-venue="${k}" tabindex="0" role="button" aria-label="${esc(v.name)}, ${n} events" style="cursor:pointer">
+        <circle cx="${v.x}" cy="${v.y}" r="15" fill="#0f2340" stroke="#b8913a" stroke-width="2"/>
+        <text x="${v.x}" y="${v.y+4.5}" text-anchor="middle" font-family="Figtree, sans-serif" font-size="12" font-weight="700" fill="#f7f0de">${n}</text>
+        <text x="${v.x + (right?-20:20)}" y="${v.y-17}" text-anchor="${right?"end":"start"}" font-family="Figtree, sans-serif" font-size="11.5" font-weight="600" fill="var(--fg)">${esc(v.short)}</text>
+      </g>`;}).join("");
+    return `<div class="view">
+      <div class="mapbox"><svg viewBox="0 0 400 440" role="img" aria-label="Schematic map of Newport event venues">
+        <rect width="400" height="440" fill="#9fb7c9" opacity=".35"/>
+        <path d="M190 0 H400 V440 H300 C 300 400 270 380 262 340 C 250 300 214 270 206 230 C 198 196 214 150 196 110 C 186 80 192 40 190 0Z" fill="var(--bg)" stroke="var(--line)"/>
+        <path d="M20 360 C 40 300 70 290 110 300 C 140 308 150 330 140 350 C 126 380 80 400 40 392 C 24 388 16 376 20 360Z" fill="var(--bg)" stroke="var(--line)"/>
+        <path d="M110 300 C 140 280 160 270 196 262" fill="none" stroke="var(--line)" stroke-width="6"/>
+        <path d="M222 200 C 190 230 150 270 104 312" fill="none" stroke="#b8913a" stroke-width="2" stroke-dasharray="5 5"/>
+        <text x="150" y="236" font-family="Figtree, sans-serif" font-size="11" fill="var(--muted)" transform="rotate(-40 150 236)">harbor shuttle</text>
+        <text x="40" y="150" font-family="Bodoni Moda, Georgia, serif" font-style="italic" font-size="16" fill="var(--muted)">Newport Harbor</text>
+        <text x="392" y="430" text-anchor="end" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">Schematic, not to scale</text>
+        ${pins}
+      </svg></div>
+      <div id="venueCard" class="venue"><div class="eyebrow">Venues</div><div>Tap a pin to see what's on there and how to get there.</div></div>
+    </div>`;
+  },
+  tickets(){
+    if(!state.wallet.length) return `<div class="view"><div class="empty"><h2>No tickets yet</h2><p>Tickets and add-ons you buy appear here, ready to scan.</p><button class="buy" type="button" data-shop="1">Buy tickets</button></div></div>`;
+    const i = Math.min(state.open, state.wallet.length-1), w = state.wallet[i];
+    return `<div class="view">
+      <div class="ticket">
+        <div class="eyebrow">${esc(w.sub)}</div>
+        <div class="tn">${esc(w.label)}</div>
+        <div class="qrwrap"><canvas id="qr" width="29" height="29" aria-label="Rotating entry code for ${esc(w.label)}"></canvas><div class="sample">SAMPLE</div></div>
+        <div class="serial">${w.serial}</div>
+        <div class="timer" id="qrTimer">Code refreshes every 15 seconds. Screenshots will not scan.</div>
+        <div class="walletbtns"><span>Add to Apple Wallet</span><span>Add to Google Wallet</span></div>
+      </div>
+      <section class="section">
+        <div class="section-head"><h2>My tickets</h2><button class="link" type="button" data-shop="1">Buy more tickets</button></div>
+        <div class="wallet">${state.wallet.map((x,j)=>`<button type="button" class="tk" data-open="${j}" aria-pressed="${j===i}"><div><div class="t">${esc(x.label)}</div><div class="s">${x.serial}</div></div><span class="price">${esc(x.sub.split(" · ")[0])}</span></button>`).join("")}</div>
+      </section>
+      <button class="buy ghost" type="button" data-link="1">Bought on the website? Link your order</button>
+      <section class="section">
+        <div class="section-head"><h2>Your badge</h2><span class="price">Printed at check-in</span></div>
+        <div class="badgecard"><div class="slot"></div><div class="band">Audrain Motor Week</div><div class="nm">Guest Name</div><div class="tier">${esc(w.label)}</div><canvas id="badgeQR" width="29" height="29" aria-label="Badge code"></canvas><div class="sn">${w.serial}</div></div>
+        <div class="notice">No app needed. Website buyers show their confirmation email or ID at check-in and get a printed badge carrying the same serial and QR as their order. App and badge scan against one record, so a ticket can only be used once.</div>
+      </section>
+    </div>`;
+  },
+  photos(){
+    return `<div class="view">
+      <div class="upload">
+        <h2>Share your photos</h2>
+        <p class="price">The best photos from the week are featured here and on Audrain's channels.</p>
+        <input type="file" id="photoIn" accept="image/*" multiple>
+        <label for="photoIn">Upload photos</label>
+      </div>
+      ${state.uploads.length ? `<section class="section"><div class="section-head"><h2>Your submissions</h2><span class="price">${state.uploads.length}</span></div>
+        <div class="feat">${state.uploads.map(u=>`<figure class="ph"><img src="${u.url}" alt="Your photo ${esc(u.name)}"><span class="st">In review</span><figcaption>${esc(u.name)}</figcaption></figure>`).join("")}</div>
+        <div class="notice">Submitted photos are reviewed by the Audrain team before they're featured.</div></section>` : ""}
+      <section class="section">
+        <div class="section-head"><h2>Featured</h2><span class="price">Audrain archive</span></div>
+        <div class="feat">${FEATURED.map(f=>`<figure class="ph${f.wide?" wide":""}"><img src="${f.src}" alt="${esc(f.cap)}" loading="lazy"><figcaption>${esc(f.cap)}</figcaption></figure>`).join("")}</div>
+      </section>
+    </div>`;
+  }
+};
+
+function render(){
+  document.querySelectorAll(".switch button").forEach(b=>b.setAttribute("aria-pressed", b.id==="ev-"+state.event));
+  $("#eventName").textContent = state.event==="winterfest" ? "Winterfest" : "Newport Concours & Motor Week";
+  document.querySelectorAll(".tabs button").forEach(b=>{ if(b.dataset.tab===state.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  $("#alertCount").hidden = state.seen;
+  $("#main").innerHTML = state.event==="winterfest" ? winterfest() : views[state.tab]();
+  stopQR(); if(state.event!=="winterfest" && state.tab==="tickets" && state.wallet.length) startQR();
+  drawBadge();
+  const pin = document.getElementById("photoIn"); if(pin) pin.addEventListener("change", onPhotos);
+}
+function go(tab){ state.tab = tab; store.set("ae.tab",tab); render(); window.scrollTo(0,0); }
+
+let qrTimer = null;
+function drawQR(){
+  const c = document.getElementById("qr"); if(!c) return stopQR();
+  const w = state.wallet[Math.min(state.open, state.wallet.length-1)];
+  const x = c.getContext("2d"), N = 29, slot = Math.floor(Date.now()/15000);
+  let s = (slot * 2654435761 + [...w.serial].reduce((a,ch)=>a*31+ch.charCodeAt(0)>>>0,7)) >>> 0;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  x.fillStyle = "#fff"; x.fillRect(0,0,N,N); x.fillStyle = "#0f2340";
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){ const inF = (i<8&&j<8)||(i>N-9&&j<8)||(i<8&&j>N-9); if(!inF && rnd()>.52) x.fillRect(i,j,1,1); }
+  const finder = (fx,fy) => { x.fillStyle="#0f2340"; x.fillRect(fx,fy,7,7); x.fillStyle="#fff"; x.fillRect(fx+1,fy+1,5,5); x.fillStyle="#0f2340"; x.fillRect(fx+2,fy+2,3,3); };
+  finder(0,0); finder(N-7,0); finder(0,N-7);
+  const left = 15 - Math.floor((Date.now()%15000)/1000), t = document.getElementById("qrTimer");
+  if(t) t.textContent = `Code refreshes in ${left}s. Screenshots will not scan.`;
+}
+function drawBadge(){
+  const c = document.getElementById("badgeQR"); if(!c) return;
+  const w = state.wallet[Math.min(state.open, state.wallet.length-1)], x = c.getContext("2d"), N = 29;
+  let s = [...w.serial].reduce((a,ch)=>a*33+ch.charCodeAt(0)>>>0,11) >>> 0;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  x.fillStyle="#fff"; x.fillRect(0,0,N,N); x.fillStyle="#14213a";
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){ const inF=(i<8&&j<8)||(i>N-9&&j<8)||(i<8&&j>N-9); if(!inF && rnd()>.52) x.fillRect(i,j,1,1); }
+  [[0,0],[N-7,0],[0,N-7]].forEach(([fx,fy])=>{ x.fillStyle="#14213a"; x.fillRect(fx,fy,7,7); x.fillStyle="#fff"; x.fillRect(fx+1,fy+1,5,5); x.fillStyle="#14213a"; x.fillRect(fx+2,fy+2,3,3); });
+}
+function startQR(){ drawQR(); qrTimer = setInterval(drawQR, 1000); }
+function stopQR(){ if(qrTimer){ clearInterval(qrTimer); qrTimer = null; } }
+
+let lastFocus = null;
+function openSheet(title, html){ lastFocus = document.activeElement; $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html; $("#scrim").hidden = false; const f = $("#sheetBody button, #sheetBody a"); if(f) f.focus(); }
+function closeSheet(){ $("#scrim").hidden = true; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+let toastT = null;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>{ t.hidden = true; }, 2600); }
+
+// Checkout sheet: one flow for event tickets, passes and add-ons.
+let cart = null;
+function checkout(item){
+  cart = {...item, qty:1};
+  const paint = () => {
+    const priced = typeof cart.price === "number";
+    openSheet(cart.title, `
+      <p class="price">${esc(cart.sub)}</p>
+      <div class="qty"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="qtyOut">${cart.qty}</output><button type="button" data-q="1" aria-label="More">+</button><span class="price">${priced ? (cart.from?"from ":"") + money(cart.price*cart.qty) : "2027 price TBA"}</span></div>
+      ${cart.kind==="addon" ? `<label class="price" for="attachSel">Attach to</label><select id="attachSel">${state.wallet.filter(w=>w.kind==="pass").map(w=>`<option>${esc(w.label)} · ${w.serial}</option>`).join("") || "<option>Your next pass</option>"}</select>` : ""}
+      <button class="pay" type="button" data-pay="1">Pay with Apple Pay or card (demo)</button>
+      ${cart.url ? `<a class="buy ghost" href="${cart.url}" target="_blank" rel="noopener">Open the 2026 page on Showpass</a>` : ""}
+      <p class="price">Demo only: no payment is taken. In the app, each ticket is issued with its own serial and lands in My Tickets.</p>
+      <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`);
+  };
+  cart.paint = paint; paint();
+}
+function pay(){
+  for(let n=0;n<cart.qty;n++){
+    state.wallet.push({kind:cart.kind, ref:cart.ref, label:cart.title + (cart.qty>1?` (${n+1} of ${cart.qty})`:""), sub:cart.sub, serial:newSerial(cart.code)});
+  }
+  if(cart.kind==="event"){ state.saved.add(cart.ref); store.set("ae.saved",[...state.saved]); }
+  saveWallet(); closeSheet();
+  toast(`${cart.qty} ${cart.qty>1?"tickets":"ticket"} added to My Tickets`);
+  render();
+}
+
+function onPhotos(ev){
+  const files = [...ev.target.files].filter(f=>f.type.startsWith("image/")).slice(0,12);
+  files.forEach(f=>state.uploads.unshift({name:f.name.replace(/\.[^.]+$/,"").slice(0,32), url:URL.createObjectURL(f)}));
+  if(files.length){ toast(`${files.length} ${files.length>1?"photos":"photo"} sent for review`); render(); }
+}
+
+function alertsSheet(){
+  state.seen = true; store.set("ae.seen", true); $("#alertCount").hidden = true;
+  const P = state.prefs, sw = (k,label,sub) => `<div class="pref"><div><div class="title">${label}</div><div class="price">${sub}</div></div><input type="checkbox" class="sw" id="pref-${k}" data-pref="${k}" ${P[k]?"checked":""} aria-label="${label}"></div>`;
+  const BELL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/></svg>`;
+  openSheet("Alerts", `
+    <div class="list">
+      <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Supercar Concours starts in 30 minutes</div><div class="w">Fort Adams · 12 minutes by harbor shuttle</div></div></div>
+      <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Room change: Pegaso seminar moves to the Casino Theatre balcony</div><div class="w">Sent to everyone with this event in their itinerary</div></div></div>
+      <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Two seats opened for A Life in Design</div><div class="w">Waitlist offer · claim within 20 minutes</div></div></div>
+    </div>
+    <div>
+      ${sw("remind","Event reminders","30 minutes before anything in your itinerary, with travel time")}
+      ${sw("changes","Schedule changes","Time, venue or weather changes to your events")}
+      ${sw("weather","Weather and safety","Always sent during the event")}
+      ${sw("offers","Offers and on-sale news","New events, waitlist seats, partner offers")}
+    </div>
+    <button class="buy" type="button" data-notifon="1">Turn on phone notifications</button>
+    <p class="price">Sample alerts shown. Notifications work once the app is installed on your phone.</p>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Done</button></div>`);
+}
+async function enableNotifications(){
+  try{
+    if(!("Notification" in window)){ toast("Install the app to turn on notifications"); return; }
+    const p = await Notification.requestPermission();
+    if(p!=="granted"){ toast("Notifications are off. You can turn them on in your phone's settings."); return; }
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    const opts = {body:"Fort Adams · starts in 30 minutes", icon:"icon-192.png"};
+    if(reg) reg.showNotification("Supercar Concours d'Elegance", opts); else new Notification("Supercar Concours d'Elegance", opts);
+    toast("Notifications on. A sample alert was sent.");
+  }catch(e){ toast("Install the app to turn on notifications"); }
+}
+
+function showVenue(k){
+  const v = VENUES[k], list = EVENTS.filter(e=>e.v===k), card = document.getElementById("venueCard");
+  card.innerHTML = `<div class="eyebrow">Venue</div><h2>${esc(v.name)}</h2><div class="addr">${esc(v.addr)}, Newport</div>
+    <div class="notice">Getting there: ${esc(v.get)}</div>
+    <a class="buy ghost" href="https://maps.google.com/?q=${encodeURIComponent(v.name+", "+v.addr+", Newport RI")}" target="_blank" rel="noopener">Directions</a>
+    <div class="list">${list.map(e=>row(e,true)).join("")}</div>`;
+  card.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+document.addEventListener("click", ev=>{
+  const t = ev.target.closest("button, g.pin"); if(!t) return;
+  const ds = t.dataset;
+  if(t.id==="ev-motorweek"||t.id==="ev-winterfest"){ state.event = t.id.slice(3); store.set("ae.event",state.event); render(); return; }
+  if(ds.tab){ go(ds.tab); return; }
+  if(ds.go){ if(ds.go==="itinerary") state.itinMode="mine"; go(ds.go); return; }
+  if(ds.mode){ state.itinMode = ds.mode; render(); return; }
+  if(ds.day){ state.day = ds.day; render(); return; }
+  if(ds.save){ const id=ds.save; if(booked(id)){ toast("Booked events stay in your itinerary"); return; } state.saved.has(id)?state.saved.delete(id):state.saved.add(id); store.set("ae.saved",[...state.saved]); toast(state.saved.has(id)?"Added to your itinerary. We'll remind you before it starts.":"Removed from your itinerary"); render(); return; }
+  if(ds.buy){ const e = EVENTS.find(x=>x.id===ds.buy), dp = dayParts(e.d), tm = fmtTime(e.t); checkout({kind:"event", ref:e.id, code:"EV", title:e.title, sub:`${dp.wd} ${tm.hm} ${tm.ap} · ${VENUES[e.v].short}`, price:e.price, from:e.from, url:e.url}); return; }
+  if(ds.buypass){ const p = PASSES.find(x=>x.id===ds.buypass); checkout({kind:"pass", ref:p.id, code:"PS", title:p.t, sub:p.d, price:p.price, url:p.url}); return; }
+  if(ds.addon){ const a = ADDONS.find(x=>x.id===ds.addon); checkout({kind:"addon", ref:a.id, code:a.code, title:a.t, sub:`${a.use} · add-on`, price:null}); return; }
+  if(ds.shop){ openSheet("Buy tickets", `<div class="eyebrow">Passes</div><div class="list">${PASSES.map(p=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${p.t}</div><div class="meta">${p.d}</div></div><div class="actions"><button class="buy" type="button" data-buypass="${p.id}">${money(p.price)}</button></div></div>`).join("")}</div>
+    <div class="eyebrow">Events</div><div class="list">${EVENTS.map(e=>{const dp=dayParts(e.d),tm=fmtTime(e.t);return `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${esc(e.title)}</div><div class="meta"><span>${dp.wd} ${tm.hm} ${tm.ap}</span><span>${esc(VENUES[e.v].short)}</span></div></div><div class="actions">${e.cap==="full"?`<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`:`<button class="buy" type="button" data-buy="${e.id}">${priceLabel(e)}</button>`}</div></div>`}).join("")}</div>
+    <div class="eyebrow">Add-ons</div><div class="list">${ADDONS.map(a=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${a.t}</div><div class="meta">${a.use}</div></div><div class="actions"><button class="buy" type="button" data-addon="${a.id}">Add</button></div></div>`).join("")}</div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Close</button></div>`); return; }
+  if(ds.link){ openSheet("Link a website order", `<p>Bought tickets on the Audrain website? Link the order and every ticket appears here with the same serials as your badge.</p>
+    <div class="field"><label for="ordNo" class="price">Order number</label><input id="ordNo" inputmode="numeric" placeholder="e.g. 48213977"></div>
+    <div class="field"><label for="ordEmail" class="price">Email used at checkout</label><input id="ordEmail" type="email" placeholder="you@example.com"></div>
+    <button class="pay" type="button" data-linkgo="1" style="background:var(--btn);color:var(--btn-fg)">Link order (demo)</button>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`); return; }
+  if(ds.linkgo){ state.wallet.push({kind:"pass", ref:"ga2", label:"Two-Day General Admission", sub:"Sat & Sun · linked from website", serial:newSerial("WEB")}); saveWallet(); state.open = state.wallet.length-1; closeSheet(); toast("Website order linked. 1 ticket added."); render(); return; }
+  if(ds.q){ cart.qty = Math.max(1, Math.min(8, cart.qty + Number(ds.q))); cart.paint(); return; }
+  if(ds.pay){ pay(); return; }
+  if(ds.close){ closeSheet(); return; }
+  if(ds.wait){ const e = EVENTS.find(x=>x.id===ds.wait); openSheet("Join the waitlist", `<p>${esc(e.title)} is full. Join the waitlist and we'll alert you if a seat opens. You'll have 20 minutes to claim it.</p><div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button><button class="buy" type="button" data-joinwait="${e.id}">Join waitlist</button></div>`); return; }
+  if(ds.joinwait){ closeSheet(); toast("You're on the waitlist. We'll alert you if a seat opens."); return; }
+  if(ds.showticket){ const j = state.wallet.findIndex(w=>w.kind==="event" && w.ref===ds.showticket); state.open = Math.max(0,j); go("tickets"); return; }
+  if(ds.open){ state.open = Number(ds.open); render(); return; }
+  if(ds.venue){ showVenue(ds.venue); return; }
+  if(ds.notify){ toast("We'll alert you when Winterfest tickets go on sale"); return; }
+  if(ds.notifon){ enableNotifications(); return; }
+  if(t.id==="alertsBtn"){ alertsSheet(); return; }
+  if(t.id==="installBtn"){ install(); return; }
+});
+document.addEventListener("change", ev=>{
+  if(ev.target.id==="venueSel"){ state.venue = ev.target.value; render(); }
+  if(ev.target.dataset && ev.target.dataset.pref){ state.prefs[ev.target.dataset.pref] = ev.target.checked; store.set("ae.prefs", state.prefs); }
+});
+document.addEventListener("keydown", ev=>{
+  if(ev.key==="Escape" && !$("#scrim").hidden) closeSheet();
+  if((ev.key==="Enter"||ev.key===" ") && ev.target.matches && ev.target.matches("g.pin")){ ev.preventDefault(); showVenue(ev.target.dataset.venue); }
+});
+$("#scrim").addEventListener("click", ev=>{ if(ev.target.id==="scrim") closeSheet(); });
+
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); deferredPrompt = e; });
+function install(){
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt = null; return; }
+  openSheet("Install on your phone", `<p><b>iPhone</b></p><ol><li>Open the app link in Safari.</li><li>Tap the Share button.</li><li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol>
+  <p><b>Android</b></p><ol><li>Open the app link in Chrome.</li><li>Tap the menu (three dots).</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>
+  <p class="notice">The app then opens full-screen from its own icon, like any other app.</p>
+  <div class="sheetfoot"><button class="buy" type="button" data-close="1">Done</button></div>`);
+}
+
+if(!views[state.tab]) state.tab = "home";
+render();
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
