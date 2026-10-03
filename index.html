@@ -185,6 +185,14 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .badgecard .sn{font-family:var(--mono);font-size:11.5px;color:#14213a;margin-bottom:12px}
 .field{display:flex;flex-direction:column;gap:4px}
 .field input{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:9px 10px;font:inherit}
+.merch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mi{border:1px solid var(--line);background:var(--surface);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:var(--fg);min-width:0}
+.mi img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#fff;display:block;max-width:100%}
+.mi .b{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.mi .t{font-size:13px;font-weight:600;line-height:1.3}
+.mi .p{font-family:var(--display);font-size:16px}
+.mi .o{font-size:12px;font-weight:700;color:var(--gold)}
+.shopall{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--gold);border-radius:12px;padding:12px;text-decoration:none;color:var(--fg);background:var(--surface)}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 
@@ -303,7 +311,7 @@ const ADDONS = [
   {id:"park", code:"PK", t:"Reserved parking", d:"Assigned lot at Fort Adams. Scanned at the lot entrance.", use:"Per day"},
   {id:"shuttle", code:"SH", t:"Harbor shuttle", d:"Water shuttle from downtown to Fort Adams with a boarding time.", use:"Round trip"},
   {id:"lounge", code:"LG", t:"Hospitality upgrade", d:"Add lounge access to a General Admission pass.", use:"Both days"},
-  {id:"merch", code:"MR", t:"Merch pickup", d:"Order ahead and collect at the Fort Adams shop.", use:"One pickup"}
+  {id:"merch", code:"MR", t:"Merch pickup", d:"Order ahead and collect at the Fort Adams shop, or ship it home from the online store.", use:"One pickup"}
 ];
 const FEATURED = [
   {src:"photos/field.jpg", cap:"The show field at Fort Adams", wide:false},
@@ -313,6 +321,9 @@ const FEATURED = [
   {src:"photos/stage.jpg", cap:"On stage at Motor Week", wide:false},
   {src:"photos/wine.jpg", cap:"Wine by the Water", wide:true}
 ];
+const SHOP = "https://shop.audrainautomuseum.org/collections/audrain-concours-motorweek-merchandise";
+// Live products from the Audrain Shopify store (Concours & Motorweek collection), pulled 2026-10-03.
+const MERCH = [{"t": "Audrain Concours & Motor Week Hat", "price": 30.0, "img": "merch/2025-audrain-concours-motor-week-hat.jpg", "url": "https://shop.audrainautomuseum.org/products/2025-audrain-concours-motor-week-hat"}, {"t": "Audrain Concours Soft Shell Jacket", "price": 74.0, "img": "merch/audrain-concours-soft-shell-jacket.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-soft-shell-jacket"}, {"t": "City By the Sea T-Shirt", "price": 33.0, "img": "merch/city-by-the-sea-t-shirt.jpg", "url": "https://shop.audrainautomuseum.org/products/city-by-the-sea-t-shirt"}, {"t": "Audrain Concours Contender Polos", "price": 54.0, "img": "merch/audrain-concours-contender-polos.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-contender-polos"}, {"t": "Audrain Concours Long Sleeve", "price": 20.0, "img": "merch/adrain-concours-long-sleeve.jpg", "url": "https://shop.audrainautomuseum.org/products/adrain-concours-long-sleeve"}, {"t": "Audrain Concours Vest", "price": 85.0, "img": "merch/audrain-concours-vest.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-vest"}, {"t": "Audrain Concours Coffee Mug", "price": 7.0, "img": "merch/audrain-concours-coffee-mug.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-coffee-mug"}, {"t": "Audrain Concours & Motor Week Ace Polo", "price": 59.0, "img": "merch/audrain-concours-motor-week-ace-polo.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-motor-week-ace-polo"}, {"t": "Audrain Concours 1/4 Zip Pullover", "price": 54.0, "img": "merch/1-4-zip-pull-gray-men.jpg", "url": "https://shop.audrainautomuseum.org/products/1-4-zip-pull-gray-men"}, {"t": "Audrain Concours Full Zip Jacket", "price": 64.0, "img": "merch/audrain-concours-full-zip-jacket.jpg", "url": "https://shop.audrainautomuseum.org/products/audrain-concours-full-zip-jacket"}];
 const DAYS = [...new Set(EVENTS.map(e=>e.d))];
 const CAP = {ok:["","Available"], few:["few","Few left"], full:["full","Sold out"]};
 const money = n => "$" + (Number.isInteger(n) ? n.toLocaleString("en-US") : n.toFixed(2));
@@ -407,6 +418,11 @@ const views = {
       <section class="section">
         <div class="section-head"><h2>Add to your pass</h2></div>
         <div class="cards">${ADDONS.map(a=>`<div class="card"><div class="t">${a.t}</div><div class="d">${a.d}</div><div class="price">${a.use} · 2027 price TBA</div><button class="buy" type="button" data-addon="${a.id}">Add</button></div>`).join("")}</div>
+      </section>
+      <section class="section">
+        <div class="section-head"><h2>Concours merch</h2><a class="link" href="${SHOP}" target="_blank" rel="noopener">Shop all</a></div>
+        <div class="merch">${MERCH.slice(0,6).map(m=>`<a class="mi" href="${m.url}" target="_blank" rel="noopener"><img src="${m.img}" alt="${esc(m.t)}" loading="lazy"><div class="b"><div class="t">${esc(m.t)}</div><div class="p">${money(m.price)}</div><div class="o">Order</div></div></a>`).join("")}</div>
+        <a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Don't see it here?</b><br><span class="price">Order anything from the full Concours &amp; Motor Week collection.</span></span><span class="buy">Shop</span></a>
       </section>
       <section class="section">
         <div class="section-head"><h2>Featured photos</h2><button class="link" type="button" data-go="photos">Share yours</button></div>
@@ -554,6 +570,7 @@ function checkout(item){
       <p class="price">${esc(cart.sub)}</p>
       <div class="qty"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="qtyOut">${cart.qty}</output><button type="button" data-q="1" aria-label="More">+</button><span class="price">${priced ? (cart.from?"from ":"") + money(cart.price*cart.qty) : (cart.kind==="addon" ? "2027 price TBA" : "Price on the ticket page")}</span></div>
       ${cart.kind==="addon" ? `<label class="price" for="attachSel">Attach to</label><select id="attachSel">${state.wallet.filter(w=>w.kind==="pass").map(w=>`<option>${esc(w.label)} · ${w.serial}</option>`).join("") || "<option>Your next pass</option>"}</select>` : ""}
+      ${cart.ref==="merch" ? `<div class="merch">${MERCH.slice(0,4).map(m=>`<a class="mi" href="${m.url}" target="_blank" rel="noopener"><img src="${m.img}" alt="${esc(m.t)}"><div class="b"><div class="t">${esc(m.t)}</div><div class="p">${money(m.price)}</div></div></a>`).join("")}</div><a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Not here?</b> Order it from the online store.</span><span class="buy">Shop</span></a>` : ""}
       <button class="pay" type="button" data-pay="1">Pay with Apple Pay or card (demo)</button>
       ${cart.url ? `<a class="buy ghost" href="${cart.url}" target="_blank" rel="noopener">Open the 2026 ticket page</a>` : ""}
       <p class="price">Demo only: no payment is taken. In the app, each ticket is issued with its own serial and lands in My Tickets.</p>
@@ -633,6 +650,7 @@ document.addEventListener("click", ev=>{
   if(ds.shop){ openSheet("Buy tickets", `<div class="eyebrow">Passes</div><div class="list">${PASSES.map(p=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${p.t}</div><div class="meta">${p.d}</div></div><div class="actions"><button class="buy" type="button" data-buypass="${p.id}">${money(p.price)}</button></div></div>`).join("")}</div>
     <div class="eyebrow">Events</div><div class="list">${EVENTS.filter(e=>e.kind==="ticketed" && e.id!=="spike-pod").map(e=>{const dp=dayParts(e.d),tm=fmtTime(e.t);return `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${esc(e.title)}</div><div class="meta"><span>${dp.wd} ${tm.hm} ${tm.ap}</span><span>${esc(VENUES[e.v].short)}</span></div></div><div class="actions">${e.cap==="full"?`<button class="buy ghost" type="button" data-wait="${e.id}">Waitlist</button>`:`<button class="buy" type="button" data-buy="${e.id}">${priceLabel(e)}</button>`}</div></div>`}).join("")}</div>
     <div class="eyebrow">Add-ons</div><div class="list">${ADDONS.map(a=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${a.t}</div><div class="meta">${a.use}</div></div><div class="actions"><button class="buy" type="button" data-addon="${a.id}">Add</button></div></div>`).join("")}</div>
+    <div class="eyebrow">Merchandise</div><a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Concours &amp; Motor Week merch</b><br><span class="price">Hats, polos, jackets, mugs and more</span></span><span class="buy">Shop</span></a>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Close</button></div>`); return; }
   if(ds.link){ openSheet("Link a website order", `<p>Bought tickets on the Audrain website? Link the order and every ticket appears here with the same serials as your badge.</p>
     <div class="field"><label for="ordNo" class="price">Order number</label><input id="ordNo" inputmode="numeric" placeholder="e.g. 48213977"></div>
