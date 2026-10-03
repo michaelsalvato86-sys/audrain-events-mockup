@@ -112,6 +112,19 @@ h2{font-size:20px}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0a1220;color:#eef1f6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
 </style>
+<style>/* Leaflet 1.9.4 */
+.leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-control-layers-toggle{background-image:url(images/layers.png);width:36px;height:36px}.leaflet-retina .leaflet-control-layers-toggle{background-image:url(images/layers-2x.png);background-size:26px 26px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-default-icon-path{background-image:url(images/marker-icon.png)}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.leaflet-attribution-flag{display:none!important}
+#smap{height:400px;width:100%;background:#dfe7ec}
+.leaflet-container{font-family:var(--body)}
+.pm{display:grid;place-items:center;border-radius:50%;font:800 11px/1 var(--body);color:#0c1524;border:2px solid #0a1220;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pm.mine{outline:3px dashed var(--team);outline-offset:3px}
+.pm.guest{border-radius:6px;background:#2f7d4f;color:#fff;border-color:#fff}
+.pm.stop{background:#b8913a;color:#fff;border-color:#fff;width:18px!important;height:18px!important;font-size:9px}
+.zoombtns{display:flex;gap:8px;flex-wrap:wrap}
+.leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.4;color:#0f1a2c}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 </head>
 <body>
@@ -142,24 +155,31 @@ const TEAMS = {
   gates:   {name:"Gates & Ticketing", short:"Gates", c:"#4a90d9", lead:"Gate Lead", radio:"Ch 2", base:"maingate", size:18},
   parking: {name:"Parking & Shuttle", short:"Parking", c:"#3fae6b", lead:"Parking Lead", radio:"Ch 3", base:"lotb", size:14},
   vip:     {name:"VIP & Hospitality", short:"VIP", c:"#b07ad6", lead:"Hospitality Lead", radio:"Ch 4", base:"lounge", size:12},
-  field:   {name:"Show Field & Judging", short:"Field", c:"#e08a3c", lead:"Field Marshal", radio:"Ch 5", base:"field", size:16},
+  field:   {ll:[41.4778,-71.34], sample:true, name:"Show Field & Judging", short:"Field", c:"#e08a3c", lead:"Field Marshal", radio:"Ch 5", base:"field", size:16},
   guest:   {name:"Guest Services & Will Call", short:"Guest", c:"#e0533f", lead:"Guest Services Lead", radio:"Ch 6", base:"willcall", size:8},
   town:    {name:"Town Events & Seminars", short:"Town", c:"#3fb6b2", lead:"Town Events Lead", radio:"Ch 7", base:"casino", size:10}
 };
 const POSTS = {
-  opstent:  {name:"Ops Tent", where:"Fort Adams, inside the main gate", x:150, y:150},
-  maingate: {name:"Main Gate", where:"Fort Adams entrance road", x:250, y:250},
-  vipgate:  {name:"VIP Gate", where:"Fort Adams, east lawn entrance", x:300, y:170},
-  lotb:     {name:"Lot B", where:"Fort Adams parking, reserved lots", x:330, y:300},
-  landing:  {name:"Shuttle Landing", where:"Fort Adams harbor dock", x:70, y:250},
+  opstent:  {ll:[41.4772,-71.3385], sample:true, name:"Ops Tent", where:"Fort Adams, inside the main gate", x:150, y:150},
+  maingate: {ll:[41.4738,-71.3342], sample:true, name:"Main Gate", where:"Fort Adams entrance road", x:250, y:250},
+  vipgate:  {ll:[41.4762,-71.336], sample:true, name:"VIP Gate", where:"Fort Adams, east lawn entrance", x:300, y:170},
+  lotb:     {ll:[41.4746,-71.3353], sample:true, name:"Lot B", where:"Fort Adams parking, reserved lots", x:330, y:300},
+  landing:  {ll:[41.479,-71.3412], sample:true, name:"Shuttle Landing", where:"Fort Adams harbor dock", x:70, y:250},
   field:    {name:"Show Field", where:"Fort Adams parade lawn", x:170, y:90},
-  lounge:   {name:"VIP Lounge", where:"Fort Adams, east lawn tent", x:270, y:110},
-  stage:    {name:"Awards Stage", where:"Fort Adams, north end of the field", x:110, y:60},
-  willcall: {name:"Will Call", where:"Audrain Automobile Museum, 222 Bellevue Ave", town:true},
-  casino:   {name:"Casino Theatre", where:"9 Freebody St", town:true},
-  village:  {name:"Motor Week Village", where:"International Tennis Hall of Fame, 194 Bellevue Ave", town:true},
-  rough:    {name:"Rough Point", where:"680 Bellevue Ave", town:true},
-  ithf:     {name:"Gala, Tennis Hall of Fame", where:"194 Bellevue Ave", town:true}
+  lounge:   {ll:[41.477,-71.337], sample:true, name:"VIP Lounge", where:"Fort Adams, east lawn tent", x:270, y:110},
+  stage:    {ll:[41.4786,-71.3395], sample:true, name:"Awards Stage", where:"Fort Adams, north end of the field", x:110, y:60},
+  willcall: {ll:[41.482,-71.30823], name:"Will Call", where:"Audrain Automobile Museum, 222 Bellevue Ave", town:true},
+  casino:   {ll:[41.48225,-71.30582], name:"Casino Theatre", where:"9 Freebody St", town:true},
+  village:  {ll:[41.48277,-71.30832], name:"Motor Week Village", where:"International Tennis Hall of Fame, 194 Bellevue Ave", town:true},
+  rough:    {ll:[41.45529,-71.3053], name:"Rough Point", where:"680 Bellevue Ave", town:true},
+  ithf:     {ll:[41.48317,-71.30892], name:"Gala, Tennis Hall of Fame", where:"194 Bellevue Ave", town:true}
+};
+
+// Guest transport for the demo day (Sat Oct 3), from audrainconcours.com/parking-transportation.
+const GUEST = {
+  lots: [{name:"Fort Adams lot", ll:[41.47457,-71.33525999999999], hours:"7:00 AM to 4:00 PM"},{name:"Easton's Beach lot", ll:[41.48869,-71.28994], hours:"8:00 AM to 4:00 PM"}],
+  stops: [{name:"Newport Harbor Parking entrance", ll:[41.48808,-71.31683]},{name:"Easton's Beach", ll:[41.48869,-71.28994]},{name:"Audrain Museum", ll:[41.482,-71.30823]},{name:"Fort Adams", ll:[41.47577,-71.33876]}],
+  loop: "Trolley 9:00 AM to 5:00 PM: Harbor Parking, Easton's Beach, Audrain Museum, Fort Adams"
 };
 // Shifts per team per day: [day, start, end, post, task, event]
 const SHIFTS = {
@@ -294,27 +314,14 @@ const views = {
     </div>`;
   },
   map(){
-    const byPost = {}; Object.entries(TEAMS).forEach(([k,t])=>{ (byPost[t.base] = byPost[t.base] || []).push(k); });
-    const pins = Object.entries(POSTS).filter(([k,p])=>!p.town).map(([k,p])=>{
-      const teams = byPost[k] || []; const c = teams.length ? TEAMS[teams[0]].c : "#8c99b3"; const mine = (SHIFTS[state.team]||[]).some(s=>s[3]===k);
-      return `<g data-showpost="${k}" tabindex="0" role="button" aria-label="${esc(p.name)}" style="cursor:pointer">
-        ${mine ? `<circle cx="${p.x}" cy="${p.y}" r="20" fill="none" stroke="${T().c}" stroke-width="3" stroke-dasharray="4 3"/>` : ""}
-        <circle cx="${p.x}" cy="${p.y}" r="13" fill="${c}" stroke="#0a1220" stroke-width="2"/>
-        <text x="${p.x}" y="${p.y+28}" text-anchor="middle" font-family="Figtree, sans-serif" font-size="11" font-weight="700" fill="var(--fg)">${esc(p.name)}</text></g>`; }).join("");
+    const mine = new Set(myShifts().map(x=>x[3]));
     return `<div class="view">
-      <h2>Fort Adams posts</h2>
-      <div class="mapbox"><svg viewBox="0 0 400 360" role="img" aria-label="Schematic of staff posts at Fort Adams">
-        <rect width="400" height="360" fill="#1d3a5a" opacity=".35"/>
-        <path d="M40 30 H360 V330 H200 C 120 330 60 300 40 250 Z" fill="var(--panel-2)" stroke="var(--line)"/>
-        <path d="M110 60 h120 v80 h-120z" fill="none" stroke="var(--line)" stroke-dasharray="4 4"/>
-        <text x="170" y="128" text-anchor="middle" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">parade lawn</text>
-        <text x="392" y="352" text-anchor="end" font-family="Figtree, sans-serif" font-size="10" fill="var(--muted)">Schematic, not to scale</text>
-        ${pins}
-      </svg></div>
-      <div class="sub">Dashed ring = your posts today. Pin colour = team stationed there.</div>
-      <div id="postCard"></div>
-      <h2>Town posts</h2>
-      <div class="list">${Object.entries(POSTS).filter(([k,p])=>p.town).map(([k,p])=>`<div class="item" style="grid-template-columns:minmax(0,1fr) auto"><div><div class="ti">${esc(p.name)}</div><div class="sub">${esc(p.where)}</div></div><button class="btn ghost" type="button" data-showpost="${k}" style="padding:7px 10px">Details</button></div>`).join("")}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Posts</h2><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="guestLayer" ${state.guest!==false?"checked":""}> Guest parking &amp; trolley</label></div>
+      <div class="zoombtns"><button class="btn ghost" type="button" data-zoom="fort">Fort Adams</button><button class="btn ghost" type="button" data-zoom="town">Bellevue Ave posts</button><button class="btn ghost" type="button" data-zoom="all">Everything</button></div>
+      <div class="mapbox"><div id="smap" role="application" aria-label="Map of staff posts"></div></div>
+      <div class="sub">Pin colour = team stationed there. Dashed ring = your posts. Fort Adams post positions are sample placements until Ops sets the site plan.</div>
+      <h2>My posts</h2>
+      <div class="list">${Object.entries(POSTS).filter(([k])=>mine.has(k)).map(([k,p])=>`<div class="item" style="grid-template-columns:minmax(0,1fr) auto"><div><div class="ti">${esc(p.name)}</div><div class="sub">${esc(p.where)}</div></div><button class="btn ghost" type="button" data-flypost="${k}" style="padding:7px 10px">Locate</button></div>`).join("") || `<div class="item"><div class="sub">No posts assigned.</div></div>`}</div>
     </div>`;
   },
   team(){
@@ -346,6 +353,8 @@ function render(){
   $("#main").innerHTML = views[state.tab]();
   const f = document.getElementById("composeForm"); if(f) f.addEventListener("submit", sendMsg);
   const m = document.getElementById("msgs"); if(m) m.lastElementChild?.scrollIntoView({block:"nearest"});
+  if(state.tab==="map") initStaffMap(); else if(smap){ smap.remove(); smap = null; }
+  const gl = document.getElementById("guestLayer"); if(gl) gl.addEventListener("change", ()=>{ state.guest = gl.checked; if(smap && guestLayer){ gl.checked ? guestLayer.addTo(smap) : smap.removeLayer(guestLayer); } });
 }
 function go(t){ state.tab = t; store.set("st.tab",t); render(); window.scrollTo(0,0); }
 function now(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
@@ -359,6 +368,36 @@ let lastFocus=null;
 function openSheet(title, html){ lastFocus=document.activeElement; $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#scrim").hidden=false; const f=$("#sheetBody button, #sheetBody select"); if(f) f.focus(); }
 function closeSheet(){ $("#scrim").hidden=true; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
 
+
+let smap = null, guestLayer = null;
+function postColor(k){ const t = Object.entries(TEAMS).find(([tk,t])=>t.base===k) || Object.entries(TEAMS).find(([tk])=>(SHIFTS[tk]||[]).some(x=>x[3]===k)); return t ? t[1].c : "#8c99b3"; }
+function initStaffMap(){
+  const el = document.getElementById("smap"); if(!el) return;
+  if(!window.L){ el.innerHTML = '<p class="sub" style="padding:16px">The map could not load. Check your connection.</p>'; return; }
+  if(smap){ smap.remove(); smap = null; }
+  smap = L.map(el, {scrollWheelZoom:false}); smap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(smap);
+  const mine = new Set(myShifts().map(x=>x[3]));
+  Object.entries(POSTS).forEach(([k,p])=>{
+    const c = postColor(k), m = mine.has(k);
+    const icon = L.divIcon({className:"", html:`<div class="pm${m?" mine":""}" style="width:26px;height:26px;background:${c}">${esc(p.name.split(" ").map(w=>w[0]).join("").slice(0,2))}</div>`, iconSize:null});
+    L.marker(p.ll, {icon, title:p.name}).bindTooltip(p.name, {direction:"top", offset:[0,-14]}).on("click", ()=>showPost(k)).addTo(smap);
+  });
+  guestLayer = L.layerGroup();
+  GUEST.lots.forEach(l=>L.marker(l.ll, {icon:L.divIcon({className:"", html:'<div class="pm guest" style="width:24px;height:24px">P</div>', iconSize:null})}).bindPopup(`<b>Guest parking: ${esc(l.name)}</b><br>${l.hours} \u00b7 free, first come`).addTo(guestLayer));
+  GUEST.stops.forEach(st=>L.marker(st.ll, {icon:L.divIcon({className:"", html:'<div class="pm stop">T</div>', iconSize:null})}).bindPopup(`<b>Trolley stop: ${esc(st.name)}</b><br>${esc(GUEST.loop)}`).addTo(guestLayer));
+  L.polyline(GUEST.stops.map(x=>x.ll), {color:"#b8913a", weight:3, dashArray:"8 6", opacity:.85}).addTo(guestLayer);
+  if(state.guest!==false) guestLayer.addTo(smap);
+  zoomTo(mine.size && [...mine].every(k=>POSTS[k].sample) ? "fort" : "all");
+  setTimeout(()=>smap && smap.invalidateSize(), 60);
+}
+function zoomTo(which){
+  if(!smap) return;
+  const pts = Object.values(POSTS).filter(p=> which==="all" ? true : which==="fort" ? p.sample : !p.sample).map(p=>p.ll);
+  if(which==="all") GUEST.stops.forEach(x=>pts.push(x.ll));
+  smap.fitBounds(L.latLngBounds(pts).pad(which==="fort" ? 0.25 : 0.15));
+}
+
 function showPost(k){
   const p = POSTS[k]; const teams = Object.entries(TEAMS).filter(([tk,t])=>t.base===k || (SHIFTS[tk]||[]).some(s=>s[3]===k));
   const mine = myShifts().filter(s=>s[3]===k);
@@ -366,17 +405,19 @@ function showPost(k){
     <div class="label">Teams at this post</div>
     <div class="btns">${teams.map(([tk,t])=>`<span class="pill" style="background:${t.c};color:#0c1524">${esc(t.short)}</span>`).join("") || `<span class="sub">None assigned</span>`}</div>
     ${mine.length ? `<div class="label">You are here</div><div class="list">${mine.map(s=>`<div class="item" style="grid-template-columns:auto minmax(0,1fr)"><div class="t">${fmt(s[1])}</div><div><div class="ti">${dname(s[0])}</div><div class="sub">${esc(s[4])}</div></div></div>`).join("")}</div>` : ""}
-    <a class="btn ghost" style="text-align:center;text-decoration:none" href="https://maps.google.com/?q=${encodeURIComponent((p.town?p.where:"Fort Adams State Park")+", Newport RI")}" target="_blank" rel="noopener">Directions</a>
+    ${p.sample ? `<div class="sub">Sample placement inside Fort Adams.</div>` : ""}<a class="btn ghost" style="text-align:center;text-decoration:none" href="https://maps.google.com/?q=${p.ll[0]},${p.ll[1]}" target="_blank" rel="noopener">Directions</a>
     <div class="btns" style="justify-content:flex-end"><button class="btn" type="button" data-close="1">Done</button></div>`;
   openSheet(p.name, html);
 }
 
 document.addEventListener("click", ev=>{
-  const t = ev.target.closest("button, g[data-showpost]"); if(!t) return; const ds = t.dataset;
+  const t = ev.target.closest("button"); if(!t) return; const ds = t.dataset;
   if(ds.tab){ go(ds.tab); return; }
   if(ds.day){ state.day = ds.day; render(); return; }
   if(ds.checkin){ const d=new Date(); state.checkin[ds.checkin] = d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); store.set("st.checkin",state.checkin); toast("Checked in. Your lead can see you're at your post."); render(); return; }
-  if(ds.showpost){ showPost(ds.showpost); return; }
+  if(ds.showpost){ if(state.tab!=="map"){ go("map"); } showPost(ds.showpost); if(smap) smap.flyTo(POSTS[ds.showpost].ll, 17, {duration:.6}); return; }
+  if(ds.flypost){ if(smap){ smap.flyTo(POSTS[ds.flypost].ll, 17, {duration:.6}); document.getElementById("smap").scrollIntoView({behavior:"smooth", block:"center"}); } return; }
+  if(ds.zoom){ zoomTo(ds.zoom); return; }
   if(ds.chan){ state.chan = ds.chan; render(); return; }
   if(ds.shareloc){ (state.msgs[state.chan] = state.msgs[state.chan]||[]).push({by:"You", team:state.team, t:now(), txt:"Shared location: " + POSTS[nowNext().cur[3]].name, me:true, loc:true}); store.set("st.msgs",state.msgs); render(); return; }
   if(ds.viewteam){ state.viewTeam = state.viewTeam===ds.viewteam ? null : ds.viewteam; render(); return; }
