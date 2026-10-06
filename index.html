@@ -221,6 +221,25 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .sizes button:disabled{opacity:.35;text-decoration:line-through}
 .bagline{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .bagline img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#fff}
+.acct{width:34px;height:34px;padding:0;justify-content:center;font-weight:800;font-size:12.5px}
+.authbtn{width:100%;border-radius:12px;padding:12px;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line)}
+.authbtn.apple{background:#000;color:#fff;border-color:#000}
+.authbtn.google{background:#fff;color:#1f1f1f;border-color:#dadce0}
+.authbtn svg{width:18px;height:18px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.inp{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:11px 12px;font:inherit;width:100%}
+.codebox{letter-spacing:.5em;text-align:center;font-family:var(--mono);font-size:20px}
+.rolechip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 9px;background:var(--gold);color:#16120a}
+.edbar{display:flex;flex-direction:column;gap:8px;border:2px solid var(--gold);border-radius:14px;padding:10px;background:var(--surface)}
+.edbar .row1{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.edbar select{flex:1;min-width:140px}
+.mk-closure{width:24px;height:24px;background:#a33a2b}
+.mk-info{width:24px;height:24px;background:#3a6fb0}
+.mk-post{width:24px;height:24px;background:#7a4fa0}
+.leaflet-marker-draggable .mk{box-shadow:0 0 0 3px rgba(184,145,58,.65),0 2px 6px rgba(0,0,0,.4)}
+.daychk{display:flex;gap:6px;flex-wrap:wrap}
+.daychk label{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;display:flex;gap:5px;align-items:center}
 .merch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .mi{border:1px solid var(--line);background:var(--surface);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:var(--fg);min-width:0}
 .mi img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#fff;display:block;max-width:100%}
@@ -244,6 +263,7 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
       <div class="mark"><small>Audrain</small><span id="eventName">Newport Concours &amp; Motor Week</span></div>
       <div class="tools">
         <button class="iconbtn" id="alertsBtn" type="button" aria-label="Alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="alertCount">3</span></button>
+        <button class="iconbtn acct" id="acctBtn" type="button" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" id="acctIcon"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span id="acctTxt" hidden></span></button>
         <button class="iconbtn" id="installBtn" type="button">Install</button>
       </div>
     </div>
@@ -425,7 +445,9 @@ const state = {
   prefs: store.get("ae.prefs",{remind:true, changes:true, offers:false, weather:true}),
   seen: store.get("ae.seen", false),
   mapDay: "2026-10-03", layers: {venues:true, parking:true, trolley:true, ferry:true},
-  cat: "all", bag: store.get("ae.bag", []), prod: null, size: null
+  cat: "all", bag: store.get("ae.bag", []), prod: null, size: null,
+  account: store.get("ae.account", null), edit: false, placeType: null,
+  mapPub: store.get("ae.mapedits", {moved:{}, added:[], removed:[]}), mapDraft: null
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -531,6 +553,7 @@ const views = {
     const lay = (k,label,col) => `<button type="button" data-layer="${k}" aria-pressed="${state.layers[k]}"><i style="background:${col}"></i>${label}</button>`;
     return `<div class="view">
       <div class="days" role="group" aria-label="Day">${MAPDAYS.map(d=>{const p=dayParts(d);return `<button type="button" data-mapday="${d}" aria-pressed="${d===D}"><span>${p.wd}</span><b>${p.n}</b><span>${p.mon}</span></button>`}).join("")}</div>
+      ${isOps() ? editorBar() : ""}
       <div class="layers" role="group" aria-label="Map layers">${lay("venues","Venues","#0f2340")}${lay("parking","Parking","#2f7d4f")}${lay("trolley","Trolley","#b8913a")}${lay("ferry","Ferry","#1f78a8")}</div>
       <a class="buy ghost" href="https://www.google.com/maps/@41.4815,-71.3150,14z/data=!5m1!1e1" target="_blank" rel="noopener" style="align-self:flex-start">Live traffic in Google Maps</a>
       <div class="mapbox"><div id="lmap" role="application" aria-label="Map of Newport event venues, parking and trolley stops"></div></div>
@@ -716,36 +739,143 @@ async function enableNotifications(){
 let lmap = null, mapLayers = {};
 function mkIcon(cls, txt, approx){ return L.divIcon({className:"", html:`<div class="mk ${cls}${approx?" mk-approx":""}">${txt||""}</div>`, iconSize:null}); }
 function gmaps(q){ return "https://maps.google.com/?q=" + encodeURIComponent(q); }
+const ITEM_TYPES = {stop:["Trolley stop","mk-stop","T","trolley"], parking:["Parking","mk-park","P","parking"], landing:["Ferry or shuttle landing","mk-ferry","F","ferry"], closure:["Road closure","mk-closure","\u00d7","extra"], info:["Info point","mk-info","i","extra"], post:["Staff post","mk-post","S","extra"]};
+function edits(){ return state.edit && state.mapDraft ? state.mapDraft : state.mapPub; }
+function posOf(key, ll){ const m = edits().moved[key]; return m || ll; }
+function gone(key){ return edits().removed.includes(key); }
+function editorPopup(key, label){ return state.edit ? `<div style="margin-top:6px;display:flex;gap:6px"><button type="button" data-editem="${key}">Edit</button><button type="button" data-rmitem="${key}">Remove</button></div>` : ""; }
+function placeMarker(key, ll, icon, title, html, layer){
+  if(gone(key)) return null;
+  const m = L.marker(posOf(key, ll), {icon, title, draggable: state.edit}).bindPopup(html + editorPopup(key, title)).addTo(layer);
+  if(state.edit) m.on("dragend", ev=>{ const p = ev.target.getLatLng(); const nl = [+p.lat.toFixed(6), +p.lng.toFixed(6)];
+    if(key.startsWith("a:")){ const a = state.mapDraft.added.find(x=>x.id===key); if(a) a.ll = nl; } else state.mapDraft.moved[key] = nl;
+    markDirty(); toast("Moved. Publish to update everyone."); });
+  return m;
+}
 function initMap(){
   const el = document.getElementById("lmap"); if(!el) return;
   if(!window.L){ el.innerHTML = `<div class="empty" style="height:100%;justify-content:center"><p>The map couldn't load. Check your connection and reopen this tab.</p></div>`; return; }
-  if(lmap){ lmap.remove(); lmap = null; }
+  let view = null; if(lmap){ view = {c:lmap.getCenter(), z:lmap.getZoom()}; lmap.remove(); lmap = null; }
   lmap = L.map(el, {zoomControl:true, attributionControl:true, scrollWheelZoom:false}); lmap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   let ok = 0, bad = 0;
   const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, maxNativeZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
   tiles.on("tileload", ()=>ok++); tiles.on("tileerror", ()=>{ bad++; if(bad>6 && !ok){ const n = document.getElementById("mapNote"); if(n) n.textContent = "Street tiles are blocked in this preview. They load in the installed app; pins, parking and trolley lines still show."; } });
   const D = state.mapDay, pts = [];
-  mapLayers = {venues:L.layerGroup(), parking:L.layerGroup(), trolley:L.layerGroup(), ferry:L.layerGroup()};
+  mapLayers = {venues:L.layerGroup(), parking:L.layerGroup(), trolley:L.layerGroup(), ferry:L.layerGroup(), extra:L.layerGroup()};
   Object.entries(VENUES).forEach(([k,v])=>{
     const n = EVENTS.filter(e=>e.v===k && e.d===D).length;
-    const m = L.marker(v.ll, {icon: mkIcon("mk-venue", n || "", v.approx), title: v.name}).bindPopup(`<b>${esc(v.name)}</b><br>${esc(v.addr)}${v.approx?" (approximate pin)":""}<br>${n} event${n===1?"":"s"} on ${dayParts(D).wd}<br><a href="${gmaps(v.name+", "+v.addr)}" target="_blank" rel="noopener">Directions</a>`);
-    m.on("click", ()=>showVenue(k, true)); m.addTo(mapLayers.venues); if(n) pts.push(v.ll);
+    const m = placeMarker("v:"+k, v.ll, mkIcon("mk-venue", n || "", v.approx), v.name, `<b>${esc(v.name)}</b><br>${esc(v.addr)}${v.approx?" (approximate pin)":""}<br>${n} event${n===1?"":"s"} on ${dayParts(D).wd}<br><a href="${gmaps(v.name+", "+v.addr)}" target="_blank" rel="noopener">Directions</a>`, mapLayers.venues);
+    if(m){ if(!state.edit) m.on("click", ()=>showVenue(k, true)); if(n) pts.push(m.getLatLng()); }
   });
   LOTS.filter(l=>l.days[D]).forEach(l=>{ const h = l.days[D];
-    L.marker(l.ll, {icon: mkIcon("mk-park","P"), title: l.name}).bindPopup(`<b>Parking: ${esc(l.name)}</b><br>${esc(l.addr)}<br>${fmtTime(h[0]).hm} ${fmtTime(h[0]).ap} to ${fmtTime(h[1]).hm} ${fmtTime(h[1]).ap} \u00b7 Free, first come<br><a href="${gmaps(l.addr)}" target="_blank" rel="noopener">Directions</a>`).addTo(mapLayers.parking); pts.push(l.ll); });
-  const seen = {};
+    const m = placeMarker("l:"+l.id, l.ll, mkIcon("mk-park","P"), l.name, `<b>Parking: ${esc(l.name)}</b><br>${esc(l.addr)}<br>${fmtTime(h[0]).hm} ${fmtTime(h[0]).ap} to ${fmtTime(h[1]).hm} ${fmtTime(h[1]).ap} \u00b7 Free, first come<br><a href="${gmaps(l.addr)}" target="_blank" rel="noopener">Directions</a>`, mapLayers.parking);
+    if(m) pts.push(m.getLatLng()); });
+  const seen = {}, sLL = k => posOf("s:"+k, STOPS[k].ll);
   TROLLEY.filter(t=>t.d===D).forEach(t=>{
-    const geo = t.stops.filter(k=>STOPS[k].ll);
-    if(geo.length>1) L.polyline(geo.map(k=>STOPS[k].ll), {color:t.c, weight:4, opacity:.85, dashArray:"8 6"}).addTo(mapLayers.trolley);
-    geo.forEach(k=>{ if(seen[k]) { seen[k].push(t); return; } seen[k] = [t]; });
+    const geo = t.stops.filter(k=>STOPS[k].ll && !gone("s:"+k));
+    if(geo.length>1) L.polyline(geo.map(sLL), {color:t.c, weight:4, opacity:.85, dashArray:"8 6"}).addTo(mapLayers.trolley);
+    geo.forEach(k=>{ (seen[k] = seen[k] || []).push(t); });
   });
   Object.entries(seen).forEach(([k,ts])=>{ const st = STOPS[k];
-    L.marker(st.ll, {icon: mkIcon("mk-stop","T", st.approx), title: st.name}).bindPopup(`<b>Trolley stop: ${esc(st.name)}</b><br>${esc(st.note||"")}<br>${ts.map(t=>`${fmtTime(t.s).hm} ${fmtTime(t.s).ap}\u2013${fmtTime(t.e).hm} ${fmtTime(t.e).ap} loop`).join("<br>")}`).addTo(mapLayers.trolley); pts.push(st.ll); });
-  if(FERRY.days.includes(D)) FERRY.from.filter(f=>f.ll).forEach(f=>{ L.marker(f.ll, {icon: mkIcon("mk-ferry","F"), title:f.name}).bindPopup(`<b>Ferry: ${esc(f.name)}</b><br>Sat & Sun service. Tickets via ${FERRY.seller}, code ${FERRY.code}.`).addTo(mapLayers.ferry); pts.push(f.ll); });
-  Object.entries(mapLayers).forEach(([k,g])=>{ if(state.layers[k]) g.addTo(lmap); });
-  if(pts.length) lmap.fitBounds(L.latLngBounds(pts).pad(0.12)); else lmap.setView([41.482,-71.315], 13);
+    const m = placeMarker("s:"+k, st.ll, mkIcon("mk-stop","T", st.approx), st.name, `<b>Trolley stop: ${esc(st.name)}</b><br>${esc(st.note||"")}<br>${ts.map(t=>`${fmtTime(t.s).hm} ${fmtTime(t.s).ap}\u2013${fmtTime(t.e).hm} ${fmtTime(t.e).ap} loop`).join("<br>")}`, mapLayers.trolley);
+    if(m) pts.push(m.getLatLng()); });
+  if(FERRY.days.includes(D)) FERRY.from.filter(f=>f.ll).forEach(f=>{ const m = placeMarker("f:"+f.name, f.ll, mkIcon("mk-ferry","F"), f.name, `<b>Ferry: ${esc(f.name)}</b><br>Sat & Sun service. Tickets via ${FERRY.seller}, code ${FERRY.code}.`, mapLayers.ferry); if(m) pts.push(m.getLatLng()); });
+  edits().added.filter(a=>!a.days.length || a.days.includes(D)).forEach(a=>{ const ty = ITEM_TYPES[a.type];
+    placeMarker(a.id, a.ll, mkIcon(ty[1], ty[2]), a.name, `<b>${esc(ty[0])}: ${esc(a.name)}</b>${a.hours?`<br>${esc(a.hours)}`:""}${a.note?`<br>${esc(a.note)}`:""}${a.days.length?`<br>${a.days.map(d=>dayParts(d).wd).join(", ")}`:"<br>All days"}`, mapLayers[ty[3]]); });
+  Object.entries(mapLayers).forEach(([k,g])=>{ if(k==="extra" || state.layers[k]) g.addTo(lmap); });
+  if(view) lmap.setView(view.c, view.z); else if(pts.length) lmap.fitBounds(L.latLngBounds(pts).pad(0.12)); else lmap.setView([41.482,-71.315], 13);
+  lmap.on("click", ev=>{ if(!state.edit || !state.placeType) return; const ll = [+ev.latlng.lat.toFixed(6), +ev.latlng.lng.toFixed(6)]; itemForm(null, state.placeType, ll); });
   setTimeout(()=>lmap && lmap.invalidateSize(), 60);
 }
+
+// ---------- Map editor (Ops role)
+function isOps(){ return !!(state.account && state.account.role==="ops"); }
+function dirtyCount(){ const d = state.mapDraft, p = state.mapPub; if(!d) return 0; return Object.keys(d.moved).filter(k=>JSON.stringify(d.moved[k])!==JSON.stringify(p.moved[k])).length + Math.abs(d.added.length-p.added.length) + d.added.filter(a=>{ const o = p.added.find(x=>x.id===a.id); return o && JSON.stringify(o)!==JSON.stringify(a); }).length + Math.abs(d.removed.length-p.removed.length); }
+function markDirty(){ const b = document.getElementById("edCount"); if(b) b.textContent = dirtyCount() + " unpublished change" + (dirtyCount()===1?"":"s"); }
+function editorBar(){
+  if(!state.edit) return `<div class="edbar"><div class="row1"><span class="rolechip">Ops</span><span class="price" style="flex:1">You can edit this map: add or move trolley stops, parking, landings, closures, info points and posts.</span><button class="buy" type="button" data-editmap="1">Edit map</button></div></div>`;
+  return `<div class="edbar">
+    <div class="row1"><b style="flex:1">Editing the map</b><span class="price" id="edCount">${dirtyCount()} unpublished change${dirtyCount()===1?"":"s"}</span></div>
+    <div class="row1"><select id="placeSel" aria-label="Item to add"><option value="">Add an item\u2026</option>${Object.entries(ITEM_TYPES).map(([k,v])=>`<option value="${k}" ${state.placeType===k?"selected":""}>${v[0]}</option>`).join("")}</select></div>
+    <div class="price">${state.placeType ? `Tap the map where the ${ITEM_TYPES[state.placeType][0].toLowerCase()} goes. Zoom in for street-level accuracy.` : "Drag any pin to move it. Tap a pin to edit or remove it."}</div>
+    <div class="row1"><button class="buy" type="button" data-publishmap="1">Publish</button><button class="buy ghost" type="button" data-discardmap="1">Discard</button><button class="buy ghost" type="button" data-exportmap="1">Copy map data</button><button class="buy ghost" type="button" data-donemap="1">Done</button></div>
+  </div>`;
+}
+function itemForm(id, type, ll){
+  const a = id ? state.mapDraft.added.find(x=>x.id===id) : {name:"", type, hours:"", note:"", days:[state.mapDay], ll};
+  openSheet(id ? "Edit item" : "Add " + ITEM_TYPES[type][0].toLowerCase(), `
+    <label class="price" for="itName">Name</label><input class="inp" id="itName" value="${esc(a.name)}" placeholder="e.g. Trolley stop, Memorial Blvd">
+    <label class="price" for="itType">Type</label><select id="itType" class="inp">${Object.entries(ITEM_TYPES).map(([k,v])=>`<option value="${k}" ${a.type===k?"selected":""}>${v[0]}</option>`).join("")}</select>
+    <label class="price" for="itHours">Hours or times</label><input class="inp" id="itHours" value="${esc(a.hours)}" placeholder="e.g. Every 20 min, 9:00 AM to 5:00 PM">
+    <label class="price" for="itNote">Note for guests</label><input class="inp" id="itNote" value="${esc(a.note)}" placeholder="e.g. Accessible boarding on the east side">
+    <div class="price">Days shown (none = every day)</div>
+    <div class="daychk">${MAPDAYS.map(d=>`<label><input type="checkbox" data-itday="${d}" ${a.days.includes(d)?"checked":""}>${dayParts(d).wd}</label>`).join("")}</div>
+    <div class="price">${(a.ll||[]).join(", ")}</div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-saveitem="${id||""}" data-ll="${(a.ll||[]).join(",")}">Save</button></div>`);
+}
+function saveItem(id, llStr){
+  const name = ($("#itName").value||"").trim() || ITEM_TYPES[$("#itType").value][0];
+  const days = [...document.querySelectorAll("[data-itday]")].filter(x=>x.checked).map(x=>x.dataset.itday);
+  const rec = {name, type:$("#itType").value, hours:$("#itHours").value.trim(), note:$("#itNote").value.trim(), days};
+  if(id){ Object.assign(state.mapDraft.added.find(x=>x.id===id), rec); }
+  else state.mapDraft.added.push({id:"a:"+Date.now().toString(36), ll: llStr.split(",").map(Number), ...rec});
+  state.placeType = null; closeSheet(); render(); toast("Saved as a draft. Publish to update everyone.");
+}
+
+// ---------- Sign-in and account
+const ROLE_CODES = {"STAFF-2027":"staff", "LEAD-2027":"lead", "OPS-2027":"ops"};
+const ROLE_NAME = {guest:"Guest", staff:"Staff", lead:"Team lead", ops:"Ops"};
+let afterSignIn = null;
+function signedIn(acc){
+  state.account = acc; store.set("ae.account", acc); closeSheet(); paintAcct();
+  toast(acc.role==="guest" ? "Signed in" : "Signed in as " + ROLE_NAME[acc.role]); render();
+  const f = afterSignIn; afterSignIn = null; if(f) setTimeout(f, 150);
+}
+function paintAcct(){ const a = state.account, t = $("#acctTxt"), i = $("#acctIcon");
+  if(a){ t.textContent = (a.name||"?").split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase(); t.hidden = false; i.style.display = "none"; }
+  else { t.hidden = true; i.style.display = ""; } }
+function signInSheet(why){
+  const APPLE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-4zM14 5.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.6 2.8-1.4z"/></svg>';
+  const GOOG = '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>';
+  openSheet("Sign in", `
+    ${why ? `<p class="price">${esc(why)}</p>` : `<p class="price">Sign in to buy tickets, keep them on this phone, and get alerts for your events.</p>`}
+    <button class="authbtn apple" type="button" data-auth="apple">${APPLE}Continue with Apple</button>
+    <button class="authbtn google" type="button" data-auth="google">${GOOG}Continue with Google</button>
+    <div class="or">or use email</div>
+    <label class="price" for="authEmail">Email</label><input class="inp" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
+    <button class="buy" type="button" data-sendcode="1" style="padding:11px">Email me a code</button>
+    <details><summary class="price" style="cursor:pointer">Staff? Enter your invite code</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><input class="inp" id="authInvite" placeholder="Invite code from Ops" autocapitalize="characters"><div class="price">Demo codes: STAFF-2027, LEAD-2027, OPS-2027 (Ops unlocks the map editor).</div></div>
+    </details>
+    <p class="price">No passwords. Mockup: nothing is sent and no account is created on a server.</p>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button></div>`);
+}
+function inviteRole(){ const v = ($("#authInvite") && $("#authInvite").value || "").trim().toUpperCase(); if(!v) return "guest"; if(ROLE_CODES[v]) return ROLE_CODES[v]; return null; }
+function codeSheet(email, role){
+  openSheet("Enter your code", `<p class="price">We sent a 6-digit code to <b>${esc(email)}</b>. It expires in 10 minutes.</p>
+    <input class="inp codebox" id="authCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+    <div class="price">Demo: any 6 digits work.</div>
+    <button class="buy" type="button" data-verify="${esc(email)}" data-role="${role}" style="padding:11px">Sign in</button>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-signin="1">Back</button></div>`);
+}
+function accountSheet(){
+  const a = state.account;
+  openSheet("Your account", `
+    <div><div class="title" style="font-size:17px">${esc(a.name)}</div><div class="price">${esc(a.email)} \u00b7 signed in with ${esc(a.method)}</div></div>
+    <div><span class="rolechip">${ROLE_NAME[a.role]}</span> <span class="price">for Audrain Concours</span></div>
+    ${a.role!=="guest" ? `<a class="buy" style="padding:11px" href="https://michaelsalvato86-sys.github.io/audrain-events-mockup/staff/" target="_blank" rel="noopener">Open staff tools</a>` : ""}
+    ${a.role==="ops" ? `<button class="buy ghost" type="button" data-gomapedit="1">Edit the event map</button>` : ""}
+    <button class="buy ghost" type="button" data-go="tickets">My tickets (${state.wallet.length})</button>
+    <button class="buy ghost" type="button" data-link="1">Link a website order</button>
+    <div class="pref"><div><div class="title">News and offers by email</div><div class="price">Optional. Separate from your account.</div></div><input type="checkbox" class="sw" id="mktOpt" data-mkt="1" ${a.marketing?"checked":""} aria-label="News and offers by email"></div>
+    <div class="sheetfoot" style="justify-content:space-between"><button class="buy ghost" type="button" data-delacct="1">Delete account</button><button class="buy" type="button" data-signout="1">Sign out</button></div>`);
+}
+function deleteSheet(){
+  openSheet("Delete your account?", `<p>This removes your account, saved itinerary and alerts from Audrain. Tickets you bought stay valid with your order email, and you can link them again later.</p>
+    <p class="price">Apple and Google require apps with accounts to offer this.</p>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Keep account</button><button class="buy" type="button" data-delconfirm="1" style="background:var(--full);color:#fff">Delete account</button></div>`);
+}
+
 function flyTo(ll, z){ if(lmap){ lmap.flyTo(ll, z||16, {duration:.6}); document.getElementById("lmap").scrollIntoView({behavior:"smooth", block:"center"}); } }
 
 function bagUrl(){ return STORE + "/cart/" + state.bag.map(b=>b.id+":"+b.q).join(","); }
@@ -805,7 +935,7 @@ document.addEventListener("click", ev=>{
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`); return; }
   if(ds.linkgo){ state.wallet.push({kind:"pass", ref:"ga2", label:"Two-Day General Admission", sub:"Sat & Sun · linked from website", serial:newSerial("WEB")}); saveWallet(); state.open = state.wallet.length-1; closeSheet(); toast("Website order linked. 1 ticket added."); render(); return; }
   if(ds.q){ cart.qty = Math.max(1, Math.min(8, cart.qty + Number(ds.q))); cart.paint(); return; }
-  if(ds.pay){ pay(); return; }
+  if(ds.pay){ if(!state.account){ afterSignIn = ()=>{ pay(); }; signInSheet("Sign in to finish your purchase. Your tickets will be saved to your account."); return; } pay(); return; }
   if(ds.close){ closeSheet(); return; }
   if(ds.wait){ const e = EVENTS.find(x=>x.id===ds.wait); openSheet("Join the waitlist", `<p>${esc(e.title)} is full. Join the waitlist and we'll alert you if a seat opens. You'll have 20 minutes to claim it.</p><div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button><button class="buy" type="button" data-joinwait="${e.id}">Join waitlist</button></div>`); return; }
   if(ds.joinwait){ closeSheet(); toast("You're on the waitlist. We'll alert you if a seat opens."); return; }
@@ -825,9 +955,29 @@ document.addEventListener("click", ev=>{
   if(ds.notifon){ enableNotifications(); return; }
   if(t.id==="alertsBtn"){ alertsSheet(); return; }
   if(t.id==="installBtn"){ install(); return; }
+  if(t.id==="acctBtn"){ state.account ? accountSheet() : signInSheet(); return; }
+  if(ds.signin){ signInSheet(); return; }
+  if(ds.auth){ const role = inviteRole(); if(role===null){ toast("That invite code isn't valid"); return; }
+    signedIn(ds.auth==="apple" ? {name:"Apple ID user", email:"private relay (hidden by Apple)", method:"Apple", role} : {name:"Google user", email:"you@gmail.com", method:"Google", role}); return; }
+  if(ds.sendcode){ const e = ($("#authEmail").value||"").trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ toast("Enter a valid email"); return; } const role = inviteRole(); if(role===null){ toast("That invite code isn't valid"); return; } codeSheet(e, role); return; }
+  if(ds.verify){ const c = ($("#authCode").value||"").trim(); if(!/^\d{6}$/.test(c)){ toast("Enter the 6-digit code"); return; } signedIn({name: ds.verify.split("@")[0], email: ds.verify, method:"email code", role: ds.role}); return; }
+  if(ds.signout){ state.account = null; store.set("ae.account", null); state.edit = false; closeSheet(); paintAcct(); toast("Signed out"); render(); return; }
+  if(ds.delacct){ deleteSheet(); return; }
+  if(ds.delconfirm){ state.account = null; store.set("ae.account", null); state.saved = new Set(); store.set("ae.saved", []); state.edit = false; closeSheet(); paintAcct(); toast("Account deleted"); render(); return; }
+  if(ds.gomapedit){ closeSheet(); state.edit = true; state.mapDraft = JSON.parse(JSON.stringify(state.mapPub)); go("map"); return; }
+  if(ds.editmap){ state.edit = true; state.mapDraft = JSON.parse(JSON.stringify(state.mapPub)); render(); return; }
+  if(ds.donemap){ if(dirtyCount()){ toast("Publish or discard your changes first"); return; } state.edit = false; state.placeType = null; state.mapDraft = null; render(); return; }
+  if(ds.discardmap){ state.mapDraft = JSON.parse(JSON.stringify(state.mapPub)); state.placeType = null; render(); toast("Changes discarded"); return; }
+  if(ds.publishmap){ state.mapPub = JSON.parse(JSON.stringify(state.mapDraft)); store.set("ae.mapedits", state.mapPub); state.placeType = null; render(); toast("Published. In the live app every phone gets the update."); return; }
+  if(ds.exportmap){ const txt = JSON.stringify(state.mapDraft, null, 1); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(()=>toast("Map data copied")).catch(()=>{ openSheet("Map data", `<textarea class="inp" rows="10" readonly>${esc(txt)}</textarea><div class="sheetfoot"><button class="buy" type="button" data-close="1">Done</button></div>`); }); return; }
+  if(ds.editem){ if(lmap) lmap.closePopup(); if(ds.editem.startsWith("a:")) itemForm(ds.editem); else toast("Built-in pins can be moved or removed; add a new item to change details"); return; }
+  if(ds.rmitem){ if(lmap) lmap.closePopup(); const k = ds.rmitem; if(k.startsWith("a:")) state.mapDraft.added = state.mapDraft.added.filter(x=>x.id!==k); else if(!state.mapDraft.removed.includes(k)) state.mapDraft.removed.push(k); render(); toast("Removed (draft)"); return; }
+  if(ds.saveitem!==undefined && t.matches("[data-saveitem]")){ saveItem(ds.saveitem, ds.ll); return; }
 });
 document.addEventListener("change", ev=>{
   if(ev.target.id==="venueSel"){ state.venue = ev.target.value; render(); }
+  if(ev.target.id==="placeSel"){ state.placeType = ev.target.value || null; render(); return; }
+  if(ev.target.dataset && ev.target.dataset.mkt && state.account){ state.account.marketing = ev.target.checked; store.set("ae.account", state.account); }
   if(ev.target.dataset && ev.target.dataset.pref){ state.prefs[ev.target.dataset.pref] = ev.target.checked; store.set("ae.prefs", state.prefs); }
 });
 document.addEventListener("keydown", ev=>{
@@ -847,6 +997,7 @@ function install(){
 }
 
 if(!views[state.tab]) state.tab = "home";
+paintAcct();
 render();
 })();
 </script>
