@@ -146,6 +146,7 @@ h2{font-size:20px}
 .leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.4;color:#0f1a2c}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 </head>
 <body>
@@ -288,6 +289,13 @@ const ALERTS0 = [
 ];
 
 // Work email domains allowed into the staff app. Confirm this list with Michael before launch.
+// Gate check-in codes. Must match GATES in the attendee app. Guests scan "AUDRAIN-CHECKIN:<event>:<gate>".
+const GATES = {
+  MAIN:   {name:"Main Gate, Fort Adams", ev:"ACMW", code:"4821"},
+  VIP:    {name:"VIP Gate, Fort Adams", ev:"ACMW", code:"7350"},
+  TOWN:   {name:"Town event door", ev:"ACMW", code:"5163"},
+  MUSEUM: {name:"Museum entrance, 222 Bellevue Ave", ev:"AAM", code:"2266"}
+};
 const STAFF_DOMAINS = ["audrainautomuseum.org","audrainconcours.com","mwmwealth.com"];
 const PRESETS = [["here","Need you at {post} now"],["late","Running 10 min late"],["break","Break relief needed"],["clear","All clear"],["custom","Custom message"]];
 const store = { get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
@@ -333,6 +341,7 @@ const views = {
         <div class="btns">${done ? `<span class="pill" style="background:var(--ok);color:#fff">Checked in ${done}</span>` : `<button class="btn ok" type="button" data-checkin="${esc(key)}">Check in at post</button>`}<button class="btn ghost" type="button" data-showpost="${cur[3]}">Show on map</button><button class="btn ghost" type="button" data-tab="chat">Team chat</button></div>
       </section>` : `<div class="notice">No shift assigned for this team.</div>`}
       ${nxt ? `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:4px"><div class="label">Next</div><div class="ti">${esc(POSTS[nxt[3]].name)} at ${fmt(nxt[1])}</div><div class="sub">${esc(nxt[4])}. You'll get an alert 15 minutes before with walking time.</div></section>` : ""}
+      <section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:6px"><div class="label">Gate check-in code</div><div class="sub">Show or print the QR guests scan with their own phone to check themselves in.</div><div class="btns"><button class="btn" type="button" data-gateqr="MAIN">Show gate code</button></div></section>
       <section style="display:flex;flex-direction:column;gap:10px">
         <h2>My schedule</h2>
         <div class="days" role="group" aria-label="Day">${DAYS().map(d=>`<button type="button" data-day="${d}" aria-pressed="${d===state.day}">${dname(d)}</button>`).join("")}</div>
@@ -406,6 +415,22 @@ function sendMsg(ev){
 }
 let tt=null; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,2600); }
 let lastFocus=null;
+function gateQrSheet(gk){
+  const g = GATES[gk] || GATES.MAIN, payload = "AUDRAIN-CHECKIN:" + g.ev + ":" + gk;
+  openSheet("Gate check-in code", `<div class="field"><label class="label" for="gateSel">Gate</label><select id="gateSel">${Object.entries(GATES).map(([k,x])=>`<option value="${k}" ${k===gk?"selected":""}>${esc(x.name)}</option>`).join("")}</select></div>
+    <div style="background:#fff;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#003057">
+      <div style="font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:12px">Scan to check in</div>
+      <div id="gateQR" aria-label="Check-in QR for ${esc(g.name)}"></div>
+      <div style="font-weight:800">${esc(g.name)}</div>
+      <div style="font-size:13px">Can't scan? Enter code <b style="font-size:20px;letter-spacing:.2em">${g.code}</b></div>
+    </div>
+    <div class="sub">Guests open My Tickets, tap Check in, and scan this. Their phone shows a green ADMITTED screen for you to glance at. Print one sign per lane.</div>
+    <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-printgate="1">Print</button><button class="btn" type="button" data-close="1">Done</button></div>`);
+  const box = document.getElementById("gateQR");
+  if(window.QRCode){ new QRCode(box, {text: payload, width: 220, height: 220, colorDark: "#003057", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M}); }
+  else box.textContent = payload;
+  const sel = document.getElementById("gateSel"); if(sel) sel.addEventListener("change", ()=>gateQrSheet(sel.value));
+}
 function openSheet(title, html){ lastFocus=document.activeElement; $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#scrim").hidden=false; const f=$("#sheetBody button, #sheetBody select"); if(f) f.focus(); }
 function closeSheet(){ $("#scrim").hidden=true; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
 
@@ -603,6 +628,8 @@ document.addEventListener("click", ev=>{
   if(ds.simin){ simulateIncoming(); return; }
   if(ds.reply){ const [id, v] = ds.reply.split("|"); const p = state.pings.find(x=>x.id==id); if(p){ p.reply = v; savePings(); } $("#pingBan").hidden = true; toast("Replied: " + v); if(state.tab==="alerts") render(); return; }
   if(ds.signout){ signOut(); return; }
+  if(ds.gateqr){ gateQrSheet(ds.gateqr); return; }
+  if(ds.printgate){ try{ window.print(); }catch(e){} return; }
   if(ds.close){ closeSheet(); return; }
   if(t.id==="whoBtn"){ openSheet("Switch team (demo)", `<p class="sub">Staff sign in and see their own team. For the demo, pick any team to see its shifts, posts and chat.</p><div class="teams">${Object.entries(TEAMS).map(([k,x])=>`<button type="button" class="team" style="--c:${x.c}" data-pickteam="${k}" aria-pressed="${k===state.team}"><span class="n">${esc(x.name)}</span><span class="sub">${x.radio}</span></button>`).join("")}</div><div class="sub">Signed in as ${esc(state.session ? state.session.email : "")}</div><button class="btn ghost" type="button" data-signout="1">Sign out</button>`); return; }
   if(ds.pickteam){ state.team = ds.pickteam; store.set("st.team",state.team); state.day=null; closeSheet(); toast("Now viewing as " + T().name); render(); return; }

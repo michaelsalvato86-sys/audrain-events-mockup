@@ -273,6 +273,51 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .mk-util{width:26px;height:26px;background:#1f78a8}
 .mk-aid{width:26px;height:26px;background:#a33a2b}
 .mk-zone{width:26px;height:26px;background:#DBAB1A;color:#00112E;border-color:#00112E}
+.pmrow{display:flex;gap:8px;flex-wrap:wrap}
+.pm{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:700;font-size:13.5px;min-width:72px;text-align:center;color:var(--fg)}
+.pm.apple{background:#000;color:#fff;border-color:#000}
+.pm.gpay{background:#fff;color:#1f1f1f;border-color:#dadce0}
+.pm.paypal{background:#ffc439;color:#003087;border-color:#ffc439}
+.pm.venmo{background:#008cff;color:#fff;border-color:#008cff}
+.pm[aria-pressed="true"]{outline:3px solid var(--gold);outline-offset:2px}
+.qline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.qline:first-child{border-top:0}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;font-size:17px}
+.rail{font-size:12.5px;color:var(--muted)}
+.orders{display:flex;flex-direction:column;gap:10px}
+.ocard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);border-left:5px solid var(--gold);background:var(--surface);border-radius:14px;padding:12px 14px}
+.ocard[aria-expanded="true"]{box-shadow:0 0 0 2px var(--gold)}
+.ocard .t{font-weight:800}
+.ocard .s{font-size:12.5px;color:var(--muted)}
+.st{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 8px;background:var(--line);color:var(--fg);margin-left:6px;vertical-align:middle}
+.st.ok{background:#2f7d4f;color:#fff}.st.pend{background:#b26a12;color:#fff}.st.demo{background:var(--line);color:var(--fg)}.st.rx{background:#3a6fb0;color:#fff}
+.carousel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}
+.carousel::-webkit-scrollbar{display:none}
+.carousel .ticket{flex:0 0 100%;scroll-snap-align:center;min-width:0}
+.dots{display:flex;justify-content:center;gap:6px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--gold)}
+.tstate{font-size:12.5px;font-weight:700;color:#d6cdb6}
+.tbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tbtns .buy{background:var(--gold);color:#16120a}
+.tbtns .buy.ghost{background:transparent;color:#f3ead6;border:1px solid rgba(233,220,188,.45)}
+.bigcheck{display:block;width:100%;padding:14px;border:0;border-radius:12px;background:var(--gold);color:#16120a;font-weight:800;font-size:16px}
+.xferd{padding:30px 10px;color:#d6cdb6;font-weight:700}
+.scanbox{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:100%}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanframe{position:absolute;inset:18%;border:3px solid var(--gold);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.admitted{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;color:#fff;background:#1f7a46}
+.admitted.re{background:#1d6a8f}.admitted.bad{background:#a33a2b}
+.admitted h1{color:#fff;font-size:44px;letter-spacing:.04em}
+.admitted .alist{width:100%;max-width:420px;display:flex;flex-direction:column;gap:6px;text-align:left;background:rgba(0,0,0,.18);border-radius:14px;padding:12px}
+.admitted .alist div{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.admitted .alist span{font-family:var(--mono);font-size:12px;opacity:.9}
+.admitted button{border:0;border-radius:12px;padding:12px 22px;font-weight:800;background:#fff;color:#1a1a1a}
+.chk{width:110px;height:110px}
+.chk circle{fill:none;stroke:rgba(255,255,255,.35);stroke-width:6}
+.chk path{fill:none;stroke:#fff;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:80;animation:draw .55s .1s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.admclock{font-family:var(--mono);font-size:22px}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 <style>/* Leaflet 1.9.4 */
@@ -314,6 +359,7 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="admitted" id="admitted" role="alertdialog" aria-label="Check-in result" hidden></div>
 
 <script>
 (function(){
@@ -394,6 +440,31 @@ const ADDONS = [
   {id:"lounge", code:"LG", t:"Hospitality upgrade", d:"Add lounge access to a General Admission pass.", use:"Both days"},
   {id:"merch", code:"MR", t:"Merch pickup", d:"Order ahead and collect at the Fort Adams shop, or ship it home from the online store.", use:"One pickup"}
 ];
+// Real Audrain Automobile Museum admission products in the Shopify store (non-shipping), pulled 2026-10-07.
+const ADMISSION = [
+  {k:"adult", label:"Adult", price:18, variant:47775674237223},
+  {k:"senior", label:"Senior", price:10, variant:47775695667495},
+  {k:"military", label:"Military", price:10, variant:47775694913831},
+  {k:"student", label:"Student", price:10, variant:47775696257319},
+  {k:"youth", label:"Youth 6-17", price:8, variant:47775691309351}
+];
+// Gate check-in codes. The staff app shows the same QR ("AUDRAIN-CHECKIN:<event>:<gate>") and 4-digit code.
+const GATES = {
+  MAIN:   {name:"Main Gate, Fort Adams", ev:"ACMW", code:"4821"},
+  VIP:    {name:"VIP Gate, Fort Adams", ev:"ACMW", code:"7350"},
+  TOWN:   {name:"Town event door", ev:"ACMW", code:"5163"},
+  MUSEUM: {name:"Museum entrance, 222 Bellevue Ave", ev:"AAM", code:"2266"}
+};
+// PAYMENTS: one rail per sellable item.
+//   shopify  -> real Shopify checkout (Apple Pay on Apple devices, Google Pay, PayPal, Venmo, Shop Pay, card)
+//   showpass -> the real 2026 Showpass event page
+//   pending  -> demo checkout until Audrain adds the item to the store
+const PAY = Object.assign(
+  {admission:{rail:"shopify"}, merch:{rail:"shopify"}},
+  Object.fromEntries(PASSES.map(p=>[p.id, p.url ? {rail:"showpass", url:p.url} : {rail:"pending"}])),
+  Object.fromEntries(EVENTS.filter(e=>e.kind==="ticketed").map(e=>[e.id, (e.url && /showpass\.com/.test(e.url)) ? {rail:"showpass", url:e.url} : {rail:"pending"}])),
+  Object.fromEntries(ADDONS.map(a=>[a.id, {rail:"pending"}]))
+);
 const FEATURED = [
   {src:"photos/field.jpg", cap:"The show field at Fort Adams", wide:false},
   {src:"photos/alfa.jpg", cap:"Pre-war Alfa Romeo on the lawn", wide:false},
@@ -464,7 +535,7 @@ const state = {
   day: DAYS[0], venue:"all", itinMode: "all", mapMode: "getting", infoTab: "faq",
   saved: new Set(store.get("ae.saved",["main","supercar","cars-coffee"]).filter(id=>EVENTS.some(e=>e.id===id))),
   wallet: store.get("ae.wallet", START_WALLET),
-  open: 0,
+  open: 0, orders: store.get("ae.orders", null), openOrder: null, pm: null,
   uploads: [],
   prefs: store.get("ae.prefs",{remind:true, changes:true, offers:false, weather:true}),
   seen: store.get("ae.seen", false),
@@ -480,6 +551,19 @@ const fmtTime = t => { const [h,m] = t.split(":").map(Number); return {hm: ((h%1
 const endLabel = e => { if(!e.e) return ""; const f = fmtTime(e.e); return "Until " + f.hm + " " + f.ap; };
 const booked = id => state.wallet.some(w=>w.kind==="event" && w.ref===id);
 const saveWallet = () => store.set("ae.wallet", state.wallet);
+const saveOrders = () => store.set("ae.orders", state.orders);
+const today = () => new Date().toISOString().slice(0,10);
+const newOrderId = () => "AC27-" + String(Math.floor(100000 + Math.random()*899999));
+(function migrate(){
+  if(!Array.isArray(state.orders)) state.orders = [];
+  state.wallet.forEach(w=>{
+    if(!w.order){ w.order = "AC27-" + w.serial.slice(-6); if(!state.orders.some(o=>o.id===w.order)) state.orders.push({id:w.order, title:w.label, sub:w.sub, status:"demo", rail:"pending", at:Date.now()}); }
+    if(!Array.isArray(w.used)) w.used = [];
+    if(!w.ev) w.ev = w.kind==="admission" ? "AAM" : "ACMW";
+  });
+  saveWallet(); saveOrders();
+})();
+const orderTickets = id => state.wallet.filter(w=>w.order===id);
 let serialN = store.get("ae.serialN", 5200);
 const newSerial = code => { serialN += 7; store.set("ae.serialN", serialN); return `AC27-${code}-${String(serialN).padStart(6,"0")}`; };
 
@@ -528,6 +612,11 @@ function buyBlock(){
     <div class="cards">${PASSES.map(p=>`<div class="card"><div class="t">${p.t}</div><div class="d">${p.d}</div><div class="p">${money(p.price)}</div><button class="buy" type="button" data-buypass="${p.id}">Buy</button></div>`).join("")}</div>
     <div class="section-head"><h3>Add to your pass</h3></div>
     <div class="cards">${ADDONS.map(a=>`<div class="card"><div class="t">${a.t}</div><div class="d">${a.d}</div><div class="price">${a.use} \u00b7 2027 price TBA</div><button class="buy" type="button" data-addon="${a.id}">Add</button></div>`).join("")}</div></section>`;
+}
+function admissionBlock(){
+  return `<section class="section"><div class="section-head"><h2>Museum admission</h2><span class="price">Real checkout</span></div>
+    <div class="card" style="gap:8px"><div class="t">Audrain Automobile Museum</div><div class="d">222 Bellevue Ave. ${ADMISSION.map(a=>`${a.label} ${money(a.price)}`).join(" \u00b7 ")}</div>
+    <button class="buy" type="button" data-buyadm="1">Buy admission</button></div></section>`;
 }
 function infoBody(){
   const t = state.infoTab, hm = x => { const f = fmtTime(x); return f.hm + " " + f.ap; }, dl = d => { const p = dayParts(d); return `${p.wd} ${p.mon} ${p.n}`; };
@@ -618,27 +707,21 @@ const views = {
     </div>`;
   },
   tickets(){
-    if(!state.wallet.length) return `<div class="view">${banner("Tickets","alfa","Passes, add-ons and your scannable tickets")}${buyBlock()}<div class="empty"><h2>No tickets yet</h2><p>Tickets and add-ons you buy appear here, ready to scan.</p></div></div>`;
-    const i = Math.min(state.open, state.wallet.length-1), w = state.wallet[i];
-    return `<div class="view">${banner("Tickets","alfa","Passes, add-ons and your scannable tickets")}${buyBlock()}
+    const head = `${banner("Tickets","alfa","Buy for the whole family. Every ticket scans from this phone.")}${buyBlock()}${admissionBlock()}`;
+    const orders = state.orders.filter(o=>orderTickets(o.id).length);
+    const tools = `<div class="cards"><button class="buy ghost" type="button" data-link="1">Link a website order</button><button class="buy ghost" type="button" data-receive="1">Add a ticket I was sent</button></div>`;
+    if(!orders.length) return `<div class="view">${head}<div class="empty"><h2>No tickets yet</h2><p>Tickets you buy land here as one order per purchase, ready to scan.</p></div>${tools}</div>`;
+    if(!state.openOrder || !orders.some(o=>o.id===state.openOrder)) state.openOrder = orders[0].id;
+    const o = orders.find(x=>x.id===state.openOrder), ts = orderTickets(o.id);
+    return `<div class="view">${head}
       <h2>My tickets</h2>
-      <div class="ticket">
-        <div class="eyebrow">${esc(w.sub)}</div>
-        <div class="tn">${esc(w.label)}</div>
-        <div class="qrwrap"><canvas id="qr" width="29" height="29" aria-label="Rotating entry code for ${esc(w.label)}"></canvas><div class="sample">SAMPLE</div></div>
-        <div class="serial">${w.serial}</div>
-        <div class="timer" id="qrTimer">Code refreshes every 15 seconds. Screenshots will not scan.</div>
-        <div class="walletbtns"><span>Add to Apple Wallet</span><span>Add to Google Wallet</span></div>
-      </div>
-      <section class="section">
-        <div class="section-head"><h3>All my tickets</h3><button class="link" type="button" data-shop="1">Buy more</button></div>
-        <div class="wallet">${state.wallet.map((x,j)=>`<button type="button" class="tk" data-open="${j}" aria-pressed="${j===i}"><div><div class="t">${esc(x.label)}</div><div class="s">${x.serial}</div></div><span class="price">${esc(x.sub.split(" · ")[0])}</span></button>`).join("")}</div>
-      </section>
-      <button class="buy ghost" type="button" data-link="1">Bought on the website? Link your order</button>
+      <div class="orders">${orders.map(orderCard).join("")}</div>
+      ${orderDetail(o, ts)}
+      ${tools}
       <section class="section">
         <div class="section-head"><h2>Your badge</h2><span class="price">Printed at check-in</span></div>
-        <div class="badgecard"><div class="slot"></div><div class="band">Audrain Motor Week</div><div class="nm">Guest Name</div><div class="tier">${esc(w.label)}</div><canvas id="badgeQR" width="29" height="29" aria-label="Badge code"></canvas><div class="sn">${w.serial}</div></div>
-        <div class="notice">No app needed. Website buyers show their confirmation email or ID at check-in and get a printed badge carrying the same serial and QR as their order. App and badge scan against one record, so a ticket can only be used once.</div>
+        <div class="badgecard"><div class="slot"></div><div class="band">Audrain Motor Week</div><div class="nm">${esc(ts[0].tname || "Guest Name")}</div><div class="tier">${esc(ts[0].label)}</div><canvas id="badgeQR" width="29" height="29" aria-label="Badge code"></canvas><div class="sn">${ts[0].serial}</div></div>
+        <div class="notice">No app needed. Website buyers show their confirmation email at check-in and get a printed badge per ticket, with the same serial and QR as their order. One order number links the whole group.</div>
       </section>
     </div>`;
   },
@@ -725,6 +808,7 @@ function render(){
   $("#alertCount").hidden = state.seen;
   $("#main").innerHTML = views[state.tab]();
   stopQR(); if(state.tab==="tickets" && state.wallet.length) startQR();
+  const car = document.getElementById("carousel"); if(car) car.addEventListener("scroll", ()=>{ const i = Math.round(car.scrollLeft / car.clientWidth); document.querySelectorAll("#dots i").forEach((d,j)=>d.classList.toggle("on", j===i)); }, {passive:true});
   if(state.tab==="map") initMap(); else if(lmap){ lmap.remove(); lmap = null; }
   drawBadge();
   const pin = document.getElementById("photoIn"); if(pin) pin.addEventListener("change", onPhotos);
@@ -733,7 +817,9 @@ function go(tab){ state.tab = tab; store.set("ae.tab",tab); render(); window.scr
 
 let qrTimer = null;
 function drawQR(){
-  const c = document.getElementById("qr"); if(!c) return stopQR();
+  const cs = document.querySelectorAll("canvas.qrc"); if(!cs.length) return stopQR(); cs.forEach(drawQRCanvas);
+  const lft = 15 - Math.floor((Date.now()%15000)/1000); document.querySelectorAll(".qrtimer").forEach(t=>t.textContent = `Code refreshes in ${lft}s. Screenshots will not scan.`); return;
+  const c = null;
   const w = state.wallet[Math.min(state.open, state.wallet.length-1)];
   const x = c.getContext("2d"), N = 29, slot = Math.floor(Date.now()/15000);
   let s = (slot * 2654435761 + [...w.serial].reduce((a,ch)=>a*31+ch.charCodeAt(0)>>>0,7)) >>> 0;
@@ -747,7 +833,7 @@ function drawQR(){
 }
 function drawBadge(){
   const c = document.getElementById("badgeQR"); if(!c) return;
-  const w = state.wallet[Math.min(state.open, state.wallet.length-1)], x = c.getContext("2d"), N = 29;
+  const ow = orderTickets(state.openOrder); const w = ow[0] || state.wallet[0]; if(!w) return; const x = c.getContext("2d"), N = 29;
   let s = [...w.serial].reduce((a,ch)=>a*33+ch.charCodeAt(0)>>>0,11) >>> 0;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
   x.fillStyle="#fff"; x.fillRect(0,0,N,N); x.fillStyle="#14213a";
@@ -759,36 +845,198 @@ function stopQR(){ if(qrTimer){ clearInterval(qrTimer); qrTimer = null; } }
 
 let lastFocus = null;
 function openSheet(title, html){ lastFocus = document.activeElement; $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html; $("#scrim").hidden = false; const f = $("#sheetBody button, #sheetBody a"); if(f) f.focus(); }
-function closeSheet(){ $("#scrim").hidden = true; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+function closeSheet(){ stopCam(); scan = null; $("#scrim").hidden = true; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
 let toastT = null;
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>{ t.hidden = true; }, 2600); }
 
-// Checkout sheet: one flow for event tickets, passes and add-ons.
+const STATUS = {demo:["Sample","demo"], pending:["Pending confirmation","pend"], confirmed:["Confirmed","ok"], website:["From website","ok"], received:["Received","rx"]};
+function orderCard(o){
+  const ts = orderTickets(o.id), st = STATUS[o.status] || STATUS.demo, open = o.id===state.openOrder;
+  const names = ts.map(t=>t.tname).filter(Boolean);
+  return `<button type="button" class="ocard" data-order="${o.id}" aria-expanded="${open}"><div><div class="t">${esc(o.title)}<span class="st ${st[1]}">${st[0]}</span></div><div class="s">Order #${esc(o.id)} \u00b7 ${ts.length} ticket${ts.length===1?"":"s"}${names.length?` \u00b7 ${esc(names.join(", "))}`:""}</div></div><span class="chev">${open?"\u2304":"\u203a"}</span></button>`;
+}
+function ticketState(t){
+  if(t.transferred) return "Sent to " + (t.sentTo || "someone");
+  if(t.used.includes(today())) return "Checked in today \u00b7 re-entry allowed";
+  if(t.used.length) return "Used on " + t.used.slice(-1)[0];
+  return "Not checked in yet";
+}
+function orderDetail(o, ts){
+  const live = ts.filter(t=>!t.transferred);
+  return `<section class="section">
+    ${live.length>1 ? `<button class="bigcheck" type="button" data-checkin="order:${o.id}">Check in all ${live.length} with one scan</button>` : ""}
+    <div class="carousel" id="carousel">${ts.map((t,j)=>`<div class="ticket">
+      <div class="eyebrow">${esc(t.type || t.label)} \u00b7 ${j+1} of ${ts.length}</div>
+      <div class="tn">${esc(t.tname || "Guest " + (j+1))}</div>
+      ${t.transferred ? `<div class="xferd">Transferred. This ticket now lives on the recipient's phone.</div>` : `<div class="qrwrap"><canvas class="qrc" data-serial="${t.serial}" width="29" height="29" aria-label="Rotating entry code"></canvas><div class="sample">SAMPLE</div></div>`}
+      <div class="serial">${t.serial}</div>
+      <div class="tstate">${esc(ticketState(t))}</div>
+      ${t.transferred ? "" : `<div class="timer qrtimer">Code refreshes every 15 seconds. Screenshots will not scan.</div>
+      <div class="tbtns"><button class="buy" type="button" data-checkin="t:${t.serial}">Check in</button><button class="buy ghost" type="button" data-xfer="${t.serial}">Send to someone</button></div>`}
+    </div>`).join("")}</div>
+    ${ts.length>1 ? `<div class="dots" id="dots">${ts.map((t,j)=>`<i class="${j===0?"on":""}"></i>`).join("")}</div>` : ""}
+    <div class="cards"><button class="buy ghost" type="button" data-names="${o.id}">Assign names</button><button class="buy ghost" type="button" data-addwallet="1">Add to Wallet</button></div>
+    ${o.status==="pending" ? `<div class="notice">Pending confirmation: your payment was made on the secure checkout. In the live app these tickets confirm automatically when the store sends the order to Audrain.</div>` : ""}
+  </section>`;
+}
+
+// ---------- Checkout: lines (qty per ticket type), payment method, rail
+const isApple = typeof window.ApplePaySession !== "undefined" || /iPhone|iPad|iPod/.test(navigator.userAgent);
+const PMS = () => [isApple ? ["applepay","Apple Pay","apple"] : ["googlepay","G Pay","gpay"], ["paypal","PayPal","paypal"], ["venmo","Venmo","venmo"], ["card","Card",""]];
 let cart = null;
 function checkout(item){
-  cart = {...item, qty:1};
-  const paint = () => {
-    const priced = typeof cart.price === "number";
-    openSheet(cart.title, `
-      <p class="price">${esc(cart.sub)}</p>
-      <div class="qty"><button type="button" data-q="-1" aria-label="Fewer">−</button><output id="qtyOut">${cart.qty}</output><button type="button" data-q="1" aria-label="More">+</button><span class="price">${priced ? (cart.from?"from ":"") + money(cart.price*cart.qty) : (cart.kind==="addon" ? "2027 price TBA" : "Price on the ticket page")}</span></div>
-      ${cart.kind==="addon" ? `<label class="price" for="attachSel">Attach to</label><select id="attachSel">${state.wallet.filter(w=>w.kind==="pass").map(w=>`<option>${esc(w.label)} · ${w.serial}</option>`).join("") || "<option>Your next pass</option>"}</select>` : ""}
-      ${cart.ref==="merch" ? `<div class="merch">${MERCH.slice(0,4).map(m=>`<a class="mi" href="${m.url}" target="_blank" rel="noopener"><img src="${m.img}" alt="${esc(m.t)}"><div class="b"><div class="t">${esc(m.t)}</div><div class="p">${money(m.price)}</div></div></a>`).join("")}</div><a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Not here?</b> Order it from the online store.</span><span class="buy">Shop</span></a>` : ""}
-      <button class="pay" type="button" data-pay="1">Pay with Apple Pay or card (demo)</button>
-      ${cart.url ? `<a class="buy ghost" href="${cart.url}" target="_blank" rel="noopener">Open the 2026 ticket page</a>` : ""}
-      <p class="price">Demo only: no payment is taken. In the app, each ticket is issued with its own serial and lands in My Tickets.</p>
-      <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`);
-  };
-  cart.paint = paint; paint();
+  const pay = PAY[item.ref] || PAY[item.kind] || {rail:"pending"};
+  const lines = item.kind==="admission" ? ADMISSION.map((a,j)=>({k:a.k, label:a.label, price:a.price, variant:a.variant, qty:j===0?2:0}))
+              : [{k:"std", label:item.typeLabel || "Ticket", price:item.price, qty:1}];
+  cart = {item, pay, lines, opened:false};
+  if(!state.pm) state.pm = PMS()[0][0];
+  paintCart();
 }
-function pay(){
-  for(let n=0;n<cart.qty;n++){
-    state.wallet.push({kind:cart.kind, ref:cart.ref, label:cart.title + (cart.qty>1?` (${n+1} of ${cart.qty})`:""), sub:cart.sub, serial:newSerial(cart.code)});
-  }
-  if(cart.kind==="event"){ state.saved.add(cart.ref); store.set("ae.saved",[...state.saved]); }
-  saveWallet(); closeSheet();
-  toast(`${cart.qty} ${cart.qty>1?"tickets":"ticket"} added to My Tickets`);
-  render();
+function cartTotal(){ return cart.lines.reduce((a,l)=>a + (typeof l.price==="number" ? l.price*l.qty : 0), 0); }
+function cartQty(){ return cart.lines.reduce((a,l)=>a+l.qty, 0); }
+function shopifyUrl(){ return STORE + "/cart/" + cart.lines.filter(l=>l.qty>0 && l.variant).map(l=>l.variant+":"+l.qty).join(","); }
+function paintCart(){
+  const it = cart.item, r = cart.pay.rail, q = cartQty(), tot = cartTotal(), priced = cart.lines.some(l=>typeof l.price==="number");
+  const pmName = (PMS().find(p=>p[0]===state.pm)||PMS()[0])[1];
+  const lines = cart.lines.map((l,j)=>`<div class="qline"><div><div class="title">${esc(l.label)}</div><div class="price">${typeof l.price==="number" ? money(l.price) + (it.from?" and up":"") + " each" : (it.kind==="addon" ? "2027 price TBA" : "Price on the ticket page")}</div></div>
+    <div class="qty"><button type="button" data-q="-1" data-ql="${j}" aria-label="Fewer ${esc(l.label)}">\u2212</button><output>${l.qty}</output><button type="button" data-q="1" data-ql="${j}" aria-label="More ${esc(l.label)}">+</button></div></div>`).join("");
+  let action;
+  if(r==="shopify") action = q ? `<a class="pay" style="display:block;text-align:center;text-decoration:none" data-extpay="1" href="${shopifyUrl()}" target="_blank" rel="noopener">Pay ${money(tot)} with ${pmName}</a>
+      <p class="rail">Opens Audrain's secure Shopify checkout: Apple Pay (on Apple devices), Google Pay, PayPal, Venmo, Shop Pay or card. Real payment.</p>` : `<p class="rail">Choose at least one ticket.</p>`;
+  else if(r==="showpass") action = `<a class="pay" style="display:block;text-align:center;text-decoration:none" data-extpay="1" href="${cart.pay.url}" target="_blank" rel="noopener">Continue to Showpass</a>
+      <p class="rail">Opens the real 2026 Showpass event page to pay. In the 2027 app this becomes one in-app checkout with Apple Pay and Google Pay.</p>`;
+  else action = `<button class="pay" type="button" data-pay="1"${q?"":" disabled"}>Pay ${priced?money(tot)+" ":""}with ${pmName} (demo)</button>
+      <p class="rail">Demo: no payment is taken. Payments for this item open when Audrain adds it to the store.</p>`;
+  openSheet(it.title, `
+    <p class="price">${esc(it.sub)}</p>
+    <div>${lines}</div>
+    ${priced ? `<div class="total"><span>Total \u00b7 ${q} ticket${q===1?"":"s"}</span><span>${money(tot)}</span></div>` : ""}
+    ${r!=="showpass" ? `<div class="price">Pay with</div><div class="pmrow" role="group" aria-label="Payment method">${PMS().map(p=>`<button type="button" class="pm ${p[2]}" data-pm="${p[0]}" aria-pressed="${state.pm===p[0]}">${p[1]}</button>`).join("")}</div>` : ""}
+    ${action}
+    ${cart.opened && r!=="pending" ? `<button class="buy" type="button" data-paidext="1" style="padding:11px">I've paid \u2013 add my ticket${q===1?"":"s"}</button><p class="rail">Adds them as "Pending confirmation". Real tickets are issued by Audrain's system when the order comes through.</p>` : ""}
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`);
+}
+function issueOrder(status){
+  const it = cart.item, id = newOrderId(), ev = it.kind==="admission" ? "AAM" : "ACMW";
+  cart.lines.filter(l=>l.qty>0).forEach(l=>{ for(let n=0;n<l.qty;n++) state.wallet.push({kind:it.kind, ref:it.ref, label:it.title, type:l.label, sub:it.sub, serial:newSerial(it.code||"TK"), order:id, used:[], ev}); });
+  state.orders.unshift({id, title:it.title, sub:it.sub, status, rail:cart.pay.rail, at:Date.now()});
+  if(it.kind==="event"){ state.saved.add(it.ref); store.set("ae.saved",[...state.saved]); }
+  saveWallet(); saveOrders(); state.openOrder = id; closeSheet();
+  const q = orderTickets(id).length;
+  toast(`Order #${id}: ${q} ticket${q===1?"":"s"} in My Tickets`);
+  go("tickets");
+}
+function pay(){ issueOrder("demo"); }
+
+// ---------- Rotating codes for every visible ticket
+function drawQRCanvas(c){
+  const serial = c.dataset.serial, x = c.getContext("2d"), N = 29, slot = Math.floor(Date.now()/15000);
+  let s = (slot * 2654435761 + [...serial].reduce((a,ch)=>a*31+ch.charCodeAt(0)>>>0,7)) >>> 0;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  x.fillStyle = "#fff"; x.fillRect(0,0,N,N); x.fillStyle = "#003057";
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){ const inF = (i<8&&j<8)||(i>N-9&&j<8)||(i<8&&j>N-9); if(!inF && rnd()>.52) x.fillRect(i,j,1,1); }
+  const finder = (fx,fy) => { x.fillStyle="#003057"; x.fillRect(fx,fy,7,7); x.fillStyle="#fff"; x.fillRect(fx+1,fy+1,5,5); x.fillStyle="#003057"; x.fillRect(fx+2,fy+2,3,3); };
+  finder(0,0); finder(N-7,0); finder(0,N-7);
+}
+
+// ---------- Self check-in: scan the gate's posted QR
+let scan = null;
+function loadJsQR(){ return new Promise(res=>{ if(window.jsQR) return res(true); const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; sc.onload = ()=>res(true); sc.onerror = ()=>res(false); document.head.appendChild(sc); }); }
+function scanSheet(targets, label){
+  openSheet("Check in", `<p class="price">${esc(label)}. Point your camera at the check-in QR posted at the gate.</p>
+    <div class="scanbox"><video id="scanVid" playsinline muted></video><div class="scanframe"></div></div>
+    <div class="price" id="scanMsg" role="status">Starting camera\u2026</div>
+    <details><summary class="price" style="cursor:pointer">Can't scan? Enter the gate code</summary>
+      <div style="display:flex;gap:8px;margin-top:8px"><input class="inp" id="gateCode" inputmode="numeric" maxlength="4" placeholder="4-digit code on the gate sign" aria-label="Gate code"><button class="buy" type="button" data-gatecode="1">Check in</button></div></details>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label class="price" for="simGate">Demo</label><select id="simGate">${Object.entries(GATES).map(([k,g])=>`<option value="${k}">${esc(g.name)}</option>`).join("")}</select><button class="buy ghost" type="button" data-simgate="1">Simulate gate scan</button></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`);
+  scan = {targets, stream:null, timer:null, done:false};
+  startCam();
+}
+async function startCam(){
+  const msg = t => { const m = document.getElementById("scanMsg"); if(m) m.textContent = t; };
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("no camera");
+    const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
+    if(!scan){ st.getTracks().forEach(t=>t.stop()); return; }
+    scan.stream = st; const v = document.getElementById("scanVid"); if(!v) return stopCam();
+    v.srcObject = st; await v.play();
+    const det = ("BarcodeDetector" in window) ? new BarcodeDetector({formats:["qr_code"]}) : null;
+    if(!det) await loadJsQR();
+    const cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
+    msg("Looking for the gate code\u2026");
+    scan.timer = setInterval(async ()=>{
+      if(!scan || scan.done || !v.videoWidth) return;
+      try{
+        let txt = null;
+        if(det){ const r = await det.detect(v); if(r.length) txt = r[0].rawValue; }
+        else if(window.jsQR){ cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v,0,0); const d = cx.getImageData(0,0,cv.width,cv.height); const r = jsQR(d.data, d.width, d.height); if(r) txt = r.data; }
+        if(txt) handleGatePayload(txt);
+      }catch(e){}
+    }, 300);
+  }catch(e){ msg("Camera isn't available here. Enter the gate code or use the demo button."); }
+}
+function stopCam(){ if(!scan) return; if(scan.timer) clearInterval(scan.timer); if(scan.stream) scan.stream.getTracks().forEach(t=>t.stop()); }
+function handleGatePayload(txt){
+  const m = /^AUDRAIN-CHECKIN:([A-Z0-9]+):([A-Z0-9]+)$/.exec(String(txt).trim());
+  const g = m && GATES[m[2]];
+  if(!g || g.ev!==m[1]){ const el = document.getElementById("scanMsg"); if(el) el.textContent = "That isn't an Audrain gate code."; return; }
+  admit(m[2]);
+}
+function admit(gk){
+  if(!scan || scan.done) return; scan.done = true;
+  const g = GATES[gk], d = today(), res = [];
+  scan.targets.map(sr=>state.wallet.find(w=>w.serial===sr && !w.transferred)).filter(Boolean).forEach(t=>{
+    if(t.ev!==g.ev){ res.push([t, "wrong"]); return; }
+    const re = t.used.includes(d); if(!re) t.used.push(d); res.push([t, re ? "re" : "in"]);
+  });
+  saveWallet(); stopCam(); scan = null; closeSheet();
+  const ok = res.filter(r=>r[1]!=="wrong"), allRe = ok.length && ok.every(r=>r[1]==="re");
+  const el = document.getElementById("admitted");
+  el.className = "admitted" + (!ok.length ? " bad" : allRe ? " re" : "");
+  const now = new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:"2-digit"});
+  el.innerHTML = `${ok.length ? `<svg class="chk" viewBox="0 0 110 110" aria-hidden="true"><circle cx="55" cy="55" r="48"/><path d="M32 57 L48 73 L80 39"/></svg>` : ""}
+    <h1>${!ok.length ? "NOT VALID HERE" : allRe ? "RE-ENTRY" : "ADMITTED"}</h1>
+    <div style="font-weight:700">${esc(g.name)}</div><div class="admclock">${now}</div>
+    <div class="alist">${res.map(([t,r])=>`<div><b>${r==="wrong"?"\u2715":"\u2713"} ${esc(t.tname || t.type || "Guest")}</b><span>${t.serial}${r==="re"?" \u00b7 re-entry":r==="wrong"?" \u00b7 wrong entrance":""}</span></div>`).join("")}</div>
+    <div style="opacity:.9;font-size:13.5px">${ok.length} of ${res.length} checked in. Show this screen to the gate staff.</div>
+    <button type="button" data-admdone="1">Done</button>`;
+  el.hidden = false; if(navigator.vibrate) try{ navigator.vibrate(ok.length?[60,40,60]:[200]); }catch(e){}
+}
+
+// ---------- Names, transfers, receiving
+function namesSheet(id){
+  const ts = orderTickets(id);
+  openSheet("Assign names", `<p class="price">Names show on each ticket and on the gate screen. Optional.</p>
+    ${ts.map((t,j)=>`<label class="price" for="nm${j}">${esc(t.type || "Ticket")} \u00b7 ${t.serial}</label><input class="inp" id="nm${j}" data-nmserial="${t.serial}" value="${esc(t.tname||"")}" placeholder="e.g. ${["Dad","Emma","Jack","Mom","Grandpa"][j%5]}">`).join("")}
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-savenames="${id}">Save names</button></div>`);
+}
+const b64u = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const unb64u = s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))));
+function xferSheet(serial){
+  const t = state.wallet.find(w=>w.serial===serial); if(!t) return;
+  const code = "AUD1-" + b64u({s:t.serial, l:t.label, t:t.type||"", n:t.tname||"", o:t.order, ev:t.ev, k:t.kind, r:t.ref, u:t.sub});
+  const link = location.origin + location.pathname + "#rx-" + code;
+  openSheet("Send this ticket", `<p>${esc(t.tname || t.type || "Ticket")} \u00b7 ${t.serial}</p>
+    <label class="price" for="xferTo">Who is it for? (optional)</label><input class="inp" id="xferTo" placeholder="Name or phone">
+    <label class="price" for="xferLink">Link to send</label><textarea class="inp" id="xferLink" rows="3" readonly>${esc(link)}</textarea>
+    <div class="cards"><button class="buy" type="button" data-copyxfer="1">Copy link</button><button class="buy ghost" type="button" data-sharexfer="1">Share\u2026</button></div>
+    <p class="rail">When they open the link in the Audrain app, the ticket moves to their phone. Your copy stops working, so a ticket can only be used once.</p>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-markxfer="${t.serial}">Mark as sent</button></div>`);
+}
+function receiveSheet(prefill){
+  openSheet("Add a ticket I was sent", `<p class="price">Paste the link or code someone sent you.</p>
+    <textarea class="inp" id="rxCode" rows="3" placeholder="https://\u2026#rx-AUD1-\u2026">${esc(prefill||"")}</textarea>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-rxgo="1">Add ticket</button></div>`);
+}
+function receiveCode(raw){
+  const m = /AUD1-([A-Za-z0-9_-]+)/.exec(raw||""); if(!m) return toast("That code isn't an Audrain ticket");
+  let d; try{ d = unb64u(m[1]); }catch(e){ return toast("That code isn't an Audrain ticket"); }
+  if(state.wallet.some(w=>w.serial===d.s && !w.transferred)) return toast("That ticket is already in your wallet");
+  const id = "RX-" + d.s.slice(-6);
+  state.wallet.push({kind:d.k, ref:d.r, label:d.l, type:d.t, tname:d.n, sub:d.u, serial:d.s, order:id, used:[], ev:d.ev});
+  if(!state.orders.some(o=>o.id===id)) state.orders.unshift({id, title:d.l, sub:"Sent to you", status:"received", rail:"transfer", at:Date.now()});
+  saveWallet(); saveOrders(); state.openOrder = id; closeSheet(); toast("Ticket added to your wallet"); go("tickets");
 }
 
 function onPhotos(ev){
@@ -930,6 +1178,7 @@ const ROLE_NAME = {guest:"Guest", staff:"Staff", lead:"Team lead", ops:"Ops"};
 let afterSignIn = null;
 function signedIn(acc){
   state.account = acc; store.set("ae.account", acc); closeSheet(); paintAcct();
+if(/^#rx-AUD1-/.test(location.hash)){ setTimeout(()=>receiveSheet(location.href), 300); }
   toast(acc.role==="guest" ? "Signed in" : "Signed in as " + ROLE_NAME[acc.role]); render();
   const f = afterSignIn; afterSignIn = null; if(f) setTimeout(f, 150);
 }
@@ -999,7 +1248,7 @@ function bagSheet(){
   openSheet("Your bag", `${state.bag.map((b,i)=>`<div class="bagline"><img src="${b.img}" alt=""><div><div class="title">${esc(b.t)}</div><div class="price">${esc(b.vt)} \u00b7 ${b.q} \u00d7 ${money(b.p)}</div></div><button class="buy ghost" type="button" data-rmbag="${i}">Remove</button></div>`).join("")}
     <div class="section-head"><b>Subtotal</b><b>${money(total)}</b></div>
     <a class="buy" style="padding:12px" href="${bagUrl()}" target="_blank" rel="noopener">Check out on the Audrain store</a>
-    <p class="price">Shipping, tax and payment are handled by Shopify checkout.</p>
+    <p class="price">Pay with Apple Pay (on Apple devices), Google Pay, PayPal, Venmo, Shop Pay or card. Shipping and tax are handled by Shopify checkout.</p>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Keep shopping</button></div>`);
 }
 
@@ -1014,7 +1263,7 @@ function showVenue(k, fromMap){
 }
 
 document.addEventListener("click", ev=>{
-  const t = ev.target.closest("button, g.pin"); if(!t) return;
+  const t = ev.target.closest("button, g.pin, a[data-extpay]"); if(!t) return;
   const ds = t.dataset;
   
   if(ds.tab){ go(ds.tab); return; }
@@ -1035,13 +1284,36 @@ document.addEventListener("click", ev=>{
     <div class="field"><label for="ordEmail" class="price">Email used at checkout</label><input id="ordEmail" type="email" placeholder="you@example.com"></div>
     <button class="pay" type="button" data-linkgo="1" style="background:var(--btn);color:var(--btn-fg)">Link order (demo)</button>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button></div>`); return; }
-  if(ds.linkgo){ state.wallet.push({kind:"pass", ref:"ga2", label:"Two-Day General Admission", sub:"Sat & Sun · linked from website", serial:newSerial("WEB")}); saveWallet(); state.open = state.wallet.length-1; closeSheet(); toast("Website order linked. 1 ticket added."); render(); return; }
-  if(ds.q){ cart.qty = Math.max(1, Math.min(8, cart.qty + Number(ds.q))); cart.paint(); return; }
+  if(ds.linkgo){ const no = (($("#ordNo")||{}).value||"").trim() || String(48000000 + Math.floor(Math.random()*999999)); const id = "WEB-" + no.replace(/\D/g,"").slice(-8);
+    if(state.orders.some(o=>o.id===id)){ toast("That order is already linked"); return; }
+    ["Adult","Adult","Youth"].forEach(tp=>state.wallet.push({kind:"pass", ref:"ga2", label:"Two-Day General Admission", type:tp, sub:"Sat & Sun \u00b7 linked from website", serial:newSerial("WEB"), order:id, used:[], ev:"ACMW"}));
+    state.orders.unshift({id, title:"Two-Day General Admission", sub:"Linked from website order " + no, status:"website", rail:"website", at:Date.now()});
+    saveWallet(); saveOrders(); state.openOrder = id; closeSheet(); toast("Website order linked: 3 tickets (sample)"); go("tickets"); return; }
+  if(ds.q){ const l = cart.lines[Number(ds.ql||0)]; l.qty = Math.max(0, Math.min(10, l.qty + Number(ds.q))); if(cart.lines.length===1 && l.qty<1) l.qty = 1; paintCart(); return; }
+  if(ds.pm){ state.pm = ds.pm; paintCart(); return; }
+  if(ds.extpay){ cart.opened = true; setTimeout(paintCart, 400); return; }
+  if(ds.paidext){ if(!state.account){ afterSignIn = ()=>issueOrder("pending"); signInSheet("Sign in to keep your tickets on this phone."); return; } issueOrder("pending"); return; }
+  if(ds.buyadm){ checkout({kind:"admission", ref:"admission", code:"AAM", title:"Audrain Automobile Museum admission", sub:"222 Bellevue Ave \u00b7 valid any open day"}); return; }
+  if(ds.order){ state.openOrder = ds.order; render(); const c = document.getElementById("carousel"); if(c) c.scrollIntoView({behavior:"smooth", block:"nearest"}); return; }
+  if(ds.checkin){ const [kind,val] = ds.checkin.split(":"); const targets = kind==="order" ? orderTickets(val).filter(w=>!w.transferred).map(w=>w.serial) : [val];
+    scanSheet(targets, kind==="order" ? `Checking in ${targets.length} tickets together` : "Checking in 1 ticket"); return; }
+  if(ds.simgate){ admit($("#simGate").value); return; }
+  if(ds.gatecode){ const c = ($("#gateCode").value||"").trim(); const gk = Object.keys(GATES).find(k=>GATES[k].code===c); if(!gk){ const m = $("#scanMsg"); if(m) m.textContent = "That code doesn't match a gate. Check the sign."; return; } admit(gk); return; }
+  if(ds.admdone){ $("#admitted").hidden = true; render(); return; }
+  if(ds.names){ namesSheet(ds.names); return; }
+  if(ds.savenames){ document.querySelectorAll("[data-nmserial]").forEach(i=>{ const w = state.wallet.find(x=>x.serial===i.dataset.nmserial); if(w) w.tname = i.value.trim(); }); saveWallet(); closeSheet(); toast("Names saved"); render(); return; }
+  if(ds.xfer){ xferSheet(ds.xfer); return; }
+  if(ds.copyxfer){ const v = $("#xferLink").value; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(()=>toast("Link copied")).catch(()=>{ $("#xferLink").select(); toast("Select and copy the link"); }); return; }
+  if(ds.sharexfer){ const v = $("#xferLink").value; if(navigator.share){ navigator.share({title:"Your Audrain ticket", url:v}).catch(()=>{}); } else { $("#xferLink").select(); toast("Sharing isn't available here. Copy the link instead."); } return; }
+  if(ds.markxfer){ const w = state.wallet.find(x=>x.serial===ds.markxfer); if(w){ w.transferred = true; w.sentTo = ($("#xferTo").value||"").trim(); saveWallet(); } closeSheet(); toast("Ticket sent. Your copy is now marked Transferred."); render(); return; }
+  if(ds.receive){ receiveSheet(); return; }
+  if(ds.rxgo){ receiveCode($("#rxCode").value); return; }
+  if(ds.addwallet){ toast("Apple Wallet and Google Wallet passes come from the ticketing system in the live app"); return; }
   if(ds.pay){ if(!state.account){ afterSignIn = ()=>{ pay(); }; signInSheet("Sign in to finish your purchase. Your tickets will be saved to your account."); return; } pay(); return; }
   if(ds.close){ closeSheet(); return; }
   if(ds.wait){ const e = EVENTS.find(x=>x.id===ds.wait); openSheet("Join the waitlist", `<p>${esc(e.title)} is full. Join the waitlist and we'll alert you if a seat opens. You'll have 20 minutes to claim it.</p><div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button><button class="buy" type="button" data-joinwait="${e.id}">Join waitlist</button></div>`); return; }
   if(ds.joinwait){ closeSheet(); toast("You're on the waitlist. We'll alert you if a seat opens."); return; }
-  if(ds.showticket){ const j = state.wallet.findIndex(w=>w.kind==="event" && w.ref===ds.showticket); state.open = Math.max(0,j); go("tickets"); return; }
+  if(ds.showticket){ const w = state.wallet.find(x=>x.kind==="event" && x.ref===ds.showticket); if(w) state.openOrder = w.order; go("tickets"); return; }
   if(ds.open){ state.open = Number(ds.open); render(); return; }
   if(ds.venue){ showVenue(ds.venue); return; }
   if(ds.mapday){ state.mapDay = ds.mapday; render(); return; }

@@ -1,4 +1,4 @@
-const C='audrain-events-v9';
+const C='audrain-events-v10';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./photos/field.jpg','./photos/alfa.jpg','./photos/hilltop.jpg','./photos/lawn.jpg','./photos/stage.jpg','./photos/wine.jpg'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
