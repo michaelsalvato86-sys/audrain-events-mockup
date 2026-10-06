@@ -532,8 +532,9 @@ const views = {
     return `<div class="view">
       <div class="days" role="group" aria-label="Day">${MAPDAYS.map(d=>{const p=dayParts(d);return `<button type="button" data-mapday="${d}" aria-pressed="${d===D}"><span>${p.wd}</span><b>${p.n}</b><span>${p.mon}</span></button>`}).join("")}</div>
       <div class="layers" role="group" aria-label="Map layers">${lay("venues","Venues","#0f2340")}${lay("parking","Parking","#2f7d4f")}${lay("trolley","Trolley","#b8913a")}${lay("ferry","Ferry","#1f78a8")}</div>
+      <a class="buy ghost" href="https://www.google.com/maps/@41.4815,-71.3150,14z/data=!5m1!1e1" target="_blank" rel="noopener" style="align-self:flex-start">Live traffic in Google Maps</a>
       <div class="mapbox"><div id="lmap" role="application" aria-label="Map of Newport event venues, parking and trolley stops"></div></div>
-      <div class="price" id="mapNote">Trolley lines join stops in order and do not trace exact streets. Dashed outlines are approximate locations.</div>
+      <div class="price" id="mapNote">Pinch to zoom in to street level. Trolley lines join stops in order and do not trace exact streets. Dashed outlines are approximate locations.</div>
       <section class="section"><div class="section-head"><h2>Parking \u00b7 ${dp.wd}</h2><span class="price">Free, first come</span></div>
         ${lots.length ? `<div class="list">${lots.map(l=>`<button type="button" class="row" data-fly="lot:${l.id}" style="grid-template-columns:auto minmax(0,1fr);background:none;border:0;border-top:1px solid var(--line);text-align:left;width:100%"><div class="mk mk-park" style="width:30px;height:30px">P</div><div class="info"><div class="title">${esc(l.name)}</div><div class="meta"><span>${esc(l.addr)}</span><span>${fmtTime(l.days[D][0]).hm} ${fmtTime(l.days[D][0]).ap} to ${fmtTime(l.days[D][1]).hm} ${fmtTime(l.days[D][1]).ap}</span></div></div></button>`).join("")}</div>` : `<div class="notice">No event parking listed for this day.</div>`}
       </section>
@@ -721,7 +722,7 @@ function initMap(){
   if(lmap){ lmap.remove(); lmap = null; }
   lmap = L.map(el, {zoomControl:true, attributionControl:true, scrollWheelZoom:false}); lmap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   let ok = 0, bad = 0;
-  const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
+  const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, maxNativeZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
   tiles.on("tileload", ()=>ok++); tiles.on("tileerror", ()=>{ bad++; if(bad>6 && !ok){ const n = document.getElementById("mapNote"); if(n) n.textContent = "Street tiles are blocked in this preview. They load in the installed app; pins, parking and trolley lines still show."; } });
   const D = state.mapDay, pts = [];
   mapLayers = {venues:L.layerGroup(), parking:L.layerGroup(), trolley:L.layerGroup(), ferry:L.layerGroup()};

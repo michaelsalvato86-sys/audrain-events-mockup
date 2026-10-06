@@ -317,9 +317,9 @@ const views = {
     const mine = new Set(myShifts().map(x=>x[3]));
     return `<div class="view">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Posts</h2><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="guestLayer" ${state.guest!==false?"checked":""}> Guest parking &amp; trolley</label></div>
-      <div class="zoombtns"><button class="btn ghost" type="button" data-zoom="fort">Fort Adams</button><button class="btn ghost" type="button" data-zoom="town">Bellevue Ave posts</button><button class="btn ghost" type="button" data-zoom="all">Everything</button></div>
+      <div class="zoombtns"><button class="btn" type="button" data-placepin="1" id="placeBtn">${placing ? "Tap the map to place…" : "Place pin"}</button><a class="btn ghost" style="text-decoration:none" href="https://www.google.com/maps/@41.4815,-71.3150,14z/data=!5m1!1e1" target="_blank" rel="noopener">Live traffic</a><button class="btn ghost" type="button" data-zoom="fort">Fort Adams</button><button class="btn ghost" type="button" data-zoom="town">Bellevue Ave posts</button><button class="btn ghost" type="button" data-zoom="all">Everything</button></div>
       <div class="mapbox"><div id="smap" role="application" aria-label="Map of staff posts"></div></div>
-      <div class="sub">Pin colour = team stationed there. Dashed ring = your posts. Fort Adams post positions are sample placements until Ops sets the site plan.</div>
+      <div class="sub">Pinch to zoom to street level. Use Place pin to drop meeting points, hazards, vehicles or notes. Pin colour = team stationed there. Dashed ring = your posts. Fort Adams post positions are sample placements until Ops sets the site plan.</div>
       <h2>My posts</h2>
       <div class="list">${Object.entries(POSTS).filter(([k])=>mine.has(k)).map(([k,p])=>`<div class="item" style="grid-template-columns:minmax(0,1fr) auto"><div><div class="ti">${esc(p.name)}</div><div class="sub">${esc(p.where)}</div></div><button class="btn ghost" type="button" data-flypost="${k}" style="padding:7px 10px">Locate</button></div>`).join("") || `<div class="item"><div class="sub">No posts assigned.</div></div>`}</div>
     </div>`;
@@ -369,14 +369,23 @@ function openSheet(title, html){ lastFocus=document.activeElement; $("#sheetTitl
 function closeSheet(){ $("#scrim").hidden=true; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
 
 
-let smap = null, guestLayer = null;
+let smap = null, guestLayer = null, placing = false, pinLayer = null;
+const PIN_TYPES = {post:["Post","#4a90d9"], meet:["Meeting point","#3fae6b"], hazard:["Hazard / closed","#e0533f"], vehicle:["Vehicle / cart","#c9a14a"], note:["Note","#9aa7bf"]};
+let PINS = (()=>{ try{ return JSON.parse(localStorage.getItem("st.pins")||"[]"); }catch(e){ return []; } })();
+const savePins = () => { try{ localStorage.setItem("st.pins", JSON.stringify(PINS)); }catch(e){} };
+function drawPins(){
+  if(!smap) return; if(pinLayer) smap.removeLayer(pinLayer); pinLayer = L.layerGroup().addTo(smap);
+  PINS.forEach((p,i)=>{ const ty = PIN_TYPES[p.type]||PIN_TYPES.note;
+    L.marker(p.ll, {icon:L.divIcon({className:"", html:`<div class="pm" style="width:22px;height:22px;border-radius:6px;background:${ty[1]};color:#fff;border-color:#fff">+</div>`, iconSize:null})})
+      .bindPopup(`<b>${esc(p.label)}</b><br>${ty[0]} \u00b7 placed ${esc(p.t)} by ${esc(p.by)}<br><button type="button" data-delpin="${i}" style="margin-top:6px">Remove</button>`).addTo(pinLayer); });
+}
 function postColor(k){ const t = Object.entries(TEAMS).find(([tk,t])=>t.base===k) || Object.entries(TEAMS).find(([tk])=>(SHIFTS[tk]||[]).some(x=>x[3]===k)); return t ? t[1].c : "#8c99b3"; }
 function initStaffMap(){
   const el = document.getElementById("smap"); if(!el) return;
   if(!window.L){ el.innerHTML = '<p class="sub" style="padding:16px">The map could not load. Check your connection.</p>'; return; }
   if(smap){ smap.remove(); smap = null; }
   smap = L.map(el, {scrollWheelZoom:false}); smap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(smap);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, maxNativeZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(smap);
   const mine = new Set(myShifts().map(x=>x[3]));
   Object.entries(POSTS).forEach(([k,p])=>{
     const c = postColor(k), m = mine.has(k);
@@ -388,6 +397,13 @@ function initStaffMap(){
   GUEST.stops.forEach(st=>L.marker(st.ll, {icon:L.divIcon({className:"", html:'<div class="pm stop">T</div>', iconSize:null})}).bindPopup(`<b>Trolley stop: ${esc(st.name)}</b><br>${esc(GUEST.loop)}`).addTo(guestLayer));
   L.polyline(GUEST.stops.map(x=>x.ll), {color:"#b8913a", weight:3, dashArray:"8 6", opacity:.85}).addTo(guestLayer);
   if(state.guest!==false) guestLayer.addTo(smap);
+  drawPins();
+  smap.on("click", ev=>{ if(!placing) return; placing = false; const b = document.getElementById("placeBtn"); if(b) b.textContent = "Place pin";
+    const ll = [Number(ev.latlng.lat.toFixed(6)), Number(ev.latlng.lng.toFixed(6))];
+    openSheet("New pin", `<div class="field"><label class="label" for="pinLabel">Name</label><input id="pinLabel" placeholder="e.g. Water station 2"></div>
+      <div class="field"><label class="label" for="pinType">Type</label><select id="pinType">${Object.entries(PIN_TYPES).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("")}</select></div>
+      <div class="sub">${ll[0]}, ${ll[1]}</div>
+      <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-close="1">Cancel</button><button class="btn" type="button" data-savepin="${ll.join(",")}">Save pin</button></div>`); });
   zoomTo(mine.size && [...mine].every(k=>POSTS[k].sample) ? "fort" : "all");
   setTimeout(()=>smap && smap.invalidateSize(), 60);
 }
@@ -418,6 +434,9 @@ document.addEventListener("click", ev=>{
   if(ds.showpost){ if(state.tab!=="map"){ go("map"); } showPost(ds.showpost); if(smap) smap.flyTo(POSTS[ds.showpost].ll, 17, {duration:.6}); return; }
   if(ds.flypost){ if(smap){ smap.flyTo(POSTS[ds.flypost].ll, 17, {duration:.6}); document.getElementById("smap").scrollIntoView({behavior:"smooth", block:"center"}); } return; }
   if(ds.zoom){ zoomTo(ds.zoom); return; }
+  if(ds.placepin){ placing = !placing; t.textContent = placing ? "Tap the map to place\u2026" : "Place pin"; if(placing){ toast("Zoom in, then tap where it goes"); document.getElementById("smap").scrollIntoView({behavior:"smooth", block:"center"}); } return; }
+  if(ds.savepin){ const ll = ds.savepin.split(",").map(Number); const label = (document.getElementById("pinLabel").value||"").trim() || "Pin"; PINS.push({ll, label, type:document.getElementById("pinType").value, t:now(), by:T().short}); savePins(); closeSheet(); drawPins(); toast("Pin placed. Everyone on staff sees it in the live app."); return; }
+  if(ds.delpin){ PINS.splice(Number(ds.delpin),1); savePins(); if(smap) smap.closePopup(); drawPins(); toast("Pin removed"); return; }
   if(ds.chan){ state.chan = ds.chan; render(); return; }
   if(ds.shareloc){ (state.msgs[state.chan] = state.msgs[state.chan]||[]).push({by:"You", team:state.team, t:now(), txt:"Shared location: " + POSTS[nowNext().cur[3]].name, me:true, loc:true}); store.set("st.msgs",state.msgs); render(); return; }
   if(ds.viewteam){ state.viewTeam = state.viewTeam===ds.viewteam ? null : ds.viewteam; render(); return; }
