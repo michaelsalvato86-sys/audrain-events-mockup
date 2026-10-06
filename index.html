@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0f2340">
+<meta name="theme-color" content="#003057">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,24 +16,24 @@
 <title>Audrain Events</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: phone-first app shell - sticky header with event switcher and alerts bell, one scrolling view, fixed five-tab bar. Centered 480px column on wider screens. */
 :root{
-  --navy:#0f2340; --gold:#b8913a; --gold-soft:#e9dcbc;
+  --navy:#003057; --navy-deep:#00112E; --gold:#DBAB1A; --gold-text:#8A6A0A; --gold-soft:#f3e3ad;
   --ivory:#f7f3ea; --card:#fffdf8; --ink:#14213a; --muted:#5d6678; --line:#e3dccb;
   --ok:#2f7d4f; --warn:#b26a12; --full:#a33a2b;
   --bg:var(--ivory); --fg:var(--ink); --surface:var(--card); --bar:var(--navy); --bar-fg:#f3ead6; --btn:var(--navy); --btn-fg:#f7f0de;
-  --display:"Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --display:"Agdasima", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0b1628; --fg:#ece5d4; --surface:#13223a; --line:#26375a; --muted:#9aa6bd;
-  --bar:#07101e; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark } }
+  --bg:#001229; --fg:#ece8dc; --surface:#082440; --line:#1c3d63; --gold-text:#DBAB1A; --muted:#9aa6bd;
+  --bar:#00112E; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark } }
 :root[data-theme="dark"]{
-  --bg:#0b1628; --fg:#ece5d4; --surface:#13223a; --line:#26375a; --muted:#9aa6bd;
-  --bar:#07101e; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark }
+  --bg:#001229; --fg:#ece8dc; --surface:#082440; --line:#1c3d63; --gold-text:#DBAB1A; --muted:#9aa6bd;
+  --bar:#00112E; --bar-fg:#efe4c8; --gold-soft:#e9dcbc; --btn:var(--gold); --btn-fg:#16120a; color-scheme:dark }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
@@ -44,7 +44,7 @@ a{color:inherit}
 
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bar);color:var(--bar-fg);padding:12px 16px 10px}
 .brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.mark{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.01em;min-width:0}
+.mark{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.04em;text-transform:uppercase;min-width:0;line-height:1.05}
 .mark small{display:block;font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .tools{display:flex;gap:8px;flex:0 0 auto}
 .iconbtn{position:relative;border:1px solid rgba(233,220,188,.4);background:transparent;color:var(--bar-fg);border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
@@ -57,13 +57,14 @@ a{color:inherit}
 main{flex:1;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 .view{display:flex;flex-direction:column;gap:20px}
 .notice{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
-h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;color:var(--fg)}
-h1{font-size:30px;line-height:1.08}
-h2{font-size:21px}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;color:var(--fg);text-transform:uppercase;letter-spacing:.03em}
+h1{font-size:36px;line-height:1}
+h2{font-size:24px;line-height:1.05}
 h3{font-size:17px}
-.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-text)}
+.hero .eyebrow,.banner .eyebrow,.ticket .eyebrow{color:var(--gold)}
 .hero{position:relative;border-radius:16px;overflow:hidden;color:#f7f0de;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:18px;background:var(--navy) url("photos/field.jpg") center 30%/cover}
-.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,35,64,.05) 20%,rgba(15,35,64,.92) 85%)}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,48,87,.05) 20%,rgba(0,48,87,.92) 85%)}
 .hero > *{position:relative}
 .hero h1{color:#fbf5e6}
 .hero p{margin:6px 0 0;color:#e2dac6;font-size:14px}
@@ -71,7 +72,7 @@ h3{font-size:17px}
 .stats b{display:block;font-family:var(--display);font-size:20px;color:#fbf5e6}
 .section{display:flex;flex-direction:column;gap:10px}
 .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.link{background:none;border:0;padding:0;color:var(--gold);font-weight:600;font-size:13px}
+.link{background:none;border:0;padding:0;color:var(--gold-text);font-weight:700;font-size:13px}
 
 .list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
 .row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;padding:12px;border-top:1px solid var(--line);align-items:start}
@@ -82,7 +83,7 @@ h3{font-size:17px}
 .title{font-weight:600;line-height:1.3}
 .meta{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
 .chip{font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:999px;padding:2px 8px;border:1px solid var(--line);display:inline-block}
-.chip.lange{border-color:var(--gold);color:var(--gold)}
+.chip.lange{border-color:var(--gold);color:var(--gold-text)}
 .chip.booked{background:var(--ok);border-color:var(--ok);color:#fff}
 .dot{display:inline-flex;align-items:center;gap:5px}
 .dot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
@@ -91,7 +92,7 @@ h3{font-size:17px}
 .mini{display:flex;gap:2px}
 .save{background:none;border:0;padding:3px;line-height:1;color:var(--muted);display:grid;place-items:center}
 .save svg{width:20px;height:20px}
-.save[aria-pressed="true"]{color:var(--gold)}
+.save[aria-pressed="true"]{color:var(--gold-text)}
 .buy{display:inline-block;text-decoration:none;background:var(--btn);color:var(--btn-fg);border:0;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;white-space:nowrap;text-align:center}
 .buy.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .price{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -107,7 +108,7 @@ h3{font-size:17px}
 .seg button[aria-pressed="true"]{background:var(--navy);color:#f7f0de}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 select{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:7px 10px;font-size:13px;font:inherit;font-size:13px}
-.daylabel{font-family:var(--display);font-size:18px;font-weight:700;margin:2px 0 -2px}
+.daylabel{font-family:var(--display);font-size:20px;font-weight:700;margin:2px 0 -2px;text-transform:uppercase;letter-spacing:.03em}
 
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .card{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -161,11 +162,11 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .empty{border:1px dashed var(--line);border-radius:14px;padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;color:var(--muted)}
 .empty h2{color:var(--fg)}
 
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bar);padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px))}
-.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
-.tabs button{background:none;border:0;color:#9fa9bd;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:4px 2px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--navy-deep);padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs button{background:none;border:0;color:#9fb0c6;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 2px;border-radius:8px}
 .tabs button svg{width:22px;height:22px}
-.tabs button[aria-current="page"]{color:var(--gold)}
+.tabs button[aria-current="page"]{color:var(--gold);background:rgba(255,255,255,.07)}
 
 .scrim{position:fixed;inset:0;background:rgba(5,10,20,.55);z-index:9;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--surface);color:var(--fg);width:100%;max-width:480px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
@@ -179,9 +180,9 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fbf5e6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
 .badgecard{align-self:center;width:230px;max-width:100%;background:#fffdf8;color:#14213a;border-radius:14px;border:1px solid var(--line);box-shadow:0 6px 20px rgba(10,20,40,.18);overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center}
 .badgecard .slot{width:46px;height:8px;border-radius:6px;background:#d8d1c0;margin:10px 0 6px}
-.badgecard .band{width:100%;background:#0f2340;color:#e9dcbc;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:6px}
+.badgecard .band{width:100%;background:#003057;color:#e9dcbc;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:6px}
 .badgecard .nm{font-family:var(--display);font-size:22px;font-weight:700;margin:12px 10px 2px;color:#14213a}
-.badgecard .tier{font-size:12px;font-weight:700;color:#8a6a24;letter-spacing:.08em;text-transform:uppercase}
+.badgecard .tier{font-size:12px;font-weight:700;color:#8A6A0A;letter-spacing:.08em;text-transform:uppercase}
 .badgecard canvas{width:120px;height:120px;image-rendering:pixelated;margin:10px 0 4px}
 .badgecard .sn{font-family:var(--mono);font-size:11.5px;color:#14213a;margin-bottom:12px}
 .field{display:flex;flex-direction:column;gap:4px}
@@ -189,9 +190,9 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 #lmap{height:380px;width:100%;background:#dfe7ec}
 .leaflet-container{font-family:var(--body)}
 .mk{display:grid;place-items:center;border-radius:50%;font:700 12px/1 var(--body);color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.mk-venue{width:28px;height:28px;background:#0f2340;border-color:#b8913a}
+.mk-venue{width:28px;height:28px;background:#003057;border-color:#DBAB1A}
 .mk-park{width:26px;height:26px;border-radius:6px;background:#2f7d4f}
-.mk-stop{width:18px;height:18px;background:#b8913a;font-size:9px}
+.mk-stop{width:18px;height:18px;background:#DBAB1A;font-size:9px}
 .mk-ferry{width:24px;height:24px;background:#1f78a8;font-size:10px}
 .mk-approx{border-style:dashed}
 .leaflet-popup-content{margin:10px 12px;font-size:13px;line-height:1.4}
@@ -237,7 +238,7 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .mk-closure{width:24px;height:24px;background:#a33a2b}
 .mk-info{width:24px;height:24px;background:#3a6fb0}
 .mk-post{width:24px;height:24px;background:#7a4fa0}
-.leaflet-marker-draggable .mk{box-shadow:0 0 0 3px rgba(184,145,58,.65),0 2px 6px rgba(0,0,0,.4)}
+.leaflet-marker-draggable .mk{box-shadow:0 0 0 3px rgba(219,171,26,.65),0 2px 6px rgba(0,0,0,.4)}
 .daychk{display:flex;gap:6px;flex-wrap:wrap}
 .daychk label{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;display:flex;gap:5px;align-items:center}
 .merch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -246,8 +247,32 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .mi .b{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
 .mi .t{font-size:13px;font-weight:600;line-height:1.3}
 .mi .p{font-family:var(--display);font-size:16px}
-.mi .o{font-size:12px;font-weight:700;color:var(--gold)}
+.mi .o{font-size:12px;font-weight:700;color:var(--gold-text)}
 .shopall{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--gold);border-radius:12px;padding:12px;text-decoration:none;color:var(--fg);background:var(--surface)}
+.banner{position:relative;border-radius:14px;overflow:hidden;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;background:#003057 center 35%/cover}
+.banner::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,48,87,.30) 0%,rgba(0,17,46,.92) 88%)}
+.banner > *{position:relative}
+.banner h1{color:#fff;font-size:44px}
+.banner p{color:#dfe7f0;margin:4px 0 0;font-size:14px}
+.mrow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:14px 12px;background:none;border:0;border-top:1px solid var(--line);text-align:left}
+.mrow:first-child{border-top:0}
+.mrow .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--navy);color:var(--gold)}
+.mrow .ic svg{width:19px;height:19px}
+.mrow .t{font-family:var(--display);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.03em}
+.mrow .chev{color:var(--muted);font-size:20px}
+.faq{display:flex;flex-direction:column;gap:8px}
+.faq h3{font-size:19px;margin-top:6px}
+.faq p,.faq ul{margin:0}
+.faq ul{padding-left:20px;display:flex;flex-direction:column;gap:3px}
+.faq a{color:var(--gold-text);font-weight:700}
+.tbc{color:var(--muted);font-style:italic}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;font-size:13px}
+.lg{display:flex;align-items:center;gap:8px;min-width:0}
+.lg .mk{flex:0 0 auto;font-size:11px}
+.mk-svc{width:26px;height:26px;background:#003057;border-color:#DBAB1A}
+.mk-util{width:26px;height:26px;background:#1f78a8}
+.mk-aid{width:26px;height:26px;background:#a33a2b}
+.mk-zone{width:26px;height:26px;background:#DBAB1A;color:#00112E;border-color:#00112E}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 <style>/* Leaflet 1.9.4 */
@@ -273,12 +298,11 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 
   <div class="tabs">
     <nav aria-label="App sections">
-      <button type="button" data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
-      <button type="button" data-tab="itinerary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Itinerary</button>
-      <button type="button" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Map</button>
+      <button type="button" data-tab="itinerary" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Schedule</button>
+      <button type="button" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Map</button>
       <button type="button" data-tab="tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg>Tickets</button>
-      <button type="button" data-tab="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Shop</button>
-      <button type="button" data-tab="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>Photos</button>
+      <button type="button" data-tab="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alerts</button>
+      <button type="button" data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>
     </nav>
   </div>
 </div>
@@ -396,10 +420,10 @@ const STOPS = {
   faxon: {name:"Faxon"}, hotels: {name:"Hotels"}, parking: {name:"Parking"}
 };
 const TROLLEY = [
-  {d:"2026-10-01", s:"11:00", e:"15:00", stops:["belcourt","rough"], note:"For the Hat Luncheon", c:"#b8913a"},
+  {d:"2026-10-01", s:"11:00", e:"15:00", stops:["belcourt","rough"], note:"For the Hat Luncheon", c:"#DBAB1A"},
   {d:"2026-10-01", s:"12:00", e:"17:00", stops:["harborparking","eastons","museum","redparrot"], c:"#8a5a9e"},
   {d:"2026-10-01", s:"16:30", e:"21:00", stops:["harborparking","faxon","eastons","faxon"], c:"#c0603a"},
-  {d:"2026-10-02", s:"07:00", e:"19:00", stops:["brenton","rough"], c:"#b8913a"},
+  {d:"2026-10-02", s:"07:00", e:"19:00", stops:["brenton","rough"], c:"#DBAB1A"},
   {d:"2026-10-02", s:"10:00", e:"19:00", stops:["harborparking","eastons","museum","rough"], c:"#8a5a9e"},
   {d:"2026-10-02", s:"18:30", e:"23:30", stops:["harborparking","hotels","parking","reef"], note:"Evening loop for Whisky by the Water", c:"#c0603a"},
   {d:"2026-10-03", s:"09:00", e:"17:00", stops:["harborparking","eastons","museum","fort"], c:"#8a5a9e"},
@@ -436,8 +460,8 @@ const START_WALLET = [
 ];
 const state = {
   event: store.get("ae.event","motorweek"),
-  tab: store.get("ae.tab","home"),
-  day: DAYS[0], venue:"all", itinMode: "mine",
+  tab: (t=>({home:"itinerary"})[t]||t)(store.get("ae.tab","itinerary")),
+  day: DAYS[0], venue:"all", itinMode: "all", mapMode: "getting", infoTab: "faq",
   saved: new Set(store.get("ae.saved",["main","supercar","cars-coffee"]).filter(id=>EVENTS.some(e=>e.id===id))),
   wallet: store.get("ae.wallet", START_WALLET),
   open: 0,
@@ -459,6 +483,7 @@ const saveWallet = () => store.set("ae.wallet", state.wallet);
 let serialN = store.get("ae.serialN", 5200);
 const newSerial = code => { serialN += 7; store.set("ae.serialN", serialN); return `AC27-${code}-${String(serialN).padStart(6,"0")}`; };
 
+const HEART = on => `<svg viewBox="0 0 24 24" fill="${on?"var(--gold)":"none"}" stroke="${on?"var(--gold-text)":"currentColor"}" stroke-width="1.9"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.8 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.4 0 5.5 3.4 4.4 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>`;
 const STAR = on => `<svg viewBox="0 0 24 24" fill="${on?"currentColor":"none"}" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
 
 function row(e, showDay){
@@ -479,7 +504,7 @@ function row(e, showDay){
       <div class="meta">${b ? `<span class="chip booked">Booked</span>` : ""}<span>${esc(e.note || v.short)}</span>${e.e ? `<span>${endLabel(e)}</span>` : ""}${e.kind==="ticketed" ? `<span class="dot ${c[0]}">${c[1]}</span>` : ""}</div>
     </div>
     <div class="actions">
-      <button class="save" type="button" data-save="${e.id}" aria-pressed="${on}" aria-label="${on?"Remove from":"Add to"} my itinerary">${STAR(on)}</button>
+      <button class="save" type="button" data-save="${e.id}" aria-pressed="${on}" aria-label="${on?"Remove from":"Add to"} my itinerary">${HEART(on)}</button>
       ${btn}
       <span class="price">${priceLabel(e)}</span>
     </div>
@@ -495,46 +520,49 @@ function winterfest(){
   </div></div>`;
 }
 
+const tabOf = t => ["shop","photos","info","partners","more"].includes(t) ? "more" : t;
+const banner = (title, img, sub, eyebrow) => `<section class="banner" style="background-image:url('photos/${img}.jpg')">${eyebrow?`<div class="eyebrow">${eyebrow}</div>`:""}<h1>${title}</h1>${sub?`<p>${sub}</p>`:""}</section>`;
+const PARTNERS = [["A. Lange & S\u00f6hne","Presents the Audrain Newport Concours d'Elegance","main"],["Bank of America","Presents The Gathering","gathering"],["Broad Arrow","Presents the Casino Royale Gala; Broad Arrow Auctions","gala"],["The Macallan","Hosts Whisky by the Water","whisky"]];
+function buyBlock(){
+  return `<section class="section"><div class="section-head"><h2>Buy</h2><button class="link" type="button" data-shop="1">All tickets</button></div>
+    <div class="cards">${PASSES.map(p=>`<div class="card"><div class="t">${p.t}</div><div class="d">${p.d}</div><div class="p">${money(p.price)}</div><button class="buy" type="button" data-buypass="${p.id}">Buy</button></div>`).join("")}</div>
+    <div class="section-head"><h3>Add to your pass</h3></div>
+    <div class="cards">${ADDONS.map(a=>`<div class="card"><div class="t">${a.t}</div><div class="d">${a.d}</div><div class="price">${a.use} \u00b7 2027 price TBA</div><button class="buy" type="button" data-addon="${a.id}">Add</button></div>`).join("")}</div></section>`;
+}
+function infoBody(){
+  const t = state.infoTab, hm = x => { const f = fmtTime(x); return f.hm + " " + f.ap; }, dl = d => { const p = dayParts(d); return `${p.wd} ${p.mon} ${p.n}`; };
+  if(t==="faq"){
+    const wc = EVENTS.filter(e=>e.title==="Will Call").map(e=>`<li>${dl(e.d)}: ${hm(e.t)} to ${hm(e.e)}</li>`).join("");
+    return `<div class="faq">
+      <h3>When is it?</h3><p>The 2026 week ran Wednesday, September 30 to Sunday, October 4. The Concours d'Elegance was Sunday, October 4, 8:30 AM to 4:00 PM at Fort Adams State Park. 2027 dates are to be announced.</p>
+      <h3>Where do I pick up tickets?</h3><p>Will Call is at the Audrain Automobile Museum, 222 Bellevue Ave:</p><ul>${wc}</ul><p>Tickets bought in the app live on your phone. Website buyers get a printed, serialized badge at check-in.</p>
+      <h3>Is Fort Adams open to the public?</h3><p>RI DEM listed the park north of Monroe Drive as closed to the public October 2 to 5, 2026 for the Concours; the rest of the park stayed open (<a href="https://riparks.ri.gov/parks/fort-adams-state-park" target="_blank" rel="noopener">riparks.ri.gov</a>).</p>
+      <h3>What should I wear?</h3><p>See Audrain's style guidance on <a href="https://www.audrainconcours.com/concours-style-fashion" target="_blank" rel="noopener">audrainconcours.com</a>.</p>
+      <h3>Bags, re-entry, pets and weather</h3><p class="tbc">To be confirmed by Audrain operations.</p></div>`;
+  }
+  if(t==="travel"){
+    const lots = LOTS.map(l=>`<li><b>${esc(l.name)}</b>, ${esc(l.addr)}: ${Object.entries(l.days).map(([d,h])=>`${dayParts(d).wd} ${hm(h[0])} to ${hm(h[1])}`).join("; ")}</li>`).join("");
+    const loops = MAPDAYS.map(d=>{ const ts = TROLLEY.filter(x=>x.d===d); return ts.length ? `<li><b>${dl(d)}</b>: ${ts.map(x=>`${hm(x.s)} to ${hm(x.e)}, ${x.stops.map(k=>esc(STOPS[k].name)).join(" \u2192 ")}`).join("; ")}</li>` : ""; }).join("");
+    return `<div class="faq">
+      <h3>Parking</h3><p>Free event lots, first come:</p><ul>${lots}</ul>
+      <h3>Trolley</h3><p>Continuous loops (per-stop times weren't published):</p><ul>${loops}</ul>
+      <h3>Ferry</h3><p>Saturday and Sunday from Jamestown, Ann Street Pier and Perrotti Park. Tickets through ${FERRY.seller}; discount code <b>${FERRY.code}</b>.</p>
+      <h3>Chauffeured transportation</h3><p>Audrain's transportation partner AOT Global offers airport transfers, point-to-point, hourly and group service.</p>
+      <h3>Hotels and dining</h3><p><a href="https://www.audrainconcours.com/partner-hotels" target="_blank" rel="noopener">Partner hotels</a> \u00b7 <a href="https://www.audrainconcours.com/where-to-dine" target="_blank" rel="noopener">Where to dine</a></p>
+      <button class="buy" type="button" data-gomap="getting" style="align-self:flex-start">Open the Getting here map</button>
+      <p class="price">Source: audrainconcours.com/parking-transportation (2026).</p></div>`;
+  }
+  return `<div class="faq">
+    <h3>Accessibility</h3><p class="tbc">Details on ADA parking, accessible routes, viewing areas and shuttle access will come from Audrain operations.</p>
+    <h3>In the app</h3><ul><li>Buttons and map pins carry labels for screen readers.</li><li>ADA viewing areas, accessible restrooms and first aid appear on the Event grounds map once Ops places them.</li><li>Alerts can tell you about weather and schedule changes.</li></ul></div>`;
+}
 const views = {
-  home(){
-    const next = EVENTS.filter(e=>state.saved.has(e.id)||booked(e.id)).slice(0,3);
-    return `<div class="view">
-      <div class="notice">Mockup. Full 2026 Week at a Glance as sample content; 2027 dates to be announced. Availability shown is illustrative.</div>
-      <section class="hero">
-        <div class="eyebrow">Newport, Rhode Island</div>
-        <h1>Audrain Newport Concours &amp; Motor Week</h1>
-        <p>A week of cars, conversation and Newport, ending on the lawn at Fort Adams.</p>
-        <div class="stats"><div><b>${EVENTS.filter(e=>e.kind!=="info").length}</b>listings</div><div><b>${Object.keys(VENUES).length}</b>venues</div><div><b>${DAYS.length}</b>days</div></div>
-      </section>
-      <button class="pay" type="button" data-shop="1" style="background:var(--btn);color:var(--btn-fg)">Buy tickets</button>
-      <section class="section">
-        <div class="section-head"><h2>Your next events</h2><button class="link" type="button" data-go="itinerary">Full itinerary</button></div>
-        ${next.length ? `<div class="list">${next.map(e=>row(e,true)).join("")}</div>` : `<div class="notice">Star any event to add it to your itinerary.</div>`}
-      </section>
-      <section class="section">
-        <div class="section-head"><h2>Passes</h2></div>
-        <div class="cards">${PASSES.map(p=>`<div class="card"><div class="t">${p.t}</div><div class="d">${p.d}</div><div class="p">${money(p.price)}</div><button class="buy" type="button" data-buypass="${p.id}">Buy</button></div>`).join("")}</div>
-      </section>
-      <section class="section">
-        <div class="section-head"><h2>Add to your pass</h2></div>
-        <div class="cards">${ADDONS.map(a=>`<div class="card"><div class="t">${a.t}</div><div class="d">${a.d}</div><div class="price">${a.use} · 2027 price TBA</div><button class="buy" type="button" data-addon="${a.id}">Add</button></div>`).join("")}</div>
-      </section>
-      <section class="section">
-        <div class="section-head"><h2>Concours merch</h2><button class="link" type="button" data-go="shop">Shop all ${PRODUCTS.length}</button></div>
-        <div class="pgrid">${PRODUCTS.slice(0,4).map(p=>`<button type="button" class="pc" data-product="${p.h}"><img src="${p.img}" alt="" loading="lazy"><div class="b"><div class="t">${esc(p.t)}</div><div class="p">${money(minPrice(p))}</div></div></button>`).join("")}</div>
-      </section>
-      <section class="section">
-        <div class="section-head"><h2>Featured photos</h2><button class="link" type="button" data-go="photos">Share yours</button></div>
-        <div class="feat">${FEATURED.slice(0,2).map(f=>`<figure class="ph"><img src="${f.src}" alt="${esc(f.cap)}" loading="lazy"><figcaption>${esc(f.cap)}</figcaption></figure>`).join("")}</div>
-      </section>
-    </div>`;
-  },
   itinerary(){
     let body;
     if(state.itinMode==="mine"){
       const mine = EVENTS.filter(e=>state.saved.has(e.id)||booked(e.id));
       body = mine.length ? DAYS.filter(d=>mine.some(e=>e.d===d)).map(d=>`<div class="daylabel">${dayParts(d).long}</div><div class="list">${mine.filter(e=>e.d===d).map(e=>row(e,false)).join("")}</div>`).join("")
-        : `<div class="empty"><h2>Your itinerary is empty</h2><p>Star events in the full schedule, or buy a ticket, and they appear here by day with reminders.</p><button class="buy" type="button" data-mode="all">Browse all events</button></div>`;
+        : `<div class="empty"><h2>Nothing saved yet</h2><p>Tap the heart on any event, or buy a ticket, and it appears here by day with reminders.</p><button class="buy" type="button" data-mode="all">Browse the full schedule</button></div>`;
     } else {
       let list = EVENTS.filter(e=>e.d===state.day);
       if(state.venue!=="all") list = list.filter(e=>e.v===state.venue);
@@ -543,18 +571,38 @@ const views = {
       ${list.length ? `<div class="list">${list.map(e=>row(e,false)).join("")}</div>` : `<div class="empty"><p>No events at this venue on this day.</p></div>`}`;
     }
     return `<div class="view">
-      <div class="seg" role="group" aria-label="Itinerary view"><button type="button" data-mode="mine" aria-pressed="${state.itinMode==="mine"}">My itinerary</button><button type="button" data-mode="all" aria-pressed="${state.itinMode==="all"}">Full schedule</button></div>
+      <section class="hero">
+        <div class="eyebrow">Newport, Rhode Island</div>
+        <h1>Audrain Newport Concours &amp; Motor Week</h1>
+        <p>A week of cars, conversation and Newport, ending on the lawn at Fort Adams.</p>
+        <div class="stats"><div><b>${EVENTS.filter(e=>e.kind!=="info").length}</b>listings</div><div><b>${Object.keys(VENUES).length}</b>venues</div><div><b>${DAYS.length}</b>days</div></div>
+      </section>
+      <button class="pay" type="button" data-shop="1" style="background:var(--btn);color:var(--btn-fg)">Buy tickets</button>
+      <div class="notice">Mockup. Full 2026 Week at a Glance as sample content; 2027 dates to be announced. Availability shown is illustrative.</div>
+      <div class="seg" role="group" aria-label="Schedule view"><button type="button" data-mode="all" aria-pressed="${state.itinMode==="all"}">Full schedule</button><button type="button" data-mode="mine" aria-pressed="${state.itinMode==="mine"}">\u2665 My week</button></div>
       ${body}
     </div>`;
   },
   map(){
+    const seg = `<div class="seg" role="group" aria-label="Map view"><button type="button" data-mapmode="grounds" aria-pressed="${state.mapMode==="grounds"}">Event grounds</button><button type="button" data-mapmode="getting" aria-pressed="${state.mapMode==="getting"}">Getting here</button></div>`;
+    if(state.mapMode==="grounds"){
+      const items = edits().added.filter(a=>ITEM_TYPES[a.type] && ITEM_TYPES[a.type][3]==="grounds");
+      const legend = Object.entries(ITEM_TYPES).filter(([k,v])=>v[3]==="grounds").map(([k,v])=>{ const n = items.filter(a=>a.type===k).length; return `<span class="lg"><span class="mk ${v[1]}">${v[2]}</span><span>${v[0]}${n?` (${n})`:""}</span></span>`; }).join("");
+      return `<div class="view">${banner("Map","lawn","Fort Adams State Park, Newport")}${seg}${isOps() ? editorBar() : ""}
+        ${items.length ? "" : `<div class="notice">Site plan pins are placed by Ops. Once the Fort Adams site plan is set, box office, restrooms, first aid, show field zones, the awards stage and more appear here.</div>`}
+        <div class="mapbox"><div id="lmap" role="application" aria-label="Map of the event grounds at Fort Adams"></div></div>
+        <div class="price" id="mapNote">Pinch to zoom in to street level.</div>
+        <section class="section"><div class="section-head"><h2>Legend</h2><span class="price">Numbers: services \u00b7 letters: zones</span></div><div class="legend">${legend}</div></section>
+        <div class="notice">RI DEM listed the park north of Monroe Drive as closed to the public October 2 to 5, 2026 for the Concours. 2027 to be confirmed.</div>
+      </div>`;
+    }
     const D = state.mapDay, dp = dayParts(D);
     const lots = LOTS.filter(l=>l.days[D]), loops = TROLLEY.filter(t=>t.d===D), ferry = FERRY.days.includes(D);
     const lay = (k,label,col) => `<button type="button" data-layer="${k}" aria-pressed="${state.layers[k]}"><i style="background:${col}"></i>${label}</button>`;
-    return `<div class="view">
+    return `<div class="view">${banner("Map","lawn","Getting to Fort Adams and the town venues")}${seg}${isOps() ? editorBar() : ""}
       <div class="days" role="group" aria-label="Day">${MAPDAYS.map(d=>{const p=dayParts(d);return `<button type="button" data-mapday="${d}" aria-pressed="${d===D}"><span>${p.wd}</span><b>${p.n}</b><span>${p.mon}</span></button>`}).join("")}</div>
-      ${isOps() ? editorBar() : ""}
-      <div class="layers" role="group" aria-label="Map layers">${lay("venues","Venues","#0f2340")}${lay("parking","Parking","#2f7d4f")}${lay("trolley","Trolley","#b8913a")}${lay("ferry","Ferry","#1f78a8")}</div>
+      
+      <div class="layers" role="group" aria-label="Map layers">${lay("venues","Venues","#003057")}${lay("parking","Parking","#2f7d4f")}${lay("trolley","Trolley","#DBAB1A")}${lay("ferry","Ferry","#1f78a8")}</div>
       <a class="buy ghost" href="https://www.google.com/maps/@41.4815,-71.3150,14z/data=!5m1!1e1" target="_blank" rel="noopener" style="align-self:flex-start">Live traffic in Google Maps</a>
       <div class="mapbox"><div id="lmap" role="application" aria-label="Map of Newport event venues, parking and trolley stops"></div></div>
       <div class="price" id="mapNote">Pinch to zoom in to street level. Trolley lines join stops in order and do not trace exact streets. Dashed outlines are approximate locations.</div>
@@ -569,22 +617,11 @@ const views = {
       <div id="venueCard" class="venue"><div class="eyebrow">Venues</div><div>Tap a pin for what's on there and directions.</div></div>
     </div>`;
   },
-  shop(){
-    const cats = ["all", ...new Set(PRODUCTS.map(catOf))];
-    const list = PRODUCTS.filter(p=>state.cat==="all" || catOf(p)===state.cat);
-    const n = state.bag.reduce((a,b)=>a+b.q,0);
-    return `<div class="view">
-      <div class="shophead"><div><div class="eyebrow">Official store</div><h2>Concours &amp; Motor Week</h2></div><button class="buy" type="button" data-bag="1">Bag${n?` (${n})`:""}</button></div>
-      <div class="cats" role="group" aria-label="Category">${cats.map(c=>`<button type="button" data-cat="${c}" aria-pressed="${c===state.cat}">${c==="all"?"All":catName(c)}</button>`).join("")}</div>
-      <div class="pgrid">${list.map((p,i)=>`<button type="button" class="pc" data-product="${p.h}"><img src="${p.img}" alt="" loading="lazy"><div class="b"><div class="t">${esc(p.t)}</div><div class="p">${money(minPrice(p))}</div></div></button>`).join("")}</div>
-      <a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Can't find it?</b><br><span class="price">Browse the full online store.</span></span><span class="buy">Store</span></a>
-      <div class="price">Checkout runs on the Audrain Shopify store. ${PRODUCTS.length} in-stock items as of Oct 3, 2026.</div>
-    </div>`;
-  },
   tickets(){
-    if(!state.wallet.length) return `<div class="view"><div class="empty"><h2>No tickets yet</h2><p>Tickets and add-ons you buy appear here, ready to scan.</p><button class="buy" type="button" data-shop="1">Buy tickets</button></div></div>`;
+    if(!state.wallet.length) return `<div class="view">${banner("Tickets","alfa","Passes, add-ons and your scannable tickets")}${buyBlock()}<div class="empty"><h2>No tickets yet</h2><p>Tickets and add-ons you buy appear here, ready to scan.</p></div></div>`;
     const i = Math.min(state.open, state.wallet.length-1), w = state.wallet[i];
-    return `<div class="view">
+    return `<div class="view">${banner("Tickets","alfa","Passes, add-ons and your scannable tickets")}${buyBlock()}
+      <h2>My tickets</h2>
       <div class="ticket">
         <div class="eyebrow">${esc(w.sub)}</div>
         <div class="tn">${esc(w.label)}</div>
@@ -594,7 +631,7 @@ const views = {
         <div class="walletbtns"><span>Add to Apple Wallet</span><span>Add to Google Wallet</span></div>
       </div>
       <section class="section">
-        <div class="section-head"><h2>My tickets</h2><button class="link" type="button" data-shop="1">Buy more tickets</button></div>
+        <div class="section-head"><h3>All my tickets</h3><button class="link" type="button" data-shop="1">Buy more</button></div>
         <div class="wallet">${state.wallet.map((x,j)=>`<button type="button" class="tk" data-open="${j}" aria-pressed="${j===i}"><div><div class="t">${esc(x.label)}</div><div class="s">${x.serial}</div></div><span class="price">${esc(x.sub.split(" · ")[0])}</span></button>`).join("")}</div>
       </section>
       <button class="buy ghost" type="button" data-link="1">Bought on the website? Link your order</button>
@@ -605,8 +642,65 @@ const views = {
       </section>
     </div>`;
   },
+  alerts(){
+    state.seen = true; store.set("ae.seen", true);
+    const P = state.prefs, sw = (k,label,sub) => `<div class="pref"><div><div class="title">${label}</div><div class="price">${sub}</div></div><input type="checkbox" class="sw" id="pref-${k}" data-pref="${k}" ${P[k]?"checked":""} aria-label="${label}"></div>`;
+    const BELL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/></svg>`;
+    return `<div class="view">${banner("Alerts","stage","Reminders, schedule changes and safety notices")}
+      <div class="list">
+        <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Supercar Concours starts in 30 minutes</div><div class="w">Fort Adams \u00b7 sample alert</div></div></div>
+        <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Room change: Pegaso seminar moves to the Casino Theatre balcony</div><div class="w">Sent to everyone with this event saved \u00b7 sample alert</div></div></div>
+        <div class="alert"><div class="ic">${BELL}</div><div><div class="title">Seats opened for 'Cars' at 20</div><div class="w">Waitlist offer \u00b7 claim within 20 minutes \u00b7 sample alert</div></div></div>
+      </div>
+      <section class="section"><h2>Settings</h2><div>
+        ${sw("remind","Event reminders","30 minutes before anything you've saved, with travel time")}
+        ${sw("changes","Schedule changes","Time, venue or weather changes to your events")}
+        ${sw("weather","Weather and safety","Always sent during the event")}
+        ${sw("offers","Offers and on-sale news","New events, waitlist seats, partner offers")}
+      </div></section>
+      <button class="buy" type="button" data-notifon="1" style="padding:11px">Turn on phone notifications</button>
+      <p class="price">Sample alerts shown. Notifications work once the app is installed on your phone.</p>
+    </div>`;
+  },
+  more(){
+    const ic = d => `<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${d}</svg></span>`;
+    const R = (attr, icon, t, sub) => `<button type="button" class="mrow" ${attr}>${ic(icon)}<span><span class="t">${t}</span><br><span class="price">${sub}</span></span><span class="chev">\u203a</span></button>`;
+    const a = state.account;
+    return `<div class="view">${banner("More","wine","Info, shop, photos and your account")}
+      <div class="list">
+        ${R('data-tab="info"','<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',"Info","FAQ, travel and accessibility")}
+        ${R('data-tab="shop"','<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',"Shop",`${PRODUCTS.length} items from the official store`)}
+        ${R('data-tab="photos"','<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/>',"Photos","Share yours, see the featured gallery")}
+        ${R('data-acct="1"','<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', a ? "Account" : "Sign in", a ? esc(a.name) + " \u00b7 " + ROLE_NAME[a.role] : "Apple, Google or email code")}
+        ${R('data-tab="partners"','<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',"Partners","Presenting partners")}
+        ${R('data-install="1"','<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',"Install the app","Add it to your home screen")}
+      </div></div>`;
+  },
+  info(){
+    return `<div class="view">${banner("Info","hilltop","Know before you go")}
+      <div class="notice">2026 information. To be confirmed for 2027.</div>
+      <div class="seg" role="group" aria-label="Info section"><button type="button" data-info="faq" aria-pressed="${state.infoTab==="faq"}">FAQ</button><button type="button" data-info="travel" aria-pressed="${state.infoTab==="travel"}">Travel</button><button type="button" data-info="access" aria-pressed="${state.infoTab==="access"}">Accessibility</button></div>
+      ${infoBody()}</div>`;
+  },
+  partners(){
+    return `<div class="view">${banner("Partners","field","Presenting partners of the 2026 week")}
+      <div class="list">${PARTNERS.map(p=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="info"><div class="title">${esc(p[0])}</div><div class="meta">${esc(p[1])}</div></div><div class="actions"><button class="buy ghost" type="button" data-gotoevent="${p[2]}">See event</button></div></div>`).join("")}</div>
+      <div class="notice">Presenting partners as listed on the 2026 Week at a Glance.</div></div>`;
+  },
+  shop(){
+    const cats = ["all", ...new Set(PRODUCTS.map(catOf))];
+    const list = PRODUCTS.filter(p=>state.cat==="all" || catOf(p)===state.cat);
+    const n = state.bag.reduce((a,b)=>a+b.q,0);
+    return `<div class="view">${banner("Shop","alfa","The official Concours & Motor Week store")}
+      <div class="shophead"><div><div class="eyebrow">Official store</div><h2>Concours &amp; Motor Week</h2></div><button class="buy" type="button" data-bag="1">Bag${n?` (${n})`:""}</button></div>
+      <div class="cats" role="group" aria-label="Category">${cats.map(c=>`<button type="button" data-cat="${c}" aria-pressed="${c===state.cat}">${c==="all"?"All":catName(c)}</button>`).join("")}</div>
+      <div class="pgrid">${list.map((p,i)=>`<button type="button" class="pc" data-product="${p.h}"><img src="${p.img}" alt="" loading="lazy"><div class="b"><div class="t">${esc(p.t)}</div><div class="p">${money(minPrice(p))}</div></div></button>`).join("")}</div>
+      <a class="shopall" href="${SHOP}" target="_blank" rel="noopener"><span><b>Can't find it?</b><br><span class="price">Browse the full online store.</span></span><span class="buy">Store</span></a>
+      <div class="price">Checkout runs on the Audrain Shopify store. ${PRODUCTS.length} in-stock items as of Oct 3, 2026.</div>
+    </div>`;
+  },
   photos(){
-    return `<div class="view">
+    return `<div class="view">${banner("Photos","stage","Share your week")}
       <div class="upload">
         <h2>Share your photos</h2>
         <p class="price">The best photos from the week are featured here and on Audrain's channels.</p>
@@ -627,7 +721,7 @@ const views = {
 function render(){
   
   
-  document.querySelectorAll(".tabs button").forEach(b=>{ if(b.dataset.tab===state.tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  document.querySelectorAll(".tabs button").forEach(b=>{ if(b.dataset.tab===tabOf(state.tab)) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   $("#alertCount").hidden = state.seen;
   $("#main").innerHTML = views[state.tab]();
   stopQR(); if(state.tab==="tickets" && state.wallet.length) startQR();
@@ -644,9 +738,9 @@ function drawQR(){
   const x = c.getContext("2d"), N = 29, slot = Math.floor(Date.now()/15000);
   let s = (slot * 2654435761 + [...w.serial].reduce((a,ch)=>a*31+ch.charCodeAt(0)>>>0,7)) >>> 0;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
-  x.fillStyle = "#fff"; x.fillRect(0,0,N,N); x.fillStyle = "#0f2340";
+  x.fillStyle = "#fff"; x.fillRect(0,0,N,N); x.fillStyle = "#003057";
   for(let i=0;i<N;i++) for(let j=0;j<N;j++){ const inF = (i<8&&j<8)||(i>N-9&&j<8)||(i<8&&j>N-9); if(!inF && rnd()>.52) x.fillRect(i,j,1,1); }
-  const finder = (fx,fy) => { x.fillStyle="#0f2340"; x.fillRect(fx,fy,7,7); x.fillStyle="#fff"; x.fillRect(fx+1,fy+1,5,5); x.fillStyle="#0f2340"; x.fillRect(fx+2,fy+2,3,3); };
+  const finder = (fx,fy) => { x.fillStyle="#003057"; x.fillRect(fx,fy,7,7); x.fillStyle="#fff"; x.fillRect(fx+1,fy+1,5,5); x.fillStyle="#003057"; x.fillRect(fx+2,fy+2,3,3); };
   finder(0,0); finder(N-7,0); finder(0,N-7);
   const left = 15 - Math.floor((Date.now()%15000)/1000), t = document.getElementById("qrTimer");
   if(t) t.textContent = `Code refreshes in ${left}s. Screenshots will not scan.`;
@@ -739,7 +833,8 @@ async function enableNotifications(){
 let lmap = null, mapLayers = {};
 function mkIcon(cls, txt, approx){ return L.divIcon({className:"", html:`<div class="mk ${cls}${approx?" mk-approx":""}">${txt||""}</div>`, iconSize:null}); }
 function gmaps(q){ return "https://maps.google.com/?q=" + encodeURIComponent(q); }
-const ITEM_TYPES = {stop:["Trolley stop","mk-stop","T","trolley"], parking:["Parking","mk-park","P","parking"], landing:["Ferry or shuttle landing","mk-ferry","F","ferry"], closure:["Road closure","mk-closure","\u00d7","extra"], info:["Info point","mk-info","i","extra"], post:["Staff post","mk-post","S","extra"]};
+const ITEM_TYPES = {boxoffice:["Box office / Will Call","mk-svc","1","grounds"], infobooth:["Info booth","mk-svc","2","grounds"], food:["Food & bar","mk-svc","3","grounds"], merch:["Merch","mk-svc","4","grounds"], ada:["ADA viewing","mk-svc","5","grounds"], restroom:["Restrooms","mk-svc","6","grounds"], water:["Water","mk-util","7","grounds"], charging:["Charging","mk-util","8","grounds"], firstaid:["First aid","mk-aid","+","grounds"], zone:["Show field zone","mk-zone","A","grounds"], stage:["Awards stage","mk-zone","S","grounds"], vip:["VIP pavilion","mk-zone","V","grounds"], sponsor:["Sponsor display","mk-zone","D","grounds"], stop:["Trolley stop","mk-stop","T","trolley"], parking:["Parking","mk-park","P","parking"], landing:["Ferry or shuttle landing","mk-ferry","F","ferry"], closure:["Road closure","mk-closure","\u00d7","extra"], info:["Info point","mk-info","i","extra"], post:["Staff post","mk-post","S","extra"]};
+function glyph(a){ if(a.type==="zone"){ const m = (a.name||"").match(/\b([A-Z])\b/); return m ? m[1] : "A"; } return ITEM_TYPES[a.type][2]; }
 function edits(){ return state.edit && state.mapDraft ? state.mapDraft : state.mapPub; }
 function posOf(key, ll){ const m = edits().moved[key]; return m || ll; }
 function gone(key){ return edits().removed.includes(key); }
@@ -761,7 +856,7 @@ function initMap(){
   const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, maxNativeZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
   tiles.on("tileload", ()=>ok++); tiles.on("tileerror", ()=>{ bad++; if(bad>6 && !ok){ const n = document.getElementById("mapNote"); if(n) n.textContent = "Street tiles are blocked in this preview. They load in the installed app; pins, parking and trolley lines still show."; } });
   const D = state.mapDay, pts = [];
-  mapLayers = {venues:L.layerGroup(), parking:L.layerGroup(), trolley:L.layerGroup(), ferry:L.layerGroup(), extra:L.layerGroup()};
+  mapLayers = {venues:L.layerGroup(), parking:L.layerGroup(), trolley:L.layerGroup(), ferry:L.layerGroup(), extra:L.layerGroup(), grounds:L.layerGroup()};
   Object.entries(VENUES).forEach(([k,v])=>{
     const n = EVENTS.filter(e=>e.v===k && e.d===D).length;
     const m = placeMarker("v:"+k, v.ll, mkIcon("mk-venue", n || "", v.approx), v.name, `<b>${esc(v.name)}</b><br>${esc(v.addr)}${v.approx?" (approximate pin)":""}<br>${n} event${n===1?"":"s"} on ${dayParts(D).wd}<br><a href="${gmaps(v.name+", "+v.addr)}" target="_blank" rel="noopener">Directions</a>`, mapLayers.venues);
@@ -781,9 +876,16 @@ function initMap(){
     if(m) pts.push(m.getLatLng()); });
   if(FERRY.days.includes(D)) FERRY.from.filter(f=>f.ll).forEach(f=>{ const m = placeMarker("f:"+f.name, f.ll, mkIcon("mk-ferry","F"), f.name, `<b>Ferry: ${esc(f.name)}</b><br>Sat & Sun service. Tickets via ${FERRY.seller}, code ${FERRY.code}.`, mapLayers.ferry); if(m) pts.push(m.getLatLng()); });
   edits().added.filter(a=>!a.days.length || a.days.includes(D)).forEach(a=>{ const ty = ITEM_TYPES[a.type];
-    placeMarker(a.id, a.ll, mkIcon(ty[1], ty[2]), a.name, `<b>${esc(ty[0])}: ${esc(a.name)}</b>${a.hours?`<br>${esc(a.hours)}`:""}${a.note?`<br>${esc(a.note)}`:""}${a.days.length?`<br>${a.days.map(d=>dayParts(d).wd).join(", ")}`:"<br>All days"}`, mapLayers[ty[3]]); });
-  Object.entries(mapLayers).forEach(([k,g])=>{ if(k==="extra" || state.layers[k]) g.addTo(lmap); });
-  if(view) lmap.setView(view.c, view.z); else if(pts.length) lmap.fitBounds(L.latLngBounds(pts).pad(0.12)); else lmap.setView([41.482,-71.315], 13);
+    placeMarker(a.id, a.ll, mkIcon(ty[1], glyph(a)), a.name, `<b>${esc(ty[0])}: ${esc(a.name)}</b>${a.hours?`<br>${esc(a.hours)}`:""}${a.note?`<br>${esc(a.note)}`:""}${a.days.length?`<br>${a.days.map(d=>dayParts(d).wd).join(", ")}`:"<br>All days"}`, mapLayers[ty[3]]); });
+  if(state.mapMode==="grounds"){
+    mapLayers.grounds.addTo(lmap); mapLayers.extra.addTo(lmap);
+    const fv = VENUES.fort; L.marker(posOf("v:fort", fv.ll), {icon: mkIcon("mk-venue",""), title: fv.name}).bindPopup(`<b>${esc(fv.name)}</b><br>${esc(fv.addr)}`).addTo(lmap);
+    const gp = []; mapLayers.grounds.eachLayer(l=>gp.push(l.getLatLng()));
+    if(view) lmap.setView(view.c, view.z); else if(gp.length>1) lmap.fitBounds(L.latLngBounds(gp).pad(0.3)); else lmap.setView([41.4772,-71.3388], 16);
+  } else {
+    Object.entries(mapLayers).forEach(([k,g])=>{ if(k==="extra" || (k!=="grounds" && state.layers[k])) g.addTo(lmap); });
+    if(view) lmap.setView(view.c, view.z); else if(pts.length) lmap.fitBounds(L.latLngBounds(pts).pad(0.12)); else lmap.setView([41.482,-71.315], 13);
+  }
   lmap.on("click", ev=>{ if(!state.edit || !state.placeType) return; const ll = [+ev.latlng.lat.toFixed(6), +ev.latlng.lng.toFixed(6)]; itemForm(null, state.placeType, ll); });
   setTimeout(()=>lmap && lmap.invalidateSize(), 60);
 }
@@ -802,7 +904,7 @@ function editorBar(){
   </div>`;
 }
 function itemForm(id, type, ll){
-  const a = id ? state.mapDraft.added.find(x=>x.id===id) : {name:"", type, hours:"", note:"", days:[state.mapDay], ll};
+  const a = id ? state.mapDraft.added.find(x=>x.id===id) : {name:"", type, hours:"", note:"", days: ITEM_TYPES[type][3]==="grounds" ? [] : [state.mapDay], ll};
   openSheet(id ? "Edit item" : "Add " + ITEM_TYPES[type][0].toLowerCase(), `
     <label class="price" for="itName">Name</label><input class="inp" id="itName" value="${esc(a.name)}" placeholder="e.g. Trolley stop, Memorial Blvd">
     <label class="price" for="itType">Type</label><select id="itType" class="inp">${Object.entries(ITEM_TYPES).map(([k,v])=>`<option value="${k}" ${a.type===k?"selected":""}>${v[0]}</option>`).join("")}</select>
@@ -845,7 +947,7 @@ function signInSheet(why){
     <label class="price" for="authEmail">Email</label><input class="inp" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
     <button class="buy" type="button" data-sendcode="1" style="padding:11px">Email me a code</button>
     <details><summary class="price" style="cursor:pointer">Staff? Enter your invite code</summary>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><input class="inp" id="authInvite" placeholder="Invite code from Ops" autocapitalize="characters"><div class="price">Demo codes: STAFF-2027, LEAD-2027, OPS-2027 (Ops unlocks the map editor).</div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><input class="inp" id="authInvite" placeholder="Invite code from Ops" autocapitalize="characters"><div class="price">Demo codes: STAFF-2027, LEAD-2027, OPS-2027 (Ops unlocks the map editor).</div><a class="buy ghost" href="https://michaelsalvato86-sys.github.io/audrain-events-mockup/staff/" target="_blank" rel="noopener">Audrain staff: open the staff app (work email sign-in)</a></div>
     </details>
     <p class="price">No passwords. Mockup: nothing is sent and no account is created on a server.</p>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button></div>`);
@@ -943,6 +1045,12 @@ document.addEventListener("click", ev=>{
   if(ds.open){ state.open = Number(ds.open); render(); return; }
   if(ds.venue){ showVenue(ds.venue); return; }
   if(ds.mapday){ state.mapDay = ds.mapday; render(); return; }
+  if(ds.mapmode){ state.mapMode = ds.mapmode; if(lmap){ lmap.remove(); lmap = null; } render(); return; }
+  if(ds.gomap){ state.mapMode = ds.gomap; if(lmap){ lmap.remove(); lmap = null; } go("map"); return; }
+  if(ds.info){ state.infoTab = ds.info; render(); return; }
+  if(ds.acct){ state.account ? accountSheet() : signInSheet(); return; }
+  if(ds.install){ install(); return; }
+  if(ds.gotoevent){ const e = EVENTS.find(x=>x.id===ds.gotoevent); if(e){ state.itinMode = "all"; state.day = e.d; state.venue = "all"; go("itinerary"); } return; }
   if(ds.layer){ const k = ds.layer; state.layers[k] = !state.layers[k]; t.setAttribute("aria-pressed", state.layers[k]); if(lmap){ state.layers[k] ? mapLayers[k].addTo(lmap) : lmap.removeLayer(mapLayers[k]); } return; }
   if(ds.fly){ const [kind,id] = ds.fly.split(":"); const l = LOTS.find(x=>x.id===id); if(l) flyTo(l.ll, 16); return; }
   if(ds.cat){ state.cat = ds.cat; render(); return; }
@@ -953,7 +1061,7 @@ document.addEventListener("click", ev=>{
   if(ds.rmbag){ state.bag.splice(Number(ds.rmbag),1); store.set("ae.bag", state.bag); bagSheet(); render(); return; }
   if(ds.notify){ toast("We'll alert you when Winterfest tickets go on sale"); return; }
   if(ds.notifon){ enableNotifications(); return; }
-  if(t.id==="alertsBtn"){ alertsSheet(); return; }
+  if(t.id==="alertsBtn"){ go("alerts"); return; }
   if(t.id==="installBtn"){ install(); return; }
   if(t.id==="acctBtn"){ state.account ? accountSheet() : signInSheet(); return; }
   if(ds.signin){ signInSheet(); return; }
@@ -996,7 +1104,7 @@ function install(){
   <div class="sheetfoot"><button class="buy" type="button" data-close="1">Done</button></div>`);
 }
 
-if(!views[state.tab]) state.tab = "home";
+if(!views[state.tab]) state.tab = "itinerary";
 paintAcct();
 render();
 })();

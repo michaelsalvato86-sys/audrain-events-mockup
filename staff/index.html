@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0a1220">
+<meta name="theme-color" content="#00112E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,8 +20,8 @@
 <style>
 /* Layout: an operations tool for staff on the move - dark-first, high-contrast, big tap targets, team colour as the main signal. Phone column, five-tab bar. */
 :root{
-  --bg:#0c1524; --panel:#14213a; --panel-2:#1b2b49; --fg:#eef1f6; --muted:#9aa7bf; --line:#263a5e;
-  --gold:#c9a14a; --urgent:#e0533f; --ok:#3fae6b; --info:#4a90d9;
+  --bg:#001a33; --panel:#062a4c; --panel-2:#0b345c; --fg:#eef3f8; --muted:#9fb3c9; --line:#1b4570;
+  --gold:#DBAB1A; --urgent:#e0533f; --ok:#3fae6b; --info:#4a90d9;
   --display:"Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
@@ -37,12 +37,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:#0a1220;color:#eef1f6;padding:12px 16px;border-bottom:3px solid var(--team,#c9a14a)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:#00112E;color:#eef1f6;padding:12px 16px;border-bottom:3px solid var(--team,#DBAB1A)}
 .row1{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
-.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.16em;color:#c9a14a}
+.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.16em;color:#DBAB1A}
 .who{display:flex;align-items:center;gap:8px;border:1px solid #2c3f63;border-radius:999px;padding:5px 10px 5px 6px;background:transparent;color:#eef1f6;font-size:13px;font-weight:600}
-.sw{width:14px;height:14px;border-radius:4px;background:var(--team,#c9a14a);flex:0 0 auto}
+.sw{width:14px;height:14px;border-radius:4px;background:var(--team,#DBAB1A);flex:0 0 auto}
 main{flex:1;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
 .view{display:flex;flex-direction:column;gap:16px}
 h1,h2{font-family:var(--display);font-weight:700;margin:0;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
@@ -101,15 +101,36 @@ h2{font-size:20px}
 .alert.done{opacity:.55}
 .field{display:flex;flex-direction:column;gap:4px}
 .field select,.field input,.field textarea{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 10px}
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#0a1220;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid #1d2c48}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#00112E;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid #1d2c48}
 .tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
 .tabs button{position:relative;background:none;border:0;color:#8c99b3;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 2px}
 .tabs button svg{width:22px;height:22px}
-.tabs button[aria-current="page"]{color:#c9a14a}
+.tabs button[aria-current="page"]{color:#DBAB1A}
 .dotc{position:absolute;top:0;right:22%;background:var(--urgent);color:#fff;border-radius:999px;font-size:10px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--panel);width:100%;max-width:480px;max-height:88%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
-.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0a1220;color:#eef1f6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#00112E;color:#eef1f6;border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:13.5px;font-weight:600;z-index:10;max-width:calc(100% - 32px)}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:radial-gradient(120% 80% at 50% 0%,#0b4a7d 0%,#003057 45%,#00112E 100%);color:#eef3f8}
+.gatecard{width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;background:rgba(0,17,46,.55);border:1px solid rgba(219,171,26,.45);border-radius:18px;padding:24px 20px}
+.gatecard .logo{font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.gatecard .logo small{display:block;font-family:var(--body);font-size:11px;letter-spacing:.2em;color:#DBAB1A;margin-bottom:4px}
+.gatecard label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c9d6e4}
+.gatecard input[type=email],.gatecard input[type=password],.gatecard input[type=text]{width:100%;border:1px solid #2a5a88;background:#00112E;color:#fff;border-radius:10px;padding:12px;font:inherit;font-size:16px}
+.gatecard .row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.gatecard .err{color:#ffb4a6;font-weight:700;min-height:1.2em;margin:0}
+.gatecard .linkbtn{background:none;border:0;padding:0;color:#DBAB1A;font-weight:700;font-size:13px}
+.gatecard .btn{width:100%;padding:13px;font-size:16px}
+.gatecard .fine{font-size:12px;color:#a9bbd0;margin:0}
+.pingban{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));z-index:11;background:#DBAB1A;color:#00112E;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:8px}
+.pingban .k{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.pingban .m{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1;text-transform:uppercase}
+.pingban .btns .btn{background:#00112E;color:#fff}
+.stc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--panel-2);border:1px solid var(--line);margin:2px 4px 0 0}
+.stc.go{background:#1f6b45;border-color:#1f6b45;color:#fff}.stc.done{background:#1d5c94;border-color:#1d5c94;color:#fff}.stc.no{background:#9b2f22;border-color:#9b2f22;color:#fff}
+.presets{display:flex;flex-direction:column;gap:6px}
+.presets label{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:14px}
+.pm.dest{width:32px!important;height:32px!important;background:#DBAB1A;color:#00112E;border-color:#fff;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(219,171,26,.75)}50%{box-shadow:0 0 0 12px rgba(219,171,26,0)}}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
 </style>
 <style>/* Leaflet 1.9.4 */
@@ -117,7 +138,7 @@ h2{font-size:20px}
 .leaflet-attribution-flag{display:none!important}
 #smap{height:400px;width:100%;background:#dfe7ec}
 .leaflet-container{font-family:var(--body)}
-.pm{display:grid;place-items:center;border-radius:50%;font:800 11px/1 var(--body);color:#0c1524;border:2px solid #0a1220;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pm{display:grid;place-items:center;border-radius:50%;font:800 11px/1 var(--body);color:#0c1524;border:2px solid #00112E;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .pm.mine{outline:3px dashed var(--team);outline-offset:3px}
 .pm.guest{border-radius:6px;background:#2f7d4f;color:#fff;border-color:#fff}
 .pm.stop{background:#b8913a;color:#fff;border-color:#fff;width:18px!important;height:18px!important;font-size:9px}
@@ -128,7 +149,19 @@ h2{font-size:20px}
 
 </head>
 <body>
-<div class="app">
+<div class="gate" id="gate" hidden>
+  <form class="gatecard" id="gateForm" novalidate>
+    <div class="logo"><small>Audrain Concours</small>Staff sign-in</div>
+    <p class="fine">Use your work email and password.</p>
+    <div><label for="gEmail">Work email</label><input id="gEmail" type="email" autocomplete="username" inputmode="email" placeholder="name@audrainconcours.com" required></div>
+    <div><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password" required></div>
+    <div class="row"><label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-weight:600"><input type="checkbox" id="gShow"> Show password</label><button type="button" class="linkbtn" id="gForgot">Forgot password?</button></div>
+    <p class="err" id="gErr" role="alert"></p>
+    <button class="btn" type="submit">Sign in</button>
+    <p class="fine">Demo sign-in: any password of 8+ characters on an allowed work domain. Real accounts need the staff login service.</p>
+  </form>
+</div>
+<div class="app" id="appRoot" hidden>
   <header class="top">
     <div class="row1">
       <div class="brand"><small>Audrain Concours</small>Staff</div>
@@ -146,12 +179,13 @@ h2{font-size:20px}
 </div>
 <div class="scrim" id="scrim" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><h2 id="sheetTitle"></h2><div id="sheetBody" style="display:flex;flex-direction:column;gap:12px"></div></div></div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="pingban" id="pingBan" role="alertdialog" aria-live="assertive" hidden></div>
 
 <script>
 (function(){
 // Sample staffing plan built on the real 2026 Week at a Glance. Teams, posts and people are illustrative.
 const TEAMS = {
-  ops:     {name:"Operations Desk", short:"Ops", c:"#c9a14a", lead:"Ops Director", radio:"Ch 1", base:"opstent", size:4},
+  ops:     {name:"Operations Desk", short:"Ops", c:"#DBAB1A", lead:"Ops Director", radio:"Ch 1", base:"opstent", size:4},
   gates:   {name:"Gates & Ticketing", short:"Gates", c:"#4a90d9", lead:"Gate Lead", radio:"Ch 2", base:"maingate", size:18},
   parking: {name:"Parking & Shuttle", short:"Parking", c:"#3fae6b", lead:"Parking Lead", radio:"Ch 3", base:"lotb", size:14},
   vip:     {name:"VIP & Hospitality", short:"VIP", c:"#b07ad6", lead:"Hospitality Lead", radio:"Ch 4", base:"lounge", size:12},
@@ -253,11 +287,15 @@ const ALERTS0 = [
   {id:3, lvl:"info", t:"09:30", to:"All staff", txt:"Bellevue Car Display starts 11:00. Expect traffic on Bellevue Ave until 13:30.", ack:true}
 ];
 
+// Work email domains allowed into the staff app. Confirm this list with Michael before launch.
+const STAFF_DOMAINS = ["audrainautomuseum.org","audrainconcours.com","mwmwealth.com"];
+const PRESETS = [["here","Need you at {post} now"],["late","Running 10 min late"],["break","Break relief needed"],["clear","All clear"],["custom","Custom message"]];
 const store = { get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
 const state = {
   tab: store.get("st.tab","shift"), team: store.get("st.team","gates"), day:"2026-10-03",
   chan:"team", msgs: store.get("st.msgs", SEED), alerts: store.get("st.alerts", ALERTS0),
-  checkin: store.get("st.checkin", {}), viewTeam:null, chatSeen:false
+  checkin: store.get("st.checkin", {}), viewTeam:null, chatSeen:false,
+  session: store.get("st.session", null), pings: store.get("st.pings", []), dropping:false, dropLL:null, dirDraft:null
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -310,7 +348,7 @@ const views = {
       <div class="chan" role="group" aria-label="Channels">${Object.entries(CHANNELS).map(([k,c])=>`<button type="button" data-chan="${k}" aria-pressed="${k===state.chan}">${k==="team"?`<span class="sw" style="background:${T().c}"></span>${esc(T().short)}`:esc(c.name)}</button>`).join("")}</div>
       <div><h2>${esc(chName)}</h2><div class="sub">${esc(state.chan==="team" ? T().radio + " · " + T().size + " people" : ch.note)}</div></div>
       <div class="msgs" id="msgs">${list.map(m=>{ const mine = m.me; const c = TEAMS[m.team]?.c || "#888"; return `<div class="msg${mine?" me":""}${m.loc?" loc":""}"><div class="by">${mine?"":`<span class="sw" style="background:${c}"></span>`}${esc(m.by)} · ${m.t}</div><div class="bub">${m.loc?"📍 ":""}${esc(m.txt)}</div></div>`; }).join("")}</div>
-      <form class="compose" id="composeForm"><button type="button" class="btn ghost" data-shareloc="1" aria-label="Share my location" style="padding:8px 10px">Pin</button><input id="msgIn" placeholder="Message ${esc(chName)}" autocomplete="off"><button class="btn" type="submit">Send</button></form>
+      <form class="compose" id="composeForm"><button type="button" class="btn ghost" data-shareloc="1" aria-label="Share my location" style="padding:8px 10px">Pin</button><button type="button" class="btn ghost" data-ping="${state.chan==="team" ? "team:"+state.team : "all:all"}" style="padding:8px 10px">Ping</button><input id="msgIn" placeholder="Message ${esc(chName)}" autocomplete="off"><button class="btn" type="submit">Send</button></form>
     </div>`;
   },
   map(){
@@ -329,14 +367,17 @@ const views = {
     return `<div class="view">
       <h2>Team designations</h2>
       <div class="teams">${Object.entries(TEAMS).map(([k,t])=>`<button type="button" class="team" style="--c:${t.c}" data-viewteam="${k}" aria-pressed="${vt===k}"><span class="n">${esc(t.name)}</span><span class="sub">${t.size} people · ${t.radio}</span><span class="sub">Base: ${esc(POSTS[t.base].name)}</span>${k===state.team?`<span class="pill" style="background:${t.c};color:#0c1524;align-self:flex-start">Your team</span>`:""}</button>`).join("")}</div>
-      ${vt ? `<section style="display:flex;flex-direction:column;gap:10px"><h2>${esc(TEAMS[vt].name)} roster</h2>
-        <div class="list roster">${ROSTER_ROLES.slice(0, Math.min(8, TEAMS[vt].size)).map((r,i)=>`<div class="item" style="--c:${TEAMS[vt].c}"><div class="av">${SAMPLE_NAMES[i].split(" ").map(w=>w[0]).join("")}</div><div><div class="ti">${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}</div><div class="sub">${r} · ${esc(POSTS[(SHIFTS[vt]||[[0,0,0,TEAMS[vt].base]])[Math.min(i,(SHIFTS[vt]||[1]).length-1)][3]].name)}</div></div><button class="btn ghost" type="button" data-dm="${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}" style="padding:7px 10px">Message</button></div>`).join("")}</div>
+      ${vt ? `<section style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>${esc(TEAMS[vt].name)} roster</h2><span class="btns"><button class="btn" type="button" data-ping="team:${vt}" style="padding:7px 12px">Ping team</button><button class="btn ghost" type="button" data-dirs="team:${vt}" style="padding:7px 12px">Directions</button></span></div>
+        <div class="list roster">${ROSTER_ROLES.slice(0, Math.min(8, TEAMS[vt].size)).map((r,i)=>`<div class="item" style="--c:${TEAMS[vt].c}"><div class="av">${SAMPLE_NAMES[i].split(" ").map(w=>w[0]).join("")}</div><div><div class="ti">${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}</div><div class="sub">${r} · ${esc(POSTS[(SHIFTS[vt]||[[0,0,0,TEAMS[vt].base]])[Math.min(i,(SHIFTS[vt]||[1]).length-1)][3]].name)}</div></div><span class="btns" style="flex-wrap:nowrap"><button class="btn ghost" type="button" data-ping="person:${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}" style="padding:7px 10px">Ping</button><button class="btn ghost" type="button" data-dm="${esc(i===0?TEAMS[vt].lead:SAMPLE_NAMES[i])}" style="padding:7px 10px">Message</button></span></div>`).join("")}</div>
         <div class="sub">Showing ${Math.min(8,TEAMS[vt].size)} of ${TEAMS[vt].size}. Names are placeholders.</div></section>` : `<div class="notice">Tap a team to see its roster, posts and radio channel.</div>`}
     </div>`;
   },
   alerts(){
     $("#alertDot").hidden = true;
     return `<div class="view">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>Pings &amp; directions</h2><span class="btns"><button class="btn" type="button" data-ping="team:${state.team}">Ping</button><button class="btn ghost" type="button" data-dirs="1">Send directions</button></span></div>
+      <div class="list">${state.pings.length ? state.pings.map(pingRow).join("") : `<div class="item" style="grid-template-columns:1fr"><div class="sub">No pings yet. Ping a person, a team or everyone at a post; their replies show here.</div></div>`}</div>
+      <button class="btn ghost" type="button" data-simin="1" style="align-self:flex-start">Simulate an incoming ping (demo)</button>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Dispatch alerts</h2><button class="btn" type="button" data-compose="1">Send alert</button></div>
       <div class="list">${state.alerts.map(a=>`<div class="alert ${a.lvl}${a.ack?" done":""}"><div class="bar"></div><div style="display:flex;flex-direction:column;gap:6px"><div class="sub">${a.lvl==="urgent"?`<span class="pill" style="background:var(--urgent);color:#fff">Urgent</span> `:""}${a.t} · to ${esc(a.to)}</div><div class="ti">${esc(a.txt)}</div>${a.ack?`<div class="sub">Acknowledged</div>`:`<div><button class="btn ok" type="button" data-ack="${a.id}" style="padding:7px 12px">Acknowledge</button></div>`}</div></div>`).join("")}</div>
       <div class="notice">Shift alerts are automatic: 15 minutes before every post change, with where to go and walking time. Leads and Ops can send to a team, a post or everyone.</div>
@@ -370,7 +411,7 @@ function closeSheet(){ $("#scrim").hidden=true; if(lastFocus&&lastFocus.focus) l
 
 
 let smap = null, guestLayer = null, placing = false, pinLayer = null;
-const PIN_TYPES = {post:["Post","#4a90d9"], meet:["Meeting point","#3fae6b"], hazard:["Hazard / closed","#e0533f"], vehicle:["Vehicle / cart","#c9a14a"], note:["Note","#9aa7bf"]};
+const PIN_TYPES = {post:["Post","#4a90d9"], meet:["Meeting point","#3fae6b"], hazard:["Hazard / closed","#e0533f"], vehicle:["Vehicle / cart","#DBAB1A"], note:["Note","#9aa7bf"]};
 let PINS = (()=>{ try{ return JSON.parse(localStorage.getItem("st.pins")||"[]"); }catch(e){ return []; } })();
 const savePins = () => { try{ localStorage.setItem("st.pins", JSON.stringify(PINS)); }catch(e){} };
 function drawPins(){
@@ -395,10 +436,11 @@ function initStaffMap(){
   guestLayer = L.layerGroup();
   GUEST.lots.forEach(l=>L.marker(l.ll, {icon:L.divIcon({className:"", html:'<div class="pm guest" style="width:24px;height:24px">P</div>', iconSize:null})}).bindPopup(`<b>Guest parking: ${esc(l.name)}</b><br>${l.hours} \u00b7 free, first come`).addTo(guestLayer));
   GUEST.stops.forEach(st=>L.marker(st.ll, {icon:L.divIcon({className:"", html:'<div class="pm stop">T</div>', iconSize:null})}).bindPopup(`<b>Trolley stop: ${esc(st.name)}</b><br>${esc(GUEST.loop)}`).addTo(guestLayer));
-  L.polyline(GUEST.stops.map(x=>x.ll), {color:"#b8913a", weight:3, dashArray:"8 6", opacity:.85}).addTo(guestLayer);
+  L.polyline(GUEST.stops.map(x=>x.ll), {color:"#DBAB1A", weight:3, dashArray:"8 6", opacity:.85}).addTo(guestLayer);
   if(state.guest!==false) guestLayer.addTo(smap);
   drawPins();
-  smap.on("click", ev=>{ if(!placing) return; placing = false; const b = document.getElementById("placeBtn"); if(b) b.textContent = "Place pin";
+  smap.on("click", ev=>{ if(state.dropping){ state.dropping = false; state.dropLL = [Number(ev.latlng.lat.toFixed(6)), Number(ev.latlng.lng.toFixed(6))]; if(state.dirDraft) state.dirDraft.dest = "drop"; dirSheet(); return; }
+    if(!placing) return; placing = false; const b = document.getElementById("placeBtn"); if(b) b.textContent = "Place pin";
     const ll = [Number(ev.latlng.lat.toFixed(6)), Number(ev.latlng.lng.toFixed(6))];
     openSheet("New pin", `<div class="field"><label class="label" for="pinLabel">Name</label><input id="pinLabel" placeholder="e.g. Water station 2"></div>
       <div class="field"><label class="label" for="pinType">Type</label><select id="pinType">${Object.entries(PIN_TYPES).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("")}</select></div>
@@ -414,6 +456,110 @@ function zoomTo(which){
   smap.fitBounds(L.latLngBounds(pts).pad(which==="fort" ? 0.25 : 0.15));
 }
 
+// ---------- Pings and directions (demo: local only; real delivery needs a backend and push notifications)
+const people = k => { const t = TEAMS[k]; return [t.lead, ...SAMPLE_NAMES.slice(1, Math.min(8, t.size))]; };
+function parseTo(v){ const [kind, key] = v.split(/:(.+)/);
+  if(kind==="person") return {kind, key, label:key, rec:[key]};
+  if(kind==="team") return {kind, key, label:TEAMS[key].name, rec:people(key).slice(0,3)};
+  if(kind==="post") { const ts = Object.entries(TEAMS).filter(([tk,t])=>t.base===key || (SHIFTS[tk]||[]).some(x=>x[3]===key)); return {kind, key, label:"Everyone at " + POSTS[key].name, rec: ts.length ? ts.map(([tk,t])=>t.lead) : ["Ops Desk"]}; }
+  return {kind:"all", key:"all", label:"All staff", rec:Object.values(TEAMS).map(t=>t.lead)}; }
+function toSelect(sel){
+  const o = [["team:"+state.team, "My team ("+T().name+")"], ["all:all", "Everyone on staff"]]
+    .concat(Object.entries(TEAMS).filter(([k])=>k!==state.team).map(([k,t])=>["team:"+k, "Team: "+t.name]))
+    .concat(Object.entries(POSTS).map(([k,p])=>["post:"+k, "Everyone at "+p.name]))
+    .concat(people(state.team).map(n=>["person:"+n, n]));
+  if(sel && !o.some(x=>x[0]===sel) && sel.startsWith("person:")) o.unshift([sel, sel.slice(7)]);
+  return `<select id="pTo">${o.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
+}
+const curPost = () => { const c = nowNext().cur; return c ? c[3] : T().base; };
+const postSelect = (id, sel) => `<select id="${id}">${Object.entries(POSTS).map(([k,p])=>`<option value="${k}" ${k===sel?"selected":""}>${esc(p.name)}</option>`).join("")}</select>`;
+function stClass(x){ return x==="On my way" ? "go" : x==="Done" ? "done" : x==="Can't" ? "no" : ""; }
+function pingRow(p){
+  const chips = Object.entries(p.status||{}).map(([n,v])=>`<span class="stc ${stClass(v)}">${esc(n)}: ${esc(v)}</span>`).join("");
+  return `<div class="item" style="grid-template-columns:minmax(0,1fr) auto"><div><div class="sub">${p.dir==="in" ? "From " + esc(p.from) : "To " + esc(p.toLabel)} \u00b7 ${p.t}${p.type==="dir" ? " \u00b7 directions" : ""}</div><div class="ti">${esc(p.msg)}</div>${p.note?`<div class="sub">${esc(p.note)}</div>`:""}<div>${chips}${p.dir==="in" && p.reply ? `<span class="stc ${stClass(p.reply)}">You: ${esc(p.reply)}</span>` : ""}</div></div>${p.type==="dir" ? `<button class="btn ghost" type="button" data-opendir="${p.id}" style="padding:7px 10px">Open map</button>` : ""}</div>`;
+}
+function savePings(){ store.set("st.pings", state.pings.slice(0,60)); }
+function simulateAcks(p){
+  p.rec.forEach((n,i)=>setTimeout(()=>{
+    const v = p.msgKey==="clear" ? "Done" : (i===2 ? "Can't" : "On my way");
+    p.status[n] = v; savePings(); toast(n + ": " + v);
+    if(state.tab==="alerts") render(); }, 1600 + i*900));
+}
+function pingSheet(pre){
+  openSheet("Ping", `<div class="field"><label class="label" for="pTo">To</label>${toSelect(pre)}</div>
+    <div class="label">Message</div>
+    <div class="presets">${PRESETS.map(([k,l],i)=>`<label><input type="radio" name="pMsg" value="${k}" ${i===0?"checked":""}> ${k==="here" ? `Need you at ${postSelect("pPost", curPost())} now` : esc(l)}</label>`).join("")}</div>
+    <div class="field"><label class="label" for="pCustom">Custom message</label><input id="pCustom" placeholder="Type a short message"></div>
+    <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-close="1">Cancel</button><button class="btn" type="button" data-sendping="1">Send ping</button></div>
+    <div class="sub">Recipients get a banner and a buzz, and reply On my way, Can't or Done. Demo: replies are simulated.</div>`);
+}
+function sendPing(){
+  const to = parseTo($("#pTo").value), k = (document.querySelector('input[name="pMsg"]:checked')||{}).value || "here";
+  let msg = k==="here" ? `Need you at ${POSTS[$("#pPost").value].name} now` : k==="custom" ? ($("#pCustom").value||"").trim() : PRESETS.find(x=>x[0]===k)[1];
+  if(!msg){ toast("Type a message first"); return; }
+  const p = {id:Date.now(), type:"ping", dir:"out", msg, msgKey:k, toLabel:to.label, rec:to.rec, t:now(), status:Object.fromEntries(to.rec.map(n=>[n,"Sent"]))};
+  state.pings.unshift(p); savePings(); closeSheet(); toast("Ping sent to " + to.label); if(state.tab==="alerts") render(); simulateAcks(p);
+}
+function dirSheet(pre){
+  const d = state.dirDraft || {};
+  const to = pre && !pre.startsWith("dest:") ? pre : (d.to || "team:"+state.team);
+  const dest = pre && pre.startsWith("dest:") ? pre.slice(5) : (d.dest || (state.dropLL ? "drop" : curPost()));
+  openSheet("Send directions", `<div class="field"><label class="label" for="pTo">To</label>${toSelect(to)}</div>
+    <div class="field"><label class="label" for="dDest">Where</label><select id="dDest">${state.dropLL?`<option value="drop" ${dest==="drop"?"selected":""}>Point dropped on the map (${state.dropLL.map(x=>x.toFixed(5)).join(", ")})</option>`:""}${Object.entries(POSTS).map(([k,p])=>`<option value="${k}" ${k===dest?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>
+    <button class="btn ghost" type="button" data-dropdir="1">Drop a point on the map instead</button>
+    <div class="field"><label class="label" for="dNote">Note</label><input id="dNote" placeholder="e.g. Use the east path, bring 2 radios" value="${esc(d.note||"")}"></div>
+    <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-close="1">Cancel</button><button class="btn" type="button" data-senddir="1">Send directions</button></div>`);
+}
+function sendDir(){
+  const to = parseTo($("#pTo").value), dv = $("#dDest").value;
+  const dest = dv==="drop" ? {label:"Dropped point", ll:state.dropLL} : {label:POSTS[dv].name, ll:POSTS[dv].ll};
+  const p = {id:Date.now(), type:"dir", dir:"out", msg:"Go to " + dest.label, dest, note:($("#dNote").value||"").trim(), toLabel:to.label, rec:to.rec, t:now(), status:Object.fromEntries(to.rec.map(n=>[n,"Sent"]))};
+  state.pings.unshift(p); savePings(); state.dirDraft = null; state.dropLL = null; closeSheet(); toast("Directions sent to " + to.label); if(state.tab==="alerts") render(); simulateAcks(p);
+}
+let destMarker = null;
+function haversine(a, b){ const R = 6371000, r = x => x*Math.PI/180, dLa = r(b[0]-a[0]), dLo = r(b[1]-a[1]); const h = Math.sin(dLa/2)**2 + Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function openDir(id){
+  const p = state.pings.find(x=>x.id==id); if(!p) return;
+  closeSheet(); $("#pingBan").hidden = true;
+  if(state.tab!=="map") go("map");
+  setTimeout(()=>{ if(!smap) return;
+    if(destMarker) smap.removeLayer(destMarker);
+    const walk = `https://www.google.com/maps/dir/?api=1&destination=${p.dest.ll[0]},${p.dest.ll[1]}&travelmode=walking`;
+    const html = `<b>${esc(p.dest.label)}</b>${p.note?`<br>${esc(p.note)}`:""}<br><span id="dDist">Distance shows when location is allowed.</span><br><a href="${walk}" target="_blank" rel="noopener">Walk there</a>`;
+    destMarker = L.marker(p.dest.ll, {icon:L.divIcon({className:"", html:'<div class="pm dest">\u2605</div>', iconSize:null}), zIndexOffset:1000}).bindPopup(html).addTo(smap);
+    smap.flyTo(p.dest.ll, 18, {duration:.7}); setTimeout(()=>destMarker && destMarker.openPopup(), 800);
+    document.getElementById("smap").scrollIntoView({behavior:"smooth", block:"center"});
+    try{ navigator.geolocation && navigator.geolocation.getCurrentPosition(pos=>{ const m = haversine([pos.coords.latitude,pos.coords.longitude], p.dest.ll); const el = document.getElementById("dDist"); if(el) el.textContent = m<1000 ? `About ${Math.round(m)} m away (${Math.max(1,Math.round(m/80))} min walk)` : `About ${(m/1000).toFixed(1)} km away`; }, ()=>{}, {timeout:5000}); }catch(e){}
+  }, 120);
+}
+let simN = 0;
+function simulateIncoming(){
+  simN++;
+  const isDir = simN % 2 === 0, post = POSTS[curPost()];
+  const p = isDir ? {id:Date.now(), type:"dir", dir:"in", from:"Ops Desk", msg:"Go to " + post.name, dest:{label:post.name, ll:post.ll}, note:"Cover the line for 20 minutes", t:now()}
+                  : {id:Date.now(), type:"ping", dir:"in", from:T().lead, msg:"Need you at " + post.name + " now", t:now()};
+  state.pings.unshift(p); savePings();
+  const b = $("#pingBan");
+  b.innerHTML = `<div class="k">${isDir ? "Directions" : "Ping"} from ${esc(p.from)} \u00b7 ${p.t}</div><div class="m">${esc(p.msg)}</div>${p.note?`<div>${esc(p.note)}</div>`:""}<div class="btns">${isDir?`<button class="btn" type="button" data-opendir="${p.id}">Open map</button>`:""}<button class="btn" type="button" data-reply="${p.id}|On my way">On my way</button><button class="btn" type="button" data-reply="${p.id}|Can't">Can't</button><button class="btn" type="button" data-reply="${p.id}|Done">Done</button></div>`;
+  b.hidden = false; try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
+  if(state.tab==="alerts") render();
+}
+
+// ---------- Staff sign-in gate (DEMO). On a public static site this is not security: real auth needs a backend login or an access proxy.
+function domainOk(email){ const d = (email.split("@")[1]||"").toLowerCase(); return STAFF_DOMAINS.some(x=>d===x || d.endsWith("."+x)); }
+function showGate(){ $("#appRoot").hidden = true; $("#gate").hidden = false; $("#gErr").textContent = ""; $("#gPass").value = ""; setTimeout(()=>$("#gEmail").focus(), 50); }
+function enterApp(){ $("#gate").hidden = true; $("#appRoot").hidden = false; render(); }
+function signIn(ev){
+  ev.preventDefault();
+  const email = ($("#gEmail").value||"").trim().toLowerCase(), pw = $("#gPass").value||"", err = $("#gErr");
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent = "Enter your work email."; return; }
+  if(!domainOk(email)){ err.textContent = "Use your work email."; return; }
+  if(pw.length < 8){ err.textContent = "Password must be at least 8 characters."; return; }  // demo only; real auth checks the password on a server
+  state.session = {email, name: email.split("@")[0], at: Date.now()}; store.set("st.session", state.session);
+  enterApp(); toast("Signed in as " + email);
+}
+function signOut(){ state.session = null; store.set("st.session", null); closeSheet(); if(smap){ smap.remove(); smap = null; } showGate(); }
+
 function showPost(k){
   const p = POSTS[k]; const teams = Object.entries(TEAMS).filter(([tk,t])=>t.base===k || (SHIFTS[tk]||[]).some(s=>s[3]===k));
   const mine = myShifts().filter(s=>s[3]===k);
@@ -421,6 +567,7 @@ function showPost(k){
     <div class="label">Teams at this post</div>
     <div class="btns">${teams.map(([tk,t])=>`<span class="pill" style="background:${t.c};color:#0c1524">${esc(t.short)}</span>`).join("") || `<span class="sub">None assigned</span>`}</div>
     ${mine.length ? `<div class="label">You are here</div><div class="list">${mine.map(s=>`<div class="item" style="grid-template-columns:auto minmax(0,1fr)"><div class="t">${fmt(s[1])}</div><div><div class="ti">${dname(s[0])}</div><div class="sub">${esc(s[4])}</div></div></div>`).join("")}</div>` : ""}
+    <div class="btns"><button class="btn" type="button" data-ping="post:${k}">Ping everyone here</button><button class="btn ghost" type="button" data-dirs="dest:${k}">Send directions here</button></div>
     ${p.sample ? `<div class="sub">Sample placement inside Fort Adams.</div>` : ""}<a class="btn ghost" style="text-align:center;text-decoration:none" href="https://maps.google.com/?q=${p.ll[0]},${p.ll[1]}" target="_blank" rel="noopener">Directions</a>
     <div class="btns" style="justify-content:flex-end"><button class="btn" type="button" data-close="1">Done</button></div>`;
   openSheet(p.name, html);
@@ -447,14 +594,26 @@ document.addEventListener("click", ev=>{
       <div class="field"><label class="label" for="aTxt">Message</label><textarea id="aTxt" rows="3" placeholder="Where to be, when, and what to do"></textarea></div>
       <div class="btns" style="justify-content:flex-end"><button class="btn ghost" type="button" data-close="1">Cancel</button><button class="btn" type="button" data-sendalert="1">Send</button></div>`); return; }
   if(ds.sendalert){ const txt = $("#aTxt").value.trim(); if(!txt){ toast("Write the alert first"); return; } state.alerts.unshift({id:Date.now(), lvl:$("#aLvl").value, t:now(), to:$("#aTo").value, txt, ack:false}); store.set("st.alerts",state.alerts); closeSheet(); toast("Alert sent"); render(); return; }
+  if(ds.ping){ pingSheet(ds.ping==="1" ? null : ds.ping); return; }
+  if(ds.sendping){ sendPing(); return; }
+  if(ds.dirs){ state.dirDraft = null; dirSheet(ds.dirs==="1" ? null : ds.dirs); return; }
+  if(ds.dropdir){ state.dirDraft = {to: $("#pTo").value, note: $("#dNote").value}; state.dropping = true; closeSheet(); if(state.tab!=="map") go("map"); toast("Tap the map where they should go"); setTimeout(()=>{ const m = document.getElementById("smap"); if(m) m.scrollIntoView({behavior:"smooth", block:"center"}); }, 150); return; }
+  if(ds.senddir){ sendDir(); return; }
+  if(ds.opendir){ openDir(ds.opendir); return; }
+  if(ds.simin){ simulateIncoming(); return; }
+  if(ds.reply){ const [id, v] = ds.reply.split("|"); const p = state.pings.find(x=>x.id==id); if(p){ p.reply = v; savePings(); } $("#pingBan").hidden = true; toast("Replied: " + v); if(state.tab==="alerts") render(); return; }
+  if(ds.signout){ signOut(); return; }
   if(ds.close){ closeSheet(); return; }
-  if(t.id==="whoBtn"){ openSheet("Switch team (demo)", `<p class="sub">Staff sign in and see their own team. For the demo, pick any team to see its shifts, posts and chat.</p><div class="teams">${Object.entries(TEAMS).map(([k,x])=>`<button type="button" class="team" style="--c:${x.c}" data-pickteam="${k}" aria-pressed="${k===state.team}"><span class="n">${esc(x.name)}</span><span class="sub">${x.radio}</span></button>`).join("")}</div>`); return; }
+  if(t.id==="whoBtn"){ openSheet("Switch team (demo)", `<p class="sub">Staff sign in and see their own team. For the demo, pick any team to see its shifts, posts and chat.</p><div class="teams">${Object.entries(TEAMS).map(([k,x])=>`<button type="button" class="team" style="--c:${x.c}" data-pickteam="${k}" aria-pressed="${k===state.team}"><span class="n">${esc(x.name)}</span><span class="sub">${x.radio}</span></button>`).join("")}</div><div class="sub">Signed in as ${esc(state.session ? state.session.email : "")}</div><button class="btn ghost" type="button" data-signout="1">Sign out</button>`); return; }
   if(ds.pickteam){ state.team = ds.pickteam; store.set("st.team",state.team); state.day=null; closeSheet(); toast("Now viewing as " + T().name); render(); return; }
 });
 document.addEventListener("keydown", ev=>{ if(ev.key==="Escape" && !$("#scrim").hidden) closeSheet(); if((ev.key==="Enter"||ev.key===" ") && ev.target.matches && ev.target.matches("g[data-showpost]")){ ev.preventDefault(); showPost(ev.target.dataset.showpost); } });
 $("#scrim").addEventListener("click", ev=>{ if(ev.target.id==="scrim") closeSheet(); });
 if(!views[state.tab]) state.tab="shift";
-render();
+$("#gateForm").addEventListener("submit", signIn);
+$("#gShow").addEventListener("change", ev=>{ $("#gPass").type = ev.target.checked ? "text" : "password"; });
+$("#gForgot").addEventListener("click", ()=>{ $("#gErr").textContent = "Contact Ops to reset your password."; });
+if(state.session && domainOk(state.session.email)) enterApp(); else showGate();
 })();
 </script>
 

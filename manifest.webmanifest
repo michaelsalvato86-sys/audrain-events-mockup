@@ -4,8 +4,8 @@
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
- "background_color": "#0f2340",
- "theme_color": "#0f2340",
+ "background_color": "#003057",
+ "theme_color": "#003057",
  "description": "Schedule, map and tickets for Audrain Newport Concours & Motor Week and Winterfest.",
  "icons": [
   {
