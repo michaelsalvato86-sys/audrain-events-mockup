@@ -132,6 +132,8 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .ticket .eyebrow{color:var(--gold)}
 .qrwrap{background:#fff;border-radius:12px;padding:10px;position:relative}
 .qrwrap canvas{display:block;width:196px;height:196px;image-rendering:pixelated}
+.lqr{width:196px;height:196px}.lqr img,.lqr canvas{display:block;width:196px!important;height:196px!important;image-rendering:pixelated}
+.rxscan video{width:100%;max-height:260px;border-radius:12px;background:#000;object-fit:cover}
 .sample{position:absolute;left:0;right:0;top:44%;transform:rotate(-14deg);font-weight:800;letter-spacing:.2em;color:rgba(163,58,43,.85);font-size:20px;pointer-events:none}
 .serial{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--gold-soft)}
 .timer{font-size:12px;color:#d6cdb6}
@@ -361,6 +363,8 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="admitted" id="admitted" role="alertdialog" aria-label="Check-in result" hidden></div>
 
+<script>window.SB_CONFIG = {url:"https://jlqxorlegyqlpbnwroaz.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXhvcmxlZ3lxbHBibndyb2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1ODE1MTcsImV4cCI6MjEwNzE1NzUxN30.eOye3dMBepkoV_oOA3EbdGnyUH9VyyZ9yjbIRfJky4s", app:"concours", storageKey:"sb-concours", guest:true}; // Supabase project audrain-events; the anon key is public by design, the database enforces every rule</script>
+<script src="sb.js"></script>
 <script>
 (function(){
 const SP = s => "https://www.showpass.com/" + s + "/";
@@ -550,8 +554,8 @@ const dayParts = d => { const dt = new Date(d+"T12:00:00"); return {wd: dt.toLoc
 const fmtTime = t => { const [h,m] = t.split(":").map(Number); return {hm: ((h%12)||12)+":"+String(m).padStart(2,"0"), ap: (h>=12&&h<24)?"PM":"AM"}; };
 const endLabel = e => { if(!e.e) return ""; const f = fmtTime(e.e); return "Until " + f.hm + " " + f.ap; };
 const booked = id => state.wallet.some(w=>w.kind==="event" && w.ref===id);
-const saveWallet = () => store.set("ae.wallet", state.wallet);
-const saveOrders = () => store.set("ae.orders", state.orders);
+const saveWallet = () => store.set("ae.wallet", state.wallet.filter(w=>!w.live)); // live tickets come from the server, never from storage
+const saveOrders = () => store.set("ae.orders", state.orders.filter(o=>!o.live));
 const today = () => new Date().toISOString().slice(0,10);
 const newOrderId = () => "AC27-" + String(Math.floor(100000 + Math.random()*899999));
 (function migrate(){
@@ -754,7 +758,7 @@ const views = {
         ${R('data-tab="info"','<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',"Info","FAQ, travel and accessibility")}
         ${R('data-tab="shop"','<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',"Shop",`${PRODUCTS.length} items from the official store`)}
         ${R('data-tab="photos"','<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/>',"Photos","Share yours, see the featured gallery")}
-        ${R('data-acct="1"','<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', a ? "Account" : "Sign in", a ? esc(a.name) + " \u00b7 " + ROLE_NAME[a.role] : "Apple, Google or email code")}
+        ${R('data-acct="1"','<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', a ? "Account" : "Sign in", a ? esc(a.name) + " \u00b7 " + ROLE_NAME[a.role] : "Email and password")}
         ${R('data-tab="partners"','<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',"Partners","Presenting partners")}
         ${R('data-install="1"','<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',"Install the app","Add it to your home screen")}
       </div></div>`;
@@ -808,6 +812,7 @@ function render(){
   $("#alertCount").hidden = state.seen;
   $("#main").innerHTML = views[state.tab]();
   stopQR(); if(state.tab==="tickets" && state.wallet.length) startQR();
+  drawLiveQRs();
   const car = document.getElementById("carousel"); if(car) car.addEventListener("scroll", ()=>{ const i = Math.round(car.scrollLeft / car.clientWidth); document.querySelectorAll("#dots i").forEach((d,j)=>d.classList.toggle("on", j===i)); }, {passive:true});
   if(state.tab==="map") initMap(); else if(lmap){ lmap.remove(); lmap = null; }
   drawBadge();
@@ -845,7 +850,7 @@ function stopQR(){ if(qrTimer){ clearInterval(qrTimer); qrTimer = null; } }
 
 let lastFocus = null;
 function openSheet(title, html){ lastFocus = document.activeElement; $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html; $("#scrim").hidden = false; const f = $("#sheetBody button, #sheetBody a"); if(f) f.focus(); }
-function closeSheet(){ stopCam(); scan = null; $("#scrim").hidden = true; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+function closeSheet(){ stopCam(); rxScanStop(); scan = null; $("#scrim").hidden = true; if(lastFocus && lastFocus.focus) lastFocus.focus(); if(liveDirty && state.tab==="tickets" && $("#admitted").hidden){ liveDirty = false; render(); } }
 let toastT = null;
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>{ t.hidden = true; }, 2600); }
 
@@ -868,10 +873,10 @@ function orderDetail(o, ts){
     <div class="carousel" id="carousel">${ts.map((t,j)=>`<div class="ticket">
       <div class="eyebrow">${esc(t.type || t.label)} \u00b7 ${j+1} of ${ts.length}</div>
       <div class="tn">${esc(t.tname || "Guest " + (j+1))}</div>
-      ${t.transferred ? `<div class="xferd">Transferred. This ticket now lives on the recipient's phone.</div>` : `<div class="qrwrap"><canvas class="qrc" data-serial="${t.serial}" width="29" height="29" aria-label="Rotating entry code"></canvas><div class="sample">SAMPLE</div></div>`}
+      ${t.transferred ? `<div class="xferd">${t.live && t.waiting ? `Waiting for ${esc(t.waiting)} to load it in the Audrain app.` : `Transferred. This ticket now lives on the recipient's phone.`}</div>` : t.live ? `<div class="qrwrap"><div class="lqr" data-qr="${esc(t.qr)}" role="img" aria-label="Entry code for ${t.serial}"></div></div>` : `<div class="qrwrap"><canvas class="qrc" data-serial="${t.serial}" width="29" height="29" aria-label="Rotating entry code"></canvas><div class="sample">SAMPLE</div></div>`}
       <div class="serial">${t.serial}</div>
       <div class="tstate">${esc(ticketState(t))}</div>
-      ${t.transferred ? "" : `<div class="timer qrtimer">Code refreshes every 15 seconds. Screenshots will not scan.</div>
+      ${t.transferred ? "" : `${t.live ? `<div class="timer">Scan at the gate. Locked to this phone.</div>` : `<div class="timer qrtimer">Code refreshes every 15 seconds. Screenshots will not scan.</div>`}
       <div class="tbtns"><button class="buy" type="button" data-checkin="t:${t.serial}">Check in</button><button class="buy ghost" type="button" data-xfer="${t.serial}">Send to someone</button></div>`}
     </div>`).join("")}</div>
     ${ts.length>1 ? `<div class="dots" id="dots">${ts.map((t,j)=>`<i class="${j===0?"on":""}"></i>`).join("")}</div>` : ""}
@@ -928,6 +933,123 @@ function issueOrder(status){
 }
 function pay(){ issueOrder("demo"); }
 
+// ---------- Live tickets (Supabase project audrain-events). Sample tickets stay local and keep working offline.
+const LIVE_APP = "concours";
+const CLAIM_RE = /(?:CONCOURS-CLAIM:|#claim-)([A-Z0-9-]+):([a-f0-9]{8,})/i;
+const sbOn = () => !!(window.SB && SB.ok);
+const deviceId = () => { let d = store.get("ae.device", null); if(!d){ d = "d-" + Math.random().toString(36).slice(2,10) + Date.now().toString(36); store.set("ae.device", d); } return d; };
+function loadQRLib(){ return new Promise(res=>{ if(window.QRCode) return res(true); const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; sc.onload = ()=>res(true); sc.onerror = ()=>res(false); document.head.appendChild(sc); }); }
+function drawLiveQRs(){
+  const els = [...document.querySelectorAll(".lqr[data-qr]")].filter(el=>el.dataset.qr && !el.dataset.done);
+  if(!els.length) return;
+  loadQRLib().then(ok=>{ if(!ok) return; els.forEach(el=>{ if(el.dataset.done) return; el.dataset.done = "1"; el.innerHTML = "";
+    new QRCode(el, {text:el.dataset.qr, width:196, height:196, colorDark:"#003057", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M});
+    el.removeAttribute("title"); }); });
+}
+let liveSeq = 0, liveDirty = false; // liveDirty: new server data arrived while a sheet was open
+async function refreshLive(){
+  if(!window.SB) return; await SB.ready; if(!SB.ok) return;
+  const seq = ++liveSeq; let rows;
+  try{ rows = await SB.rpc("tix","my_tickets",{p_app:LIVE_APP}); }catch(e){ console.warn("[live]", e.message); return; }
+  if(seq!==liveSeq) return;
+  state.wallet = state.wallet.filter(w=>!w.live); state.orders = state.orders.filter(o=>!o.live);
+  const groups = {};
+  (rows||[]).forEach(r=>{
+    const oid = "L-" + String(r.order_id || r.serial).replace(/-/g,"").slice(0,8).toUpperCase();
+    state.wallet.push({live:true, id:r.id, kind:"live", ref:r.event_slug||"", label:r.event||"Audrain ticket", type:(r.type||"Ticket") + (r.is_comp?" \u00b7 Comp":""),
+      sub:r.venue||"", tname:r.holder||"", serial:r.serial, order:oid, used:(r.used||[]).map(String), ev:r.event_slug==="aam-admission" ? "AAM" : "ACMW",
+      qr:r.qr||"", transferred:!r.mine, waiting:r.mine ? null : r.waiting_for, sentTo:r.waiting_for || "someone else"});
+    if(!groups[oid]) groups[oid] = {id:oid, live:true, title:r.event||"Audrain ticket", sub:r.order_channel==="comp" ? "Complimentary" : (r.venue||""), status:"confirmed", rail:"live", at:Date.parse(r.issued_at)||Date.now()};
+  });
+  state.orders = Object.values(groups).sort((a,b)=>b.at-a.at).concat(state.orders);
+  if(state.tab==="tickets" && $("#scrim").hidden && $("#admitted").hidden){ liveDirty = false; render(); } else liveDirty = true;
+}
+async function claimLive(serial, token){
+  if(!sbOn()){ toast("No connection. Try again when you're online."); return false; }
+  try{
+    const t = await SB.rpc("tix","claim_ticket",{p_qr:`CONCOURS-CLAIM:${String(serial).toUpperCase()}:${token}`, p_device:deviceId()});
+    closeSheet(); await refreshLive();
+    const w = state.wallet.find(x=>x.live && x.id===t.id); if(w) state.openOrder = w.order;
+    toast("Ticket added. It's locked to this phone."); go("tickets"); return true;
+  }catch(e){ const m = document.getElementById("rxMsg"); if(m) m.textContent = e.message; toast(e.message); return false; }
+}
+function liveSendSheet(t){
+  openSheet("Send this ticket", `<p>${esc(t.tname || t.type || "Ticket")} \u00b7 ${t.serial}</p>
+    <label class="price" for="sendEmail">Their email</label><input class="inp" id="sendEmail" type="email" autocomplete="off" placeholder="name@example.com">
+    <div class="price" id="sendMsg" role="status"></div>
+    <p class="rail">The ticket leaves this phone. It loads on theirs when they open the link, scan the code, or sign in to the Audrain app with that email.</p>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-livesend="${t.id}">Send ticket</button></div>`);
+}
+async function liveSend(id){
+  const e = ($("#sendEmail").value||"").trim(), msg = $("#sendMsg");
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ msg.textContent = "Enter a valid email"; return; }
+  if(!sbOn()){ msg.textContent = "No connection. Try again when you're online."; return; }
+  msg.textContent = "Sending\u2026";
+  try{
+    const r = await SB.rpc("tix","send_ticket",{p_ticket_id:id, p_to_email:e});
+    const code = `CONCOURS-CLAIM:${r.serial}:${r.claim_token}`, link = location.origin + location.pathname + "#claim-" + r.serial + ":" + r.claim_token;
+    openSheet("Ticket sent", `<p>${esc(r.serial)} now waits for <b>${esc(e)}</b>. Send them this link, or let them scan the code.</p>
+      <div class="qrwrap" style="align-self:center"><div class="lqr" data-qr="${esc(code)}" role="img" aria-label="Ticket claim code"></div></div>
+      <label class="price" for="xferLink">Link to send</label><textarea class="inp" id="xferLink" rows="3" readonly>${esc(link)}</textarea>
+      <div class="cards"><button class="buy" type="button" data-copyxfer="1">Copy link</button><button class="buy ghost" type="button" data-sharexfer="1">Share\u2026</button></div>
+      <p class="rail">The link works once. After it loads on their phone it stops working for anyone else.</p>
+      <div class="sheetfoot"><button class="buy" type="button" data-close="1">Done</button></div>`);
+    drawLiveQRs(); refreshLive();
+  }catch(err){ msg.textContent = err.message; }
+}
+let rxCam = null;
+async function rxScanStart(){
+  const box = document.getElementById("rxScanBox"), msg = document.getElementById("rxMsg"); if(!box) return; box.hidden = false;
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("no camera");
+    const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
+    const v = document.getElementById("rxVid"); if(!v){ st.getTracks().forEach(t=>t.stop()); return; }
+    rxScanStop(); rxCam = {stream:st, timer:null}; v.srcObject = st; await v.play();
+    const det = ("BarcodeDetector" in window) ? new BarcodeDetector({formats:["qr_code"]}) : null; if(!det) await loadJsQR();
+    const cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
+    if(msg) msg.textContent = "Point the camera at the ticket code\u2026";
+    rxCam.timer = setInterval(async ()=>{
+      if(!rxCam || !v.videoWidth) return; let txt = null;
+      try{ if(det){ const r = await det.detect(v); if(r.length) txt = r[0].rawValue; }
+        else if(window.jsQR){ cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v,0,0); const d = cx.getImageData(0,0,cv.width,cv.height); const r = jsQR(d.data, d.width, d.height); if(r) txt = r.data; } }catch(e){}
+      if(txt){ rxScanStop(); receiveCode(txt); }
+    }, 300);
+  }catch(e){ if(msg) msg.textContent = "Camera isn't available here. Paste the code instead."; }
+}
+function rxScanStop(){ if(!rxCam) return; clearInterval(rxCam.timer); rxCam.stream.getTracks().forEach(t=>t.stop()); rxCam = null; }
+function syncAccount(u){
+  if(!sbOn()) return;
+  if(u && !u.is_anonymous){
+    if(!state.account || state.account.email!==u.email){ state.account = {name:u.email.split("@")[0], email:u.email, method:"email and password", role:"guest", real:true}; store.set("ae.account", state.account); }
+  } else if(state.account){ state.account = null; state.edit = false; store.set("ae.account", null); }
+  paintAcct(); if(state.tab==="more") render();
+}
+async function pwAuth(up){
+  const e = ($("#authEmail").value||"").trim().toLowerCase(), p = $("#authPw").value||"", msg = $("#authMsg");
+  const say = s => { if(msg) msg.textContent = s; };
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return say("Enter a valid email");
+  if(p.length < 8) return say("Use at least 8 characters for the password");
+  const role = inviteRole(); if(role===null) return say("That invite code isn't valid");
+  if(!sbOn()){ signedIn({name:e.split("@")[0], email:e, method:"email (offline demo)", role}); return; }
+  say(up ? "Creating your account\u2026" : "Signing in\u2026");
+  try{
+    const onPhone = state.wallet.filter(w=>w.live && !w.transferred && !w.used.length);
+    if(!up && SB.isGuest() && onPhone.length){
+      // Signing into an existing account from a guest phone: check the password first, then move this phone's
+      // tickets to that email so they load into the account (claim_my_tickets below).
+      const tmp = window.supabase.createClient(SB_CONFIG.url, SB_CONFIG.anon, {auth:{persistSession:false, autoRefreshToken:false, storageKey:"sb-concours-check"}});
+      const chk = await tmp.auth.signInWithPassword({email:e, password:p});
+      if(chk.error) throw new Error(/Invalid login/i.test(chk.error.message) ? "Email or password is wrong" : chk.error.message);
+      for(const w of onPhone){ try{ await SB.rpc("tix","send_ticket",{p_ticket_id:w.id, p_to_email:e}); }catch(err){ console.warn("[live] move", w.serial, err.message); } }
+    }
+    up ? await SB.signUp(e, p) : await SB.signIn(e, p);
+    const r = await SB.rpc("tix","claim_my_tickets",{p_device:deviceId()});
+    signedIn({name:e.split("@")[0], email:e, method:"email and password", role, real:true});
+    await refreshLive();
+    if(r && r.loaded) toast(`${r.loaded} ticket${r.loaded===1?"":"s"} loaded onto this phone`);
+  }catch(err){ say(err.message); }
+}
+
 // ---------- Rotating codes for every visible ticket
 function drawQRCanvas(c){
   const serial = c.dataset.serial, x = c.getContext("2d"), N = 29, slot = Math.floor(Date.now()/15000);
@@ -981,27 +1103,36 @@ function handleGatePayload(txt){
   const m = /^AUDRAIN-CHECKIN:([A-Z0-9]+):([A-Z0-9]+)$/.exec(String(txt).trim());
   const g = m && GATES[m[2]];
   if(!g || g.ev!==m[1]){ const el = document.getElementById("scanMsg"); if(el) el.textContent = "That isn't an Audrain gate code."; return; }
-  admit(m[2]);
+  admit(m[2], String(txt).trim());
 }
-function admit(gk){
+async function admit(gk, gateStr){
   if(!scan || scan.done) return; scan.done = true;
   const g = GATES[gk], d = today(), res = [];
-  scan.targets.map(sr=>state.wallet.find(w=>w.serial===sr && !w.transferred)).filter(Boolean).forEach(t=>{
+  const ts = scan.targets.map(sr=>state.wallet.find(w=>w.serial===sr && !w.transferred)).filter(Boolean);
+  const liveTs = ts.filter(t=>t.live && t.ev===g.ev), liveRes = {};
+  if(liveTs.length){
+    const m = document.getElementById("scanMsg"); if(m) m.textContent = "Checking in\u2026";
+    try{ const r = await SB.rpc("tix","self_checkin",{p_gate_qr:gateStr || `AUDRAIN-CHECKIN:${g.ev}:${gk}`, p_ticket_ids:liveTs.map(t=>t.id)}); (r.results||[]).forEach(x=>{ liveRes[x.ticket_id] = x.result; }); }
+    catch(e){ scan.done = false; if(m) m.textContent = e.message; return; }
+  }
+  ts.forEach(t=>{
     if(t.ev!==g.ev){ res.push([t, "wrong"]); return; }
+    if(t.live){ const r = liveRes[t.id]; if(r==="valid"){ if(!t.used.includes(d)) t.used.push(d); res.push([t, "in"]); } else res.push([t, r==="already_used" ? "re" : "bad"]); return; }
     const re = t.used.includes(d); if(!re) t.used.push(d); res.push([t, re ? "re" : "in"]);
   });
   saveWallet(); stopCam(); scan = null; closeSheet();
-  const ok = res.filter(r=>r[1]!=="wrong"), allRe = ok.length && ok.every(r=>r[1]==="re");
+  const ok = res.filter(r=>r[1]==="in" || r[1]==="re"), allRe = ok.length && ok.every(r=>r[1]==="re");
   const el = document.getElementById("admitted");
   el.className = "admitted" + (!ok.length ? " bad" : allRe ? " re" : "");
   const now = new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",second:"2-digit"});
   el.innerHTML = `${ok.length ? `<svg class="chk" viewBox="0 0 110 110" aria-hidden="true"><circle cx="55" cy="55" r="48"/><path d="M32 57 L48 73 L80 39"/></svg>` : ""}
     <h1>${!ok.length ? "NOT VALID HERE" : allRe ? "RE-ENTRY" : "ADMITTED"}</h1>
     <div style="font-weight:700">${esc(g.name)}</div><div class="admclock">${now}</div>
-    <div class="alist">${res.map(([t,r])=>`<div><b>${r==="wrong"?"\u2715":"\u2713"} ${esc(t.tname || t.type || "Guest")}</b><span>${t.serial}${r==="re"?" \u00b7 re-entry":r==="wrong"?" \u00b7 wrong entrance":""}</span></div>`).join("")}</div>
+    <div class="alist">${res.map(([t,r])=>`<div><b>${r==="wrong"||r==="bad"?"\u2715":"\u2713"} ${esc(t.tname || t.type || "Guest")}</b><span>${t.serial}${r==="re"?" \u00b7 re-entry":r==="wrong"?" \u00b7 wrong entrance":r==="bad"?" \u00b7 not valid":""}</span></div>`).join("")}</div>
     <div style="opacity:.9;font-size:13.5px">${ok.length} of ${res.length} checked in. Show this screen to the gate staff.</div>
     <button type="button" data-admdone="1">Done</button>`;
   el.hidden = false; if(navigator.vibrate) try{ navigator.vibrate(ok.length?[60,40,60]:[200]); }catch(e){}
+  if(liveTs.length) refreshLive();
 }
 
 // ---------- Names, transfers, receiving
@@ -1015,6 +1146,7 @@ const b64u = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(
 const unb64u = s => JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))));
 function xferSheet(serial){
   const t = state.wallet.find(w=>w.serial===serial); if(!t) return;
+  if(t.live) return liveSendSheet(t);
   const code = "AUD1-" + b64u({s:t.serial, l:t.label, t:t.type||"", n:t.tname||"", o:t.order, ev:t.ev, k:t.kind, r:t.ref, u:t.sub});
   const link = location.origin + location.pathname + "#rx-" + code;
   openSheet("Send this ticket", `<p>${esc(t.tname || t.type || "Ticket")} \u00b7 ${t.serial}</p>
@@ -1025,11 +1157,15 @@ function xferSheet(serial){
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-markxfer="${t.serial}">Mark as sent</button></div>`);
 }
 function receiveSheet(prefill){
-  openSheet("Add a ticket I was sent", `<p class="price">Paste the link or code someone sent you.</p>
-    <textarea class="inp" id="rxCode" rows="3" placeholder="https://\u2026#rx-AUD1-\u2026">${esc(prefill||"")}</textarea>
+  openSheet("Add a ticket I was sent", `<p class="price">Scan the ticket code, or paste the link or code someone sent you. A ticket loads onto one phone only.</p>
+    <button class="buy ghost" type="button" data-rxscan="1">Scan a ticket code</button>
+    <div class="rxscan" id="rxScanBox" hidden><video id="rxVid" playsinline muted></video></div>
+    <textarea class="inp" id="rxCode" rows="3" placeholder="https://\u2026#claim-\u2026">${esc(prefill||"")}</textarea>
+    <div class="price" id="rxMsg" role="status"></div>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-rxgo="1">Add ticket</button></div>`);
 }
 function receiveCode(raw){
+  const cm = CLAIM_RE.exec(decodeURIComponent(String(raw||""))); if(cm){ claimLive(cm[1], cm[2]); return; }
   const m = /AUD1-([A-Za-z0-9_-]+)/.exec(raw||""); if(!m) return toast("That code isn't an Audrain ticket");
   let d; try{ d = unb64u(m[1]); }catch(e){ return toast("That code isn't an Audrain ticket"); }
   if(state.wallet.some(w=>w.serial===d.s && !w.transferred)) return toast("That ticket is already in your wallet");
@@ -1190,15 +1326,15 @@ function signInSheet(why){
   const GOOG = '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>';
   openSheet("Sign in", `
     ${why ? `<p class="price">${esc(why)}</p>` : `<p class="price">Sign in to buy tickets, keep them on this phone, and get alerts for your events.</p>`}
-    <button class="authbtn apple" type="button" data-auth="apple">${APPLE}Continue with Apple</button>
-    <button class="authbtn google" type="button" data-auth="google">${GOOG}Continue with Google</button>
-    <div class="or">or use email</div>
     <label class="price" for="authEmail">Email</label><input class="inp" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
-    <button class="buy" type="button" data-sendcode="1" style="padding:11px">Email me a code</button>
+    <label class="price" for="authPw">Password</label><input class="inp" id="authPw" type="password" autocomplete="current-password" placeholder="At least 8 characters">
+    <div class="price" id="authMsg" role="status"></div>
+    <button class="buy" type="button" data-pwauth="in" style="padding:11px">Sign in</button>
+    <button class="buy ghost" type="button" data-pwauth="up" style="padding:11px">Create an account</button>
     <details><summary class="price" style="cursor:pointer">Staff? Enter your invite code</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><input class="inp" id="authInvite" placeholder="Invite code from Ops" autocapitalize="characters"><div class="price">Demo codes: STAFF-2027, LEAD-2027, OPS-2027 (Ops unlocks the map editor).</div><a class="buy ghost" href="https://michaelsalvato86-sys.github.io/audrain-events-mockup/staff/" target="_blank" rel="noopener">Audrain staff: open the staff app (work email sign-in)</a></div>
     </details>
-    <p class="price">No passwords. Mockup: nothing is sent and no account is created on a server.</p>
+    <p class="price">Your tickets already live on this phone. An account keeps them if you change phones, and loads tickets sent to your email.</p>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Not now</button></div>`);
 }
 function inviteRole(){ const v = ($("#authInvite") && $("#authInvite").value || "").trim().toUpperCase(); if(!v) return "guest"; if(ROLE_CODES[v]) return ROLE_CODES[v]; return null; }
@@ -1298,15 +1434,19 @@ document.addEventListener("click", ev=>{
   if(ds.checkin){ const [kind,val] = ds.checkin.split(":"); const targets = kind==="order" ? orderTickets(val).filter(w=>!w.transferred).map(w=>w.serial) : [val];
     scanSheet(targets, kind==="order" ? `Checking in ${targets.length} tickets together` : "Checking in 1 ticket"); return; }
   if(ds.simgate){ admit($("#simGate").value); return; }
-  if(ds.gatecode){ const c = ($("#gateCode").value||"").trim(); const gk = Object.keys(GATES).find(k=>GATES[k].code===c); if(!gk){ const m = $("#scanMsg"); if(m) m.textContent = "That code doesn't match a gate. Check the sign."; return; } admit(gk); return; }
-  if(ds.admdone){ $("#admitted").hidden = true; render(); return; }
+  if(ds.gatecode){ const c = ($("#gateCode").value||"").trim(); const gk = Object.keys(GATES).find(k=>GATES[k].code===c); if(!gk){ const m = $("#scanMsg"); if(m) m.textContent = "That code doesn't match a gate. Check the sign."; return; } admit(gk, c); return; }
+  if(ds.admdone){ $("#admitted").hidden = true; liveDirty = false; render(); return; }
   if(ds.names){ namesSheet(ds.names); return; }
-  if(ds.savenames){ document.querySelectorAll("[data-nmserial]").forEach(i=>{ const w = state.wallet.find(x=>x.serial===i.dataset.nmserial); if(w) w.tname = i.value.trim(); }); saveWallet(); closeSheet(); toast("Names saved"); render(); return; }
+  if(ds.savenames){ const jobs = []; document.querySelectorAll("[data-nmserial]").forEach(i=>{ const w = state.wallet.find(x=>x.serial===i.dataset.nmserial); if(!w) return; const nm = i.value.trim(); if(w.live && nm!==(w.tname||"")) jobs.push(SB.rpc("tix","set_holder",{p_ticket_id:w.id, p_name:nm})); w.tname = nm; }); saveWallet(); closeSheet(); render();
+    if(jobs.length) Promise.all(jobs).then(()=>{ toast("Names saved"); refreshLive(); }).catch(e=>toast(e.message)); else toast("Names saved"); return; }
   if(ds.xfer){ xferSheet(ds.xfer); return; }
   if(ds.copyxfer){ const v = $("#xferLink").value; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(()=>toast("Link copied")).catch(()=>{ $("#xferLink").select(); toast("Select and copy the link"); }); return; }
   if(ds.sharexfer){ const v = $("#xferLink").value; if(navigator.share){ navigator.share({title:"Your Audrain ticket", url:v}).catch(()=>{}); } else { $("#xferLink").select(); toast("Sharing isn't available here. Copy the link instead."); } return; }
   if(ds.markxfer){ const w = state.wallet.find(x=>x.serial===ds.markxfer); if(w){ w.transferred = true; w.sentTo = ($("#xferTo").value||"").trim(); saveWallet(); } closeSheet(); toast("Ticket sent. Your copy is now marked Transferred."); render(); return; }
   if(ds.receive){ receiveSheet(); return; }
+  if(ds.rxscan){ rxScanStart(); return; }
+  if(ds.livesend){ liveSend(ds.livesend); return; }
+  if(ds.pwauth){ pwAuth(ds.pwauth==="up"); return; }
   if(ds.rxgo){ receiveCode($("#rxCode").value); return; }
   if(ds.addwallet){ toast("Apple Wallet and Google Wallet passes come from the ticketing system in the live app"); return; }
   if(ds.pay){ if(!state.account){ afterSignIn = ()=>{ pay(); }; signInSheet("Sign in to finish your purchase. Your tickets will be saved to your account."); return; } pay(); return; }
@@ -1341,9 +1481,9 @@ document.addEventListener("click", ev=>{
     signedIn(ds.auth==="apple" ? {name:"Apple ID user", email:"private relay (hidden by Apple)", method:"Apple", role} : {name:"Google user", email:"you@gmail.com", method:"Google", role}); return; }
   if(ds.sendcode){ const e = ($("#authEmail").value||"").trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ toast("Enter a valid email"); return; } const role = inviteRole(); if(role===null){ toast("That invite code isn't valid"); return; } codeSheet(e, role); return; }
   if(ds.verify){ const c = ($("#authCode").value||"").trim(); if(!/^\d{6}$/.test(c)){ toast("Enter the 6-digit code"); return; } signedIn({name: ds.verify.split("@")[0], email: ds.verify, method:"email code", role: ds.role}); return; }
-  if(ds.signout){ state.account = null; store.set("ae.account", null); state.edit = false; closeSheet(); paintAcct(); toast("Signed out"); render(); return; }
+  if(ds.signout){ state.account = null; store.set("ae.account", null); state.edit = false; closeSheet(); paintAcct(); toast("Signed out"); render(); if(sbOn()) SB.signOut().then(refreshLive).catch(e=>toast(e.message)); return; }
   if(ds.delacct){ deleteSheet(); return; }
-  if(ds.delconfirm){ state.account = null; store.set("ae.account", null); state.saved = new Set(); store.set("ae.saved", []); state.edit = false; closeSheet(); paintAcct(); toast("Account deleted"); render(); return; }
+  if(ds.delconfirm){ state.account = null; store.set("ae.account", null); state.saved = new Set(); store.set("ae.saved", []); state.edit = false; closeSheet(); paintAcct(); toast("Account deleted"); render(); if(sbOn()) SB.signOut().then(refreshLive).catch(()=>{}); return; }
   if(ds.gomapedit){ closeSheet(); state.edit = true; state.mapDraft = JSON.parse(JSON.stringify(state.mapPub)); go("map"); return; }
   if(ds.editmap){ state.edit = true; state.mapDraft = JSON.parse(JSON.stringify(state.mapPub)); render(); return; }
   if(ds.donemap){ if(dirtyCount()){ toast("Publish or discard your changes first"); return; } state.edit = false; state.placeType = null; state.mapDraft = null; render(); return; }
@@ -1379,6 +1519,12 @@ function install(){
 if(!views[state.tab]) state.tab = "itinerary";
 paintAcct();
 render();
+// Live back end: real tickets on load and on every sign-in change; a #claim- link loads its ticket onto this phone.
+if(window.SB){
+  SB.onAuth(u=>{ syncAccount(u); refreshLive(); });
+  const claimFromHash = () => SB.ready.then(()=>{ const m = CLAIM_RE.exec(decodeURIComponent(location.hash||"")); if(m && SB.ok){ history.replaceState(null, "", location.pathname + location.search); claimLive(m[1], m[2]); } });
+  claimFromHash(); addEventListener("hashchange", claimFromHash);
+}
 })();
 </script>
 
