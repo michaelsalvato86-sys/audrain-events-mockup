@@ -296,6 +296,8 @@ const GATES = {
   TOWN:   {name:"Town event door", ev:"ACMW", code:"5163"},
   MUSEUM: {name:"Museum entrance, 222 Bellevue Ave", ev:"AAM", code:"2266"}
 };
+// STAFF_LOCK: false = open (Michael 2026-10-09). Set true to require work email + password again.
+const STAFF_LOCK = false;
 const STAFF_DOMAINS = ["audrainautomuseum.org","audrainconcours.com","mwmwealth.com"];
 const PRESETS = [["here","Need you at {post} now"],["late","Running 10 min late"],["break","Break relief needed"],["clear","All clear"],["custom","Custom message"]];
 const store = { get(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
@@ -583,7 +585,7 @@ function signIn(ev){
   state.session = {email, name: email.split("@")[0], at: Date.now()}; store.set("st.session", state.session);
   enterApp(); toast("Signed in as " + email);
 }
-function signOut(){ state.session = null; store.set("st.session", null); closeSheet(); if(smap){ smap.remove(); smap = null; } showGate(); }
+function signOut(){ if(!STAFF_LOCK){ closeSheet(); toast("Sign-in is off for now"); return; } state.session = null; store.set("st.session", null); closeSheet(); if(smap){ smap.remove(); smap = null; } showGate(); }
 
 function showPost(k){
   const p = POSTS[k]; const teams = Object.entries(TEAMS).filter(([tk,t])=>t.base===k || (SHIFTS[tk]||[]).some(s=>s[3]===k));
@@ -640,7 +642,8 @@ if(!views[state.tab]) state.tab="shift";
 $("#gateForm").addEventListener("submit", signIn);
 $("#gShow").addEventListener("change", ev=>{ $("#gPass").type = ev.target.checked ? "text" : "password"; });
 $("#gForgot").addEventListener("click", ()=>{ $("#gErr").textContent = "Contact Ops to reset your password."; });
-if(state.session && domainOk(state.session.email)) enterApp(); else showGate();
+if(!STAFF_LOCK && !state.session){ state.session = {email:"staff@audrainconcours.com", name:"Staff", at:Date.now()}; }
+if(!STAFF_LOCK || (state.session && domainOk(state.session.email))) enterApp(); else showGate();
 })();
 </script>
 
