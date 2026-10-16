@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#003057">
+<link rel="icon" href="../staff/icon-192.png">
+<title>Concours Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="admin.css">
+<!-- Back end: the anon key is public by design; every rule is enforced in the database (staff.has_role 'admin').
+     Library: the vendored supabase-js 2.45.4 (../vendor); sb.js only falls back to the pinned CDN build if it is missing. -->
+<script>window.SB_CONFIG = {url:"https://jlqxorlegyqlpbnwroaz.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXhvcmxlZ3lxbHBibndyb2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1ODE1MTcsImV4cCI6MjEwNzE1NzUxN30.eOye3dMBepkoV_oOA3EbdGnyUH9VyyZ9yjbIRfJky4s", app:"concours", storageKey:"sb-concours-admin", guest:false};</script>
+<script src="../vendor/supabase-js/supabase.js"></script>
+<script src="sb.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- Sign-in -->
+<div class="gate" id="gate" hidden>
+  <form class="gatecard" id="signinForm" novalidate>
+    <div class="logo"><small>Audrain Concours</small>Admin portal</div>
+    <p class="fine">For Concours admins only. Sign in with your work email.</p>
+    <div class="field"><label for="siEmail">Work email</label><input id="siEmail" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="siPass">Password</label><input id="siPass" type="password" autocomplete="current-password"></div>
+    <p class="err" id="siErr" role="alert"></p>
+    <button class="btn primary" type="submit" id="siSubmit">Sign in</button>
+    <button class="btn ghost" type="button" id="siMagic">Email me a sign-in link instead</button>
+    <p class="fine" id="siNote" role="status"></p>
+  </form>
+</div>
+
+<!-- Signed in but not an admin -->
+<div class="gate" id="denied" hidden>
+  <div class="gatecard" role="alert" aria-labelledby="deniedTitle">
+    <div class="logo"><small>Audrain Concours</small><span id="deniedTitle">Access denied</span></div>
+    <p>This portal is for Concours admins. <span id="deniedWho"></span> does not have admin access.</p>
+    <p class="fine">If you need access, ask an existing Concours admin to set your role to admin in the staff app.</p>
+    <button class="btn ghost" type="button" id="deniedOut">Sign out</button>
+  </div>
+</div>
+
+<!-- Loading / offline -->
+<div class="gate" id="boot">
+  <div class="gatecard"><div class="logo"><small>Audrain Concours</small>Admin portal</div><p id="bootMsg" role="status">Connecting...</p></div>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <header class="top">
+    <div class="brand"><small>Audrain Concours</small>Admin</div>
+    <div class="topright"><span class="who" id="whoTxt"></span><button class="btn ghost sm onnavy" type="button" id="signOut">Sign out</button></div>
+  </header>
+  <nav class="side" aria-label="Admin sections">
+    <button type="button" data-view="dashboard">Dashboard</button>
+    <button type="button" data-view="events">Events and tickets</button>
+    <button type="button" data-view="comps">Comps</button>
+    <button type="button" data-view="orders">Orders</button>
+    <button type="button" data-view="promos">Promo codes</button>
+    <button type="button" data-view="ops">Parking and trolleys</button>
+    <button type="button" data-view="exports">Exports</button>
+    <button type="button" data-view="audit">Audit log</button>
+  </nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<!-- One dialog, reused for confirms, editors and the one-time vehicle token -->
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog" id="dlgForm" novalidate>
+    <h2 id="dlgTitle"></h2>
+    <div id="dlgBody"></div>
+    <p class="err" id="dlgErr" role="alert"></p>
+    <div class="btns end" id="dlgBtns"></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

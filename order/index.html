@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#003057">
+<meta name="description" content="Official tickets for the Audrain Concours &amp; Motor Week 2027, Newport, Rhode Island.">
+<title>Audrain Concours Tickets</title>
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="order.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="in">
+    <a class="mark" href="./">Audrain Concours<small>Tickets 2027</small></a>
+    <nav aria-label="Site"><a href="#lookup" data-go="lookup">Find my order</a></nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- Shop -->
+  <section id="v-shop" aria-labelledby="shop-h">
+    <div class="hero">
+      <h1 id="shop-h">Get your tickets</h1>
+      <p>Prices shown include all mandatory fees. Sales tax, where it applies, is added at checkout.</p>
+    </div>
+    <div id="catalog" aria-live="polite" aria-busy="true"><p class="notice">Loading events...</p></div>
+  </section>
+
+  <!-- Details (names, buyer, promo) -->
+  <section id="v-details" aria-labelledby="det-h" hidden>
+    <div class="hero"><h1 id="det-h" tabindex="-1">Your details</h1><p>Each ticket is named for its guest so it can be checked at the gate.</p></div>
+    <form id="details" novalidate>
+      <div class="panel" id="holders"></div>
+      <div class="panel">
+        <h2>Buyer</h2>
+        <label class="field"><span>Full name</span><input id="b-name" name="name" autocomplete="name" required></label>
+        <label class="field"><span>Email</span><input id="b-email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="b-email-hint"><div class="hint" id="b-email-hint">Your confirmation and tickets go here. Use the same email in the Audrain app.</div></label>
+        <label class="field"><span>Promo code (optional)</span><input id="b-promo" name="promo" autocomplete="off" autocapitalize="characters" aria-describedby="b-promo-hint"><div class="hint" id="b-promo-hint">Checked and applied at checkout.</div></label>
+      </div>
+      <div class="panel">
+        <h2>Summary</h2>
+        <table class="sum" id="est"><caption class="sr">Order estimate</caption><tbody></tbody></table>
+        <p class="hint" style="font-size:13px;color:var(--muted)">Final total, including any tax and promo discount, is confirmed by the box office on the next screen.</p>
+        <p id="det-err" class="notice err" role="alert" hidden></p>
+        <div class="row">
+          <button class="btn" type="submit" id="go-pay">Continue to payment</button>
+          <button class="btn ghost" type="button" data-go="shop">Back to tickets</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Confirmation -->
+  <section id="v-done" aria-labelledby="done-h" hidden>
+    <div class="hero"><h1 id="done-h" tabindex="-1">You're going</h1><p id="done-sub"></p></div>
+    <div class="panel" id="done-pass">
+      <h2>Your entry pass</h2>
+      <div id="qr-wrap" hidden>
+        <div class="qrbox" id="qr"></div>
+        <p class="qrmeta"><span id="qr-name"></span><br>Code refreshes in <span id="qr-left">15</span>s - screenshots will not scan.</p>
+      </div>
+      <p class="notice" id="qr-note" hidden></p>
+      <p class="qrmeta">Pass <span class="serial" id="pass-serial">-</span></p>
+    </div>
+    <div class="panel">
+      <h2>Order</h2>
+      <table class="sum" id="done-lines"><caption class="sr">Items in your order</caption><tbody></tbody></table>
+    </div>
+    <div class="panel">
+      <h2>Get the app</h2>
+      <ol class="steps">
+        <li>Download the Audrain app: <span class="todo">TODO App Store link</span> / <span class="todo">TODO Google Play link</span>.</li>
+        <li>Open <b>Tickets</b> and choose <b>Link an order</b>.</li>
+        <li>Sign in with <b id="done-email">the email you used here</b>. Your tickets move to your phone, and the entry QR moves with them.</li>
+      </ol>
+      <p class="hint" style="font-size:14px;color:var(--muted)">The QR above works in this browser until you link the order in the app. Keep this page or your confirmation email handy until then.</p>
+    </div>
+  </section>
+
+  <!-- Order lookup -->
+  <section id="v-lookup" aria-labelledby="look-h" hidden>
+    <div class="hero"><h1 id="look-h" tabindex="-1">Find my order</h1><p>We'll email you a sign-in link. Open it on this device to see your tickets.</p></div>
+    <form id="lookup-form" class="panel" novalidate>
+      <label class="field"><span>Email used for the order</span><input id="l-email" type="email" autocomplete="email" inputmode="email" required></label>
+      <p id="l-msg" class="notice" role="status" hidden></p>
+      <div class="row"><button class="btn" type="submit">Email me a link</button><button class="btn ghost" type="button" data-go="shop">Back to tickets</button></div>
+    </form>
+    <div id="lookup-result"></div>
+  </section>
+
+  <footer>
+    <nav aria-label="Policies">
+      <a href="terms.html">Terms of sale</a><a href="refund.html">Refund policy</a><a href="privacy.html">Privacy</a>
+      <a href="accessibility.html">Accessibility</a><a href="contact.html">Contact</a>
+      <a href="#" id="optout">Do not sell or share my info</a>
+    </nav>
+    <p>Sold by the Concours Foundation, Newport, Rhode Island. Card statements show AUDRAIN CONCOURS.</p>
+  </footer>
+</main>
+
+<div class="cartbar" id="cartbar" hidden>
+  <div class="in">
+    <div><b id="cart-total">$0.00</b><small id="cart-count">0 items, fees included</small></div>
+    <button class="btn" type="button" id="cart-go">Checkout</button>
+  </div>
+</div>
+<div class="sr" aria-live="polite" id="live"></div>
+
+<script>window.ORDER_CONFIG = {url:"https://jlqxorlegyqlpbnwroaz.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXhvcmxlZ3lxbHBibndyb2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1ODE1MTcsImV4cCI6MjEwNzE1NzUxN30.eOye3dMBepkoV_oOA3EbdGnyUH9VyyZ9yjbIRfJky4s", app:"concours", year:2027, storageKey:"sb-concours-order", tz:"America/New_York"}; // Supabase project audrain-events; the anon key is public by design, the database enforces every rule</script>
+<script src="../vendor/supabase-js/supabase.js"></script>
+<script src="../shared/track.js"></script>
+<script src="../shared/pass.js"></script>
+<script src="../shared/checkout.js"></script>
+<script src="order.js"></script>
+</body>
+</html>
