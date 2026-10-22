@@ -289,6 +289,22 @@ select{border:1px solid var(--line);background:var(--surface);color:var(--fg);bo
 .st.ok{background:#2f7d4f;color:#fff}.st.pend{background:#8f530c;color:#fff}.st.bad{background:#a33a2b;color:#fff}.st.rx{background:#3a6fb0;color:#fff}
 .rxscan video{width:100%;max-height:260px;border-radius:12px;background:#000;object-fit:cover}
 details summary{cursor:pointer}
+/* Account number (pass serial) and "Show your car" entrant section */
+.acctno{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--gold);border-radius:14px;padding:12px 14px;background:var(--surface)}
+.acctno output{font-family:var(--mono);font-size:22px;letter-spacing:.06em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:0;user-select:all}
+.car{border:1px solid var(--line);border-left:5px solid var(--gold);background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.shot{position:relative;border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:5px;min-width:0;background:var(--bg)}
+.shot .ex{position:relative;aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:var(--ivory);color:var(--navy);display:grid;place-items:center}
+.shot .ex img{width:100%;height:100%;object-fit:cover;display:block}
+.shot .ex svg{width:88%;height:auto}
+.shot .ex .st{position:absolute;top:6px;left:6px;margin:0}
+.shot .t{font-weight:700;font-size:13px;line-height:1.25}
+.shot .d{font-size:12px;color:var(--muted);flex:1}
+.fileinp{position:absolute;width:1px;height:1px;opacity:0}
+.fileinp:focus-visible + label{outline:3px solid var(--gold);outline-offset:2px}
+.fileinp:disabled + label{opacity:.6;cursor:progress}
+.shot label.buy{cursor:pointer}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 <style>/* Leaflet 1.9.4 */
@@ -657,7 +673,7 @@ function row(e, showDay){
   </div>`;
 }
 
-const tabOf = t => ["shop","photos","info","partners","more"].includes(t) ? "more" : t;
+const tabOf = t => ["shop","photos","info","partners","entrant","more"].includes(t) ? "more" : t;
 const banner = (title, img, sub, eyebrow) => `<section class="banner" style="background-image:url('photos/${img}.jpg')">${eyebrow?`<div class="eyebrow">${eyebrow}</div>`:""}<h1>${title}</h1>${sub?`<p>${sub}</p>`:""}</section>`;
 function datesLine(){
   const w = EVENT_2027.weekends || [];
@@ -928,6 +944,7 @@ const views = {
         ${R('data-tab="info"','<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',"Info","FAQ, travel and accessibility")}
         ${R('data-tab="shop"','<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',"Shop",`${PRODUCTS.length} items from the official store`)}
         ${R('data-tab="photos"','<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/>',"Photos","See the featured gallery")}
+        ${R('data-tab="entrant"','<path d="M3 16v-3l2-1 2-4h9l3 4 2 1v3z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/>',"Show your car","Entrant applications, photos and add-ons")}
         ${R('data-acct="1"','<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', email ? "Account" : "Sign in", email ? esc(email) : "Optional: keeps your pass if you change phones")}
         ${R('data-tab="partners"','<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/>',"Partners","Presenting partners")}
         ${R('data-install="1"','<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',"Install the app","Add it to your home screen")}
@@ -937,6 +954,12 @@ const views = {
       </div><button class="buy" type="button" data-notifon="1" style="align-self:flex-start">Turn on phone notifications</button></section>
       <section class="section"><h2>Your data</h2><p class="price">The schedule, map and info work without an account. ${email ? "" : "This phone has a private guest account so tickets can lock to it."}</p>
         <button class="buy ghost" type="button" data-delacct="1" style="align-self:flex-start">${email ? "Delete my account" : "Delete this phone's guest data"}</button></section>
+    </div>`;
+  },
+  entrant(){
+    return `<div class="view">${banner("Show your car","lawn","Apply to show your car at the Concours", "Entrants")}
+      ${entBody()}
+      ${entAddons()}
     </div>`;
   },
   info(){
@@ -992,7 +1015,8 @@ function normPass(r){
     venue:t.venue || "", holder:(t.holder != null ? t.holder : t.holder_name) || "", zones:t.zones || [], status:t.status || "claimed",
     mine:t.mine !== false, waiting:t.waiting_for || t.reserved_email || null, used:t.used || [], order_id:t.order_id || null, is_comp:!!t.is_comp}));
   const zones = r.zones || (p && p.zones) || [...new Set(tickets.flatMap(t=>t.zones))];
-  return {pass: p ? {id:String(p.id || p.pass_id), serial:p.serial || "", holder_name:p.holder_name || "", kind:p.kind || "attendee",
+  // account_no (Curtis call 2026-10-22) is the pass serial; the box office finds a pass by it, or by its last 4+ characters.
+  return {pass: p ? {id:String(p.id || p.pass_id), serial:p.serial || "", account_no:p.account_no || r.account_no || p.serial || "", holder_name:p.holder_name || "", kind:p.kind || "attendee",
     rev:Number(p.cred_rev != null ? p.cred_rev : (p.rev || 0)), status:p.status || "active", year:p.year || null} : null, tickets, zones};
 }
 async function refreshPass(){
@@ -1072,7 +1096,7 @@ function passSection(){
     const guest = !(window.SB && SB.email && SB.email());
     return `<div class="empty"><h2>No pass yet</h2><p>Buy a ticket and your ${EVENT_2027.year} pass appears here: one entry code for everything you've bought, even with no signal.</p>
       ${guest ? `<p class="price">Bought on another phone or the website? <button class="link" type="button" data-signin="1">Sign in</button> with the same email.</p>` : ""}
-      <button class="buy ghost" type="button" data-receive="1">Add a ticket I was sent</button></div>`;
+      <div class="cards"><button class="buy ghost" type="button" data-receive="1">Add a ticket I was sent</button><button class="buy ghost" type="button" data-badge="1">Add a badge</button></div></div>`;
   }
   const email = window.SB && SB.email ? SB.email() : null;
   return `<section class="ticket" aria-labelledby="passName">
@@ -1084,13 +1108,25 @@ function passSection(){
       <div class="timer">Turn your screen brightness up at the gate. Screenshots will not scan.</div>
       <div class="walletbtns"><button type="button" data-wallet="apple" aria-disabled="true">Apple Wallet: coming soon</button><button type="button" data-wallet="google" aria-disabled="true">Google Wallet: coming soon</button></div>
     </section>
+    ${acctNoBlock(P)}
     <section class="section"><div class="section-head"><h2>On this pass</h2><span class="price">${ts.length} item${ts.length===1?"":"s"}</span></div>
       ${ts.length ? `<div class="list">${ts.map(entRow).join("")}</div>` : `<div class="notice">Nothing on this pass yet.</div>`}
-      <div class="cards">${ts.some(t=>t.mine && t.status!=="void") ? `<button class="buy ghost" type="button" data-names="1">Names on tickets</button>` : ""}<button class="buy ghost" type="button" data-receive="1">Add a ticket I was sent</button></div>
+      <div class="cards">${ts.some(t=>t.mine && t.status!=="void") ? `<button class="buy ghost" type="button" data-names="1">Names on tickets</button>` : ""}<button class="buy ghost" type="button" data-receive="1">Add a ticket I was sent</button><button class="buy ghost" type="button" data-badge="1">Add a badge</button></div>
       <p class="price">One scan admits the whole pass. To give someone their own code, send them their ticket.</p>
     </section>`;
 }
-const zoneLabel = z => ({general:"General", vip:"VIP", hospitality:"Hospitality", parking:"Parking", museum:"Museum", town:"Town events"})[z] || String(z).replace(/_/g," ");
+// What Curtis asks for on the phone: the office loads comps onto a pass by this number (tix.admin_load_pass).
+function acctNoBlock(P){
+  const no = P.account_no || P.serial; if(!no || P.status==="void") return "";
+  return `<section class="section" aria-labelledby="acctNoH"><div class="section-head"><h2 id="acctNoH">Your account number</h2></div>
+      <div class="acctno"><output id="acctNo" aria-labelledby="acctNoH">${esc(no)}</output><button class="buy" type="button" data-copyacct="${esc(no)}">Copy<span class="sr"> your account number</span></button></div>
+      <p class="price">Give this number to the Concours office to have tickets added.</p></section>`;
+}
+function copyText(v, ok, el){
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(v) : Promise.reject())
+    .then(()=>toast(ok)).catch(()=>{ if(el){ const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast("Select the number and copy it"); });
+}
+const zoneLabel = z =>({general:"General", vip:"VIP", hospitality:"Hospitality", parking:"Parking", museum:"Museum", town:"Town events"})[z] || String(z).replace(/_/g," ");
 function entRow(t){
   const when = t.starts_at ? nyParts(t.starts_at) : null;
   const canSend = t.mine && t.status==="claimed" && !(t.used||[]).length;
@@ -1226,31 +1262,100 @@ function receiveSheet(prefill){
 function receiveCode(raw){
   const s = decodeURIComponent(String(raw||""));
   const cm = CLAIM_RE.exec(s); if(cm){ claimLive(cm[1], cm[2]); return; }
+  const bm = BADGE_RE.exec(s); if(bm){ badgeSheet({serial:bm[1], code:bm[2]}); claimBadge(bm[1], bm[2]); return; }
   const m = document.getElementById("rxMsg");
   const say = /^AUD1\./.test(s.trim()) ? "That's an entry code, not a ticket someone sent. Ask them to use Send on their pass." : "That code isn't an Audrain ticket.";
   if(m) m.textContent = say; else toast(say);
 }
 function loadJsQR(){ return new Promise(res=>{ if(window.jsQR) return res(true); const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; sc.onload = ()=>res(true); sc.onerror = ()=>res(false); document.head.appendChild(sc); }); }
 let rxCam = null;
-async function rxScanStart(){
-  const box = document.getElementById("rxScanBox"), msg = document.getElementById("rxMsg"); if(!box) return; box.hidden = false;
+// One camera scanner for ticket codes and badges: rear camera, BarcodeDetector where the browser has it, else jsQR.
+// closeSheet() stops the stream, so the camera never stays on behind a closed sheet.
+async function camScan(boxId, vidId, msgId, prompt, failMsg, onText){
+  const box = document.getElementById(boxId), msg = document.getElementById(msgId); if(!box) return; box.hidden = false;
   try{
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("no camera");
     const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
-    const v = document.getElementById("rxVid"); if(!v){ st.getTracks().forEach(t=>t.stop()); return; }
+    const v = document.getElementById(vidId); if(!v){ st.getTracks().forEach(t=>t.stop()); return; }
     rxScanStop(); rxCam = {stream:st, timer:null}; v.srcObject = st; await v.play();
     const det = ("BarcodeDetector" in window) ? new BarcodeDetector({formats:["qr_code"]}) : null; if(!det) await loadJsQR();
     const cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
-    if(msg) msg.textContent = "Point the camera at the ticket code…";
+    if(msg) msg.textContent = prompt;
     rxCam.timer = setInterval(async ()=>{
       if(!rxCam || !v.videoWidth) return; let txt = null;
       try{ if(det){ const r = await det.detect(v); if(r.length) txt = r[0].rawValue; }
         else if(window.jsQR){ cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v,0,0); const d = cx.getImageData(0,0,cv.width,cv.height); const r = jsQR(d.data, d.width, d.height); if(r) txt = r.data; } }catch(e){}
-      if(txt){ rxScanStop(); receiveCode(txt); }
+      if(txt){ rxScanStop(); box.hidden = true; onText(txt); }
     }, 300);
-  }catch(e){ if(msg) msg.textContent = "The camera isn't available here. Paste the link instead."; }
+  }catch(e){ rxScanStop(); box.hidden = true; if(msg) msg.textContent = failMsg; }
 }
+const rxScanStart = () => camScan("rxScanBox", "rxVid", "rxMsg", "Point the camera at the ticket code…", "The camera isn't available here. Paste the link instead.", receiveCode);
 function rxScanStop(){ if(!rxCam) return; clearInterval(rxCam.timer); rxCam.stream.getTracks().forEach(t=>t.stop()); rxCam = null; }
+
+// ---------- printed badges (tix.claim_badge): stock passes handed out by the office, QR AUDRAIN-BADGE:<serial>:<code>
+const BADGE_RE = /(?:AUDRAIN-BADGE:|#badge-)([A-Z0-9]+(?:-[A-Z0-9]+)*):([A-Z0-9]{4,16})\b/i;
+// RPC call that keeps the PostgREST code and HTTP status, so "not deployed yet" can be told apart from a real refusal.
+async function rpcX(schema, fn, args){
+  if(window.SB) await SB.ready;
+  if(!sbOn()) throw Object.assign(new Error("No connection. Try again when you're online."), {offline:true});
+  const r = await SB.client.schema(schema).rpc(fn, args || {});
+  if(r.error){ const m = r.error.message || "Something went wrong"; throw Object.assign(new Error(/Failed to fetch|NetworkError|Load failed/i.test(m) ? "No connection. Try again in a moment." : m), {code:r.error.code, status:r.status, details:r.error.details}); }
+  return r.data;
+}
+// Function or schema not exposed yet (PGRST202 / PGRST106 / 404) - never a refusal with a reason.
+const isMissing = e => !!e && (["PGRST202","PGRST106","PGRST205","42883","3F000"].includes(e.code) || (e.status===404 && (!e.code || /^PGRST/.test(e.code))) || /could not find the function|schema must be one of/i.test(e.message || ""));
+function badgeError(e){
+  const m = String(e && e.message || "");
+  if(e && e.offline) return m;
+  if(/lock|too many/i.test(m)) return "Too many wrong codes. Adding badges is locked on this account for an hour. Try again later, or ask the Concours office.";
+  if(/not found|code wrong|wrong code/i.test(m) && !isMissing(e)) return "We couldn't find that badge, or the code is wrong. Check both against the badge and try again.";
+  if(/already|claimed|void|revoked/i.test(m)) return "This badge has already been added to a pass.";
+  if(isMissing(e)) return "Adding badges isn't switched on yet. Nothing was changed.";
+  return m || "That didn't work. Try again.";
+}
+function badgeSheet(prefill){
+  const p = prefill || {}, guest = !(window.SB && SB.email && SB.email());
+  openSheet("Add a badge", `<p class="price">Got a printed Audrain badge? Scan its code, or type the badge number and claim code printed on it. Everything on the badge moves onto your pass.</p>
+    <button class="buy ghost" type="button" data-bdscan="1">Scan the badge code</button>
+    <div class="rxscan" id="bdScanBox" hidden><video id="bdVid" playsinline muted aria-label="Camera view"></video></div>
+    <label class="price" for="bdSerial">Badge number</label><input class="inp" id="bdSerial" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AC27-..." value="${esc(p.serial||"")}">
+    <label class="price" for="bdCode">Claim code (8 letters and numbers)</label><input class="inp codebox" id="bdCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16" value="${esc(p.code||"")}">
+    <div class="price" id="bdMsg" role="status" aria-live="polite"></div>
+    ${guest ? `<p class="rail">You can add a badge on this phone without an account. <button class="link" type="button" data-signin="1">Sign in</button> to keep your pass if you change phones.</p>` : ""}
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-bdgo="1">Add badge</button></div>`);
+}
+function badgeFromInputs(){
+  const raw = ($("#bdSerial") && $("#bdSerial").value || "").trim(), m = BADGE_RE.exec(raw);
+  if(m) return {serial:m[1], code:m[2]}; // the whole QR text pasted into the number box
+  return {serial:raw.replace(/\s+/g,""), code:($("#bdCode") && $("#bdCode").value || "").replace(/[\s-]+/g,"")};
+}
+let badgeBusy = false;
+async function claimBadge(serial, code){
+  const msg = document.getElementById("bdMsg"), say = s => { if(msg) msg.textContent = s; else toast(s); };
+  serial = String(serial||"").trim().toUpperCase(); code = String(code||"").trim().toUpperCase();
+  if(!/^[A-Z0-9]+(-[A-Z0-9]+)*$/.test(serial)) return say("Enter the badge number, for example AC27-1A2B3C4D5E.");
+  if(!/^[A-Z0-9]{4,16}$/.test(code)) return say("Enter the claim code printed on the badge.");
+  if(badgeBusy) return; badgeBusy = true;
+  const btn = document.querySelector("[data-bdgo]"); if(btn) btn.disabled = true;
+  say("Adding your badge…");
+  try{
+    const r = await rpcX("tix","claim_badge",{p_app:APP, p_serial:serial, p_code:code}) || {};
+    // A refusal comes back as {ok:false, error} rather than an exception, so the failed try is kept for the lockout.
+    if(r.ok === false) throw new Error(r.error || (r.locked ? "Too many tries" : "Badge not found or code wrong"));
+    const n = Number(r.moved_count || 0), no = r.pass_serial || serial;
+    const text = r.became_pass ? "This badge is now your pass. Everything on it is in the Tickets tab."
+      : n ? `${n} ticket${n===1?"":"s"} moved from the badge onto your pass. The printed badge no longer scans; use the code in this app.`
+      : "The badge is joined to your pass. It had no tickets on it yet.";
+    openSheet("Badge added", `<p role="status">${esc(text)}</p>
+      <div class="acctno"><output aria-label="Your account number">${esc(no)}</output></div><p class="price">Your account number. Give it to the Concours office to have tickets added.</p>
+      <div class="sheetfoot"><button class="buy" type="button" data-close="1">Done</button></div>`);
+    toast(r.became_pass ? "Badge added as your pass" : `Badge added: ${n} ticket${n===1?"":"s"} moved`);
+    if(state.tab!=="tickets"){ state.tab = "tickets"; store.set("ae.tab","tickets"); dirty.tickets = true; }
+    // refreshPass re-registers the device key when the serial or the tickets on the pass change, so the entry code re-signs.
+    await refreshPass(); refreshOrders();
+  }catch(e){ say(badgeError(e)); console.warn("[badge]", e.code || "", e.message); }
+  finally{ badgeBusy = false; const b = document.querySelector("[data-bdgo]"); if(b) b.disabled = false; }
+}
 
 // ---------- sign-in: Supabase email code / magic link, Apple and Google OAuth; the silent guest stays
 let otp = null; // {email, mode:'link'|'signin'}
@@ -1376,6 +1481,8 @@ async function onAuthChange(u){
   await loadRole(u);
   if(!$("#scrim").hidden) {} else render();
   refreshPass(); refreshOrders(); registerPush();
+  if(state.ent && state.ent.uid!==uid) state.ent = null;
+  if(state.tab==="entrant") loadEntrant();
 }
 function paintAcct(){
   const e = window.SB && SB.email ? SB.email() : null, t = $("#acctTxt"), i = $("#acctIcon"), b = $("#acctBtn");
@@ -1696,6 +1803,252 @@ function onPhotos(ev){
   if(files.length){ toast(`${files.length} ${files.length>1?"photos":"photo"} kept on this phone`); render(); }
 }
 
+// ---------- "Show your car": entrant applications (entrants.* RPCs + Storage bucket entrant-photos). Replaces Paperform.
+// Placeholder categories and questions until Katelyn sends the real Paperform list (Curtis call 2026-10-22).
+const ENT_CATS = [["concours","Concours d'Elegance"],["supercar","Supercar Concours"],["gathering","The Gathering"],["other","Other or not sure"]];
+const ENT_ST = {draft:["Draft","pend"], submitted:["Submitted","rx"], accepted:["Accepted","ok"], waitlist:["Waitlist","pend"], declined:["Not selected","bad"], withdrawn:["Withdrawn",""]};
+const PHOTO_BUCKET = "entrant-photos", PHOTO_MAX = 2000;
+const thumbs = {}; // storage_path -> {url, exp}: signed URLs, or a local blob URL right after an upload
+// Example-angle line drawings, used when a shot has no example_url.
+const CAR_SIDE = '<path d="M14 60h132v-7c0-6-5-9-13-10l-22-3-17-12c-4-3-9-4-14-4H58c-6 0-11 2-15 6L31 42c-10 1-17 4-17 11z"/><path d="M48 41l11-10h21l15 10z"/><circle cx="42" cy="60" r="11"/><circle cx="118" cy="60" r="11"/>';
+const CAR_34 = '<path d="M12 48l28 4v18l-28-6z"/><path d="M40 52l108-8v18l-108 8"/><path d="M48 51l14-18h56l16 13"/><path d="M62 33l-6 18M118 33l6 12"/><ellipse cx="62" cy="70" rx="8" ry="10"/><ellipse cx="126" cy="63" rx="7" ry="9"/>';
+const SHOT_ART = {
+  side: CAR_SIDE,
+  front_34: CAR_34 + '<ellipse cx="18" cy="54" rx="4" ry="2.5"/><ellipse cx="34" cy="56.5" rx="4" ry="2.5"/><path d="M21 60l12 2"/>',
+  rear_34: '<g transform="translate(160 0) scale(-1 1)">' + CAR_34 + '<path d="M15 52l7 1v4l-7-1zM30 54l7 1v4l-7-1zM20 62l12 2"/></g>',
+  interior: '<path d="M8 30c44-14 100-14 144 0"/><circle cx="60" cy="54" r="22"/><circle cx="60" cy="54" r="5"/><path d="M38 54h17M65 54h17M60 59v17"/><rect x="98" y="40" width="42" height="22" rx="4"/>',
+  engine: '<path d="M14 32L40 12h80l26 20"/><rect x="40" y="36" width="80" height="36" rx="4"/><path d="M50 36v-8h20v8M90 36v-8h20v8M28 48h12M120 48h12M58 52h44M58 60h44"/>',
+  detail: '<circle cx="68" cy="44" r="25"/><path d="M86 62l24 22"/><path d="M68 31l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>'
+};
+const shotArt = (code, label) => `<svg viewBox="0 0 160 90" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" role="img" aria-label="Example angle: ${esc(label)}">${SHOT_ART[code] || SHOT_ART.detail}</svg>`;
+const carName = v => [v.year, v.make, v.model].filter(Boolean).join(" ") || "Your car";
+function normEnt(r){
+  r = r || {};
+  const shots = (r.shots || []).filter(Boolean).map(s=>({code:s.code, label:s.label || s.code, guidance:s.guidance || "", example_url:s.example_url || null, required:!!s.required, sort:Number(s.sort) || 0})).sort((a,b)=>a.sort-b.sort);
+  const vehicles = (r.vehicles || []).filter(Boolean).map(v=>Object.assign({}, v, {id:String(v.id), photos:(v.photos || []).filter(p=>p && p.storage_path)}));
+  const applications = (r.applications || []).filter(Boolean).map(a=>Object.assign({}, a, {id:String(a.id), vehicle_id:String(a.vehicle_id)}));
+  return {profile:r.profile || null, vehicles, applications, shots, open_year:r.open_year!=null ? Number(r.open_year) : null};
+}
+let entSeq = 0;
+async function loadEntrant(){
+  if(window.SB) await SB.ready;
+  const uid = window.SB && SB.user ? SB.user.id : null;
+  if(!sbOn() || !uid){ state.ent = {st:"offline"}; softRender("entrant"); return; }
+  if(!state.ent || state.ent.uid!==uid || state.ent.st!=="ok") state.ent = {st:"loading", uid};
+  const seq = ++entSeq;
+  // Probe even for guests, so a back end without entrants shows "open soon" to everyone rather than a sign-in prompt.
+  try{
+    const r = await rpcX("entrants","my_entrant",{p_app:APP}); if(seq!==entSeq) return;
+    state.ent = SB.isGuest() ? {st:"guest", uid} : {st:"ok", uid, d:normEnt(r)};
+  }catch(e){
+    if(seq!==entSeq) return;
+    state.ent = isMissing(e) ? {st:"missing", uid} : SB.isGuest() ? {st:"guest", uid} : {st:"error", uid, err:e.message};
+    if(!isMissing(e)) console.warn("[entrant]", e.code || "", e.message);
+  }
+  softRender("entrant");
+}
+// Entrant actions need a real (email) account: the garage and applications follow the person year to year.
+function entGate(){
+  if(window.SB && !SB.isGuest()) return true;
+  signInSheet("Sign in with your email to apply with your car. Your garage and applications stay with your account from year to year.");
+  return false;
+}
+const lastPhoto = (v, code) => v.photos.filter(p=>p.shot===code).sort((a,b)=>String(a.created_at||a.storage_path).localeCompare(String(b.created_at||b.storage_path))).pop() || null;
+const missingShots = (d, v) => d.shots.filter(s=>s.required && !lastPhoto(v, s.code));
+const appFor = (d, v) => d.applications.find(a=>a.vehicle_id===v.id && Number(a.year)===d.open_year) || null;
+function shotCard(v, s){
+  const ph = lastPhoto(v, s.code), fid = `shot-${v.id}-${s.code}`, t = ph && thumbs[ph.storage_path];
+  const ex = ph ? `<img data-thumb="${esc(ph.storage_path)}" ${t ? `src="${esc(t.url)}"` : ""} alt="Your ${esc(s.label)} photo"><span class="st ok">Added</span>`
+    : s.example_url ? `<img src="${esc(s.example_url)}" alt="Example: ${esc(s.label)}" loading="lazy"><span class="st">Example</span>` : shotArt(s.code, s.label);
+  return `<div class="shot"><div class="ex">${ex}</div>
+      <div class="t">${esc(s.label)}${s.required ? ` <span class="kchip">Required</span>` : ""}</div>
+      <div class="d">${esc(s.guidance)}</div>
+      <input type="file" class="fileinp" id="${esc(fid)}" accept="image/*" capture="environment" data-shot="${esc(s.code)}" data-veh="${esc(v.id)}">
+      <label for="${esc(fid)}" class="buy${ph ? " ghost" : ""}">${ph ? "Replace" : "Add photo"}<span class="sr"> for ${esc(s.label)}, ${esc(carName(v))}</span></label>
+      <div class="price" id="${esc(fid)}-msg" role="status" aria-live="polite"></div></div>`;
+}
+function carCard(d, v){
+  const a = appFor(d, v), miss = missingShots(d, v), st = a && (ENT_ST[a.status] || [a.status, ""]);
+  const past = d.applications.filter(x=>x.vehicle_id===v.id && Number(x.year)!==d.open_year).sort((x,y)=>Number(y.year)-Number(x.year));
+  let act;
+  if(d.open_year==null) act = `<p class="price">Applications for the next Concours aren't open yet. Get your photos ready now.</p>`;
+  else if(a && ["submitted","accepted","waitlist","declined"].includes(a.status))
+    act = `<div class="price">${a.submitted_at ? "Sent " + esc(shortDate(a.submitted_at)) : ""}${a.class_assigned ? " · Class " + esc(a.class_assigned) : ""}</div>${a.decision_note ? `<p class="price">${esc(a.decision_note)}</p>` : ""}
+      ${["submitted","waitlist"].includes(a.status) ? `<button class="link" type="button" data-entwithdraw="${esc(a.id)}" style="align-self:flex-start">Withdraw this application</button>` : ""}`;
+  else act = `<button class="buy" type="button" data-entapply="${esc(v.id)}" style="align-self:flex-start">${a && a.status==="draft" ? "Finish application" : a && a.status==="withdrawn" ? "Apply again" : "Apply for " + d.open_year}</button>
+      ${miss.length ? `<p class="price">Before you send it: add the ${miss.map(s=>esc(s.label.toLowerCase())).join(", ")} photo${miss.length===1?"":"s"}.</p>` : ""}`;
+  return `<article class="car" aria-labelledby="car-${esc(v.id)}">
+      <div class="section-head"><h3 id="car-${esc(v.id)}">${esc(carName(v))}</h3><button class="link" type="button" data-entcar="${esc(v.id)}">Edit<span class="sr"> ${esc(carName(v))}</span></button></div>
+      <div class="meta">${d.open_year!=null ? `<span>${d.open_year}: <span class="st ${st ? st[1] : ""}" style="margin-left:2px">${esc(st ? st[0] : "Not applied")}</span></span>` : ""}${v.color ? `<span>${esc(v.color)}</span>` : ""}${v.chassis_no ? `<span style="font-family:var(--mono)">${esc(v.chassis_no)}</span>` : ""}</div>
+      ${past.length ? `<div class="meta">${past.map(x=>`<span>${esc(x.year)}: ${esc((ENT_ST[x.status] || [x.status])[0])}</span>`).join("")}</div>` : ""}
+      <div class="section-head"><h3 style="font-size:15px">Photos</h3><span class="price">${miss.length ? `${miss.length} required to go` : "Required photos added"}</span></div>
+      <div class="shots">${d.shots.map(s=>shotCard(v, s)).join("")}</div>
+      ${act}
+    </article>`;
+}
+function entAddons(){
+  const types = ((state.catalog && state.catalog.types) || []).filter(t=>t.kind==="addon" || /\bVIP\b|Lunch by the Water/i.test(t.name || ""));
+  const n = state.cart.reduce((a,l)=>a+l.qty,0);
+  return `<section class="section" aria-labelledby="entAddH"><div class="section-head"><h2 id="entAddH">Entrant add-ons</h2>${n ? `<button class="link" type="button" data-cart="1">Cart (${n})</button>` : ""}</div>
+    ${types.length ? `<p class="price">VIP upgrades and Lunch by the Water are bought here like any ticket and land on your pass.</p><div class="cards">${types.map(typeCard).join("")}</div>`
+      : `<div class="notice">Add-ons open with ticket sales.</div>`}</section>`;
+}
+function entBody(){
+  const E = state.ent;
+  if(!E || E.st==="loading") return `<div class="notice" role="status">Loading your garage…</div>`;
+  if(E.st==="offline") return `<div class="notice" role="status">Connect to the internet to see your car and applications.</div>`;
+  if(E.st==="missing") return `<div class="empty" role="status"><h2>Car applications open soon</h2><p>Apply to show your car right here: your details, your garage, photos of the car and the application in one place.</p></div>`;
+  if(E.st==="guest") return `<div class="empty"><h2>Apply with your car</h2><p>Sign in with your email to start. Your garage and applications stay with your account from year to year.</p><button class="buy" type="button" data-entsignin="1">Sign in to apply</button></div>`;
+  if(E.st==="error") return `<div class="warn" role="alert">We couldn't load your garage: ${esc(E.err)}</div><button class="buy ghost" type="button" data-entretry="1" style="align-self:flex-start">Try again</button>`;
+  const d = E.d, P = d.profile;
+  return `<section class="section" aria-labelledby="entMeH"><div class="section-head"><h2 id="entMeH">Your details</h2><button class="link" type="button" data-entprofile="1">${P ? "Edit" : "Add"}<span class="sr"> your details</span></button></div>
+      ${P ? `<div class="venue"><div class="title">${esc(P.name || "")}</div><div class="price">${esc([P.email, P.phone].filter(Boolean).join(" · "))}</div>${[P.city, P.state, P.country].some(Boolean) || P.instagram ? `<div class="price">${esc([P.city, P.state, P.country].filter(Boolean).join(", "))}${P.instagram ? " · @" + esc(String(P.instagram).replace(/^@/,"")) : ""}</div>` : ""}</div>`
+        : `<div class="notice">Add your name and contact details once. They go with every application.</div><button class="buy" type="button" data-entprofile="1" style="align-self:flex-start">Add your details</button>`}
+    </section>
+    <section class="section" aria-labelledby="entGarH"><div class="section-head"><h2 id="entGarH">Your garage</h2><span class="price">${d.vehicles.length} car${d.vehicles.length===1?"":"s"}</span></div>
+      ${d.vehicles.length ? d.vehicles.map(v=>carCard(d, v)).join("") : `<div class="notice">Add the car you'd like to show. Your garage stays with your account from year to year.</div>`}
+      <button class="buy${d.vehicles.length ? " ghost" : ""}" type="button" data-entcar="new" style="align-self:flex-start">Add a car</button>
+    </section>`;
+}
+const PROFILE_F = [["name","Full name",'autocomplete="name" aria-required="true"'],["email","Email",'type="email" autocomplete="email" inputmode="email" aria-required="true"'],["phone","Phone",'type="tel" autocomplete="tel"'],
+  ["city","City",'autocomplete="address-level2"'],["state","State or province",'autocomplete="address-level1"'],["country","Country",'autocomplete="country-name"'],["instagram","Instagram (optional)",'autocomplete="off" autocapitalize="none" spellcheck="false"']];
+const CAR_F = [["year","Year",'inputmode="numeric" maxlength="4" autocomplete="off" aria-required="true"'],["make","Make",'autocomplete="off" aria-required="true"'],["model","Model",'autocomplete="off" aria-required="true"'],
+  ["body","Body style or coachbuilder",'autocomplete="off"'],["chassis_no","Chassis number or VIN",'autocomplete="off" autocapitalize="characters" spellcheck="false"'],["color","Color",'autocomplete="off"'],["engine","Engine",'autocomplete="off"'],["notes","Notes","textarea"]];
+const formFields = (F, row) => F.map(([k,l,a])=>a==="textarea"
+  ? `<label class="price" for="f-${k}">${l}</label><textarea class="inp" id="f-${k}" data-f="${k}" rows="3">${esc(row && row[k] || "")}</textarea>`
+  : `<label class="price" for="f-${k}">${l}</label><input class="inp" id="f-${k}" data-f="${k}" ${a} value="${esc(row && row[k]!=null ? row[k] : "")}">`).join("");
+function formValues(){ const o = {}; document.querySelectorAll("#sheetBody [data-f]").forEach(i=>{ o[i.dataset.f] = i.value.trim(); }); return o; }
+const entD = () => state.ent && state.ent.st==="ok" ? state.ent.d : null;
+function entProfileSheet(){
+  if(!entGate() || !entD()) return;
+  const P = entD().profile || {email:SB.email() || ""};
+  openSheet("Your details", `${formFields(PROFILE_F, P)}
+    <div class="price" id="entMsg" role="status" aria-live="polite"></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-saveprofile="1">Save details</button></div>`);
+}
+function entCarSheet(id){
+  if(!entGate() || !entD()) return;
+  const v = id==="new" ? null : entD().vehicles.find(x=>x.id===id);
+  openSheet(v ? "Edit car" : "Add a car", `${formFields(CAR_F, v)}
+    <div class="price" id="entMsg" role="status" aria-live="polite"></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-savecar="${esc(v ? v.id : "new")}">${v ? "Save car" : "Add car"}</button></div>`);
+}
+const entSay = s => { const m = $("#entMsg"); if(m) m.textContent = s; };
+async function entSave(kind, id){
+  if(!entGate()) return;
+  const o = formValues(), btn = document.querySelector(kind==="car" ? "[data-savecar]" : "[data-saveprofile]");
+  if(kind==="profile"){
+    if(!o.name) return entSay("Enter your full name.");
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)) return entSay("Enter a valid email.");
+    o.instagram = o.instagram.replace(/^@/, "");
+  } else {
+    const y = Number(o.year), maxY = new Date().getFullYear() + 2;
+    if(!/^\d{4}$/.test(o.year) || y<1885 || y>maxY) return entSay(`Enter the model year, 1885 to ${maxY}.`);
+    if(!o.make || !o.model) return entSay("Enter the make and model.");
+    o.year = y; if(id && id!=="new") o.id = id;
+  }
+  if(btn) btn.disabled = true; entSay("Saving…");
+  try{
+    if(kind==="profile") await rpcX("entrants","save_profile",{p_app:APP, p:o});
+    else await rpcX("entrants","save_vehicle",{p_app:APP, p:o});
+    closeSheet(); toast(kind==="profile" ? "Details saved" : (o.id ? "Car saved" : "Car added to your garage")); loadEntrant();
+  }catch(e){ entSay(isMissing(e) ? "Car applications aren't switched on yet. Nothing was saved." : e.message); if(btn) btn.disabled = false; }
+}
+function entApplySheet(vid){
+  if(!entGate()) return;
+  const d = entD(), v = d && d.vehicles.find(x=>x.id===vid); if(!v) return;
+  if(!d.profile){ entProfileSheet(); entSay("Add your details first. They go with the application."); return; }
+  const a = appFor(d, v), ans = (a && a.answers) || {}, miss = missingShots(d, v);
+  openSheet("Apply: " + carName(v), `<p class="price">${d.open_year} Audrain Concours. The selection committee reviews every application; the decision shows here, on your car.</p>
+    ${miss.length ? `<div class="warn" id="apMissing">Add the required photos first: ${miss.map(s=>esc(s.label)).join(", ")}.</div>` : ""}
+    <label class="price" for="apCat">Category</label><select id="apCat" aria-required="true"><option value="">Choose a category</option>${ENT_CATS.map(([k,l])=>`<option value="${k}" ${(a && a.category)===k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label class="price" for="apHistory">About this car: history, provenance, what makes it special</label><textarea class="inp" id="apHistory" rows="4">${esc(ans.history || "")}</textarea>
+    <label class="price" for="apShown">Has it been shown before? Where and when?</label><input class="inp" id="apShown" autocomplete="off" value="${esc(ans.shown_before || "")}">
+    <label class="price" for="apCond">Condition</label><select id="apCond">${[["","Choose"],["original","Original or preserved"],["restored","Restored"],["modified","Modified"],["unsure","Not sure"]].map(([k,l])=>`<option value="${k}" ${ans.condition===k ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <div class="notice">Placeholder questions until the Concours office sends the final list.</div>
+    <h3>Waiver</h3>
+    <p class="price">Placeholder wording, to be replaced by the Concours office: I confirm the details and photos are true and mine to share, and I agree to the entrant rules and release for the ${d.open_year} event.</p>
+    <label class="price" for="apName">Type your full name to sign</label><input class="inp" id="apName" autocomplete="name" value="${esc((a && a.waiver_name) || "")}">
+    <div class="price" id="apMsg" role="status" aria-live="polite"></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-entsubmit="${esc(v.id)}" ${miss.length ? `disabled aria-describedby="apMissing"` : ""}>Submit application</button></div>`);
+}
+async function entSubmit(vid){
+  if(!entGate()) return;
+  const d = entD(), v = d && d.vehicles.find(x=>x.id===vid), msg = $("#apMsg"), say = s => { if(msg) msg.textContent = s; };
+  if(!v) return;
+  if(missingShots(d, v).length) return say("Add the required photos first.");
+  const cat = $("#apCat").value, name = $("#apName").value.trim();
+  if(!cat) return say("Choose a category.");
+  if(name.length<3) return say("Type your full name to sign the waiver.");
+  const btn = document.querySelector("[data-entsubmit]"); if(btn) btn.disabled = true; say("Sending…");
+  try{
+    await rpcX("entrants","submit_application",{p_app:APP, p_year:d.open_year, p_vehicle_id:v.id, p_category:cat,
+      p_answers:{history:$("#apHistory").value.trim(), shown_before:$("#apShown").value.trim(), condition:$("#apCond").value}, p_waiver_name:name});
+    closeSheet(); toast("Application sent. The decision will show on your car."); loadEntrant();
+  }catch(e){ say(isMissing(e) ? "Car applications aren't switched on yet. Nothing was sent." : /shot|photo/i.test(e.message) ? "Add the required photos first." : e.message); if(btn) btn.disabled = false; }
+}
+function entWithdrawSheet(id){
+  openSheet("Withdraw this application?", `<p>The committee stops reviewing it. You can apply again while applications are open.</p>
+    <div class="price" id="apMsg" role="status" aria-live="polite"></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Keep it</button><button class="buy" type="button" data-entwithdrawok="${esc(id)}">Withdraw</button></div>`);
+}
+async function entWithdraw(id){
+  if(!entGate()) return;
+  try{ await rpcX("entrants","withdraw",{p_application_id:id}); closeSheet(); toast("Application withdrawn"); loadEntrant(); }
+  catch(e){ const m = $("#apMsg"); if(m) m.textContent = e.message; }
+}
+// Phone photos are often 4000px+ and HEIC-sized: re-encode to a JPEG of at most 2000px on the long side before upload.
+async function downscale(file, max){
+  let src = null, w = 0, h = 0, done = ()=>{};
+  if(window.createImageBitmap){ try{ src = await createImageBitmap(file, {imageOrientation:"from-image"}); w = src.width; h = src.height; done = ()=>{ if(src.close) src.close(); }; }catch(e){ src = null; } }
+  if(!src){
+    const url = URL.createObjectURL(file);
+    try{ src = await new Promise((res, rej)=>{ const im = new Image(); im.onload = ()=>res(im); im.onerror = ()=>rej(new Error("decode")); im.src = url; }); }
+    catch(e){ URL.revokeObjectURL(url); throw e; }
+    w = src.naturalWidth; h = src.naturalHeight; done = ()=>URL.revokeObjectURL(url);
+  }
+  const k = Math.min(1, max / Math.max(w, h, 1)), cw = Math.max(1, Math.round(w*k)), ch = Math.max(1, Math.round(h*k));
+  const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+  const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cw, ch); cx.drawImage(src, 0, 0, cw, ch); done();
+  return new Promise((res, rej)=>cv.toBlob(b=>b ? res(b) : rej(new Error("encode")), "image/jpeg", 0.85));
+}
+async function uploadShot(input){
+  const f = input.files && input.files[0], vid = input.dataset.veh, shot = input.dataset.shot, id = input.id;
+  const say = s => { const m = document.getElementById(id + "-msg"); if(m) m.textContent = s; };
+  if(!f) return;
+  if(!entGate()){ input.value = ""; return; }
+  if(f.type && !/^image\//.test(f.type)){ say("Choose a photo."); input.value = ""; return; }
+  input.disabled = true; say("Preparing the photo…");
+  let blob;
+  try{ blob = await downscale(f, PHOTO_MAX); }
+  catch(e){ say("This photo can't be read here. Try a JPEG, or take the photo again."); input.disabled = false; input.value = ""; return; }
+  const path = `${SB.user.id}/${vid}/${shot}-${Math.floor(Date.now()/1000)}.jpg`;
+  say("Uploading…");
+  try{
+    const up = await SB.client.storage.from(PHOTO_BUCKET).upload(path, blob, {contentType:"image/jpeg", upsert:false, cacheControl:"3600"});
+    if(up.error) throw Object.assign(new Error(up.error.message || "Upload failed"), {storage:true});
+    await rpcX("entrants","add_photo",{p_vehicle_id:vid, p_shot:shot, p_path:path});
+    thumbs[path] = {url:URL.createObjectURL(blob), exp:Infinity};
+    toast("Photo added");
+    await loadEntrant();
+    const again = document.getElementById(id); if(again) again.focus({preventScroll:true});
+  }catch(e){
+    say(e.storage ? (/bucket.*not found|not found/i.test(e.message) ? "Photo uploads aren't switched on yet. Nothing was uploaded." : "The upload didn't go through: " + e.message)
+      : isMissing(e) ? "Car applications aren't switched on yet." : e.message);
+    console.warn("[photo]", e.message);
+  }finally{ const i = document.getElementById(id); if(i){ i.disabled = false; i.value = ""; } }
+}
+// Thumbnails come from signed URLs (the bucket is private); one batch call per render, cached for 55 minutes.
+async function paintThumbs(){
+  const imgs = [...document.querySelectorAll("img[data-thumb]")]; if(!imgs.length) return;
+  const now = Date.now(), need = [...new Set(imgs.map(i=>i.dataset.thumb).filter(p=>!(thumbs[p] && thumbs[p].exp>now)))];
+  if(need.length && sbOn()){
+    try{ const r = await SB.client.storage.from(PHOTO_BUCKET).createSignedUrls(need, 3600); (r.data || []).forEach(x=>{ if(x && x.signedUrl && !x.error) thumbs[x.path] = {url:x.signedUrl, exp:now + 55*60000}; }); }
+    catch(e){ console.warn("[thumbs]", e.message); }
+  }
+  document.querySelectorAll("img[data-thumb]").forEach(i=>{ const t = thumbs[i.dataset.thumb]; if(t && i.getAttribute("src")!==t.url) i.src = t.url; });
+}
+
 // ---------- shell: render, sheets, toast
 const dirty = {};
 function softRender(tab){ if(state.tab===tab && $("#scrim").hidden) render(); else dirty[tab] = true; }
@@ -1707,6 +2060,7 @@ function render(){
   stopQR(); if(document.getElementById("passQR")) startQR();
   if(state.tab==="map") initMap(); else if(lmap){ lmap.remove(); lmap = null; }
   const pin = document.getElementById("photoIn"); if(pin) pin.addEventListener("change", onPhotos);
+  if(state.tab==="entrant") paintThumbs();
   paintCartBtn();
 }
 function go(tab){
@@ -1715,6 +2069,7 @@ function go(tab){
   track("page_view", {props:{screen:tab}});
   if(tab==="map" && (!state.live || Date.now()-state.live.at > LIVE_MS)) refreshLiveOps();
   if(tab==="tickets"){ refreshPass(); refreshOrders(); }
+  if(tab==="entrant") loadEntrant();
 }
 let lastFocus = null;
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
@@ -1776,6 +2131,20 @@ document.addEventListener("click", ev=>{
   if(ds.copyxfer){ const v = $("#xferLink").value; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(()=>toast("Link copied")).catch(()=>{ $("#xferLink").select(); toast("Select and copy the link"); }); return; }
   if(ds.sharexfer){ const v = $("#xferLink").value; if(navigator.share){ navigator.share({title:"Your Audrain ticket", url:v}).catch(()=>{}); } else { $("#xferLink").select(); toast("Sharing isn't available here. Copy the link instead."); } return; }
   if(ds.receive){ receiveSheet(); return; }
+  if(ds.copyacct){ copyText(ds.copyacct, "Account number copied", document.getElementById("acctNo")); return; }
+  if(ds.badge){ badgeSheet(); return; }
+  if(ds.bdscan){ camScan("bdScanBox", "bdVid", "bdMsg", "Point the camera at the code on the badge…", "The camera isn't available here. Type the badge number and code instead.", txt=>{ const m = BADGE_RE.exec(txt); if(m){ $("#bdSerial").value = m[1]; $("#bdCode").value = m[2]; claimBadge(m[1], m[2]); } else if(CLAIM_RE.test(txt)) receiveCode(txt); else $("#bdMsg").textContent = "That code isn't an Audrain badge. Type the number and code printed on it instead."; }); return; }
+  if(ds.bdgo){ const b = badgeFromInputs(); claimBadge(b.serial, b.code); return; }
+  if(ds.entsignin){ entGate(); return; }
+  if(ds.entretry){ state.ent = null; render(); loadEntrant(); return; }
+  if(ds.entprofile){ entProfileSheet(); return; }
+  if(ds.entcar){ entCarSheet(ds.entcar); return; }
+  if(ds.saveprofile){ entSave("profile"); return; }
+  if(ds.savecar){ entSave("car", ds.savecar); return; }
+  if(ds.entapply){ entApplySheet(ds.entapply); return; }
+  if(ds.entsubmit){ entSubmit(ds.entsubmit); return; }
+  if(ds.entwithdraw){ entWithdrawSheet(ds.entwithdraw); return; }
+  if(ds.entwithdrawok){ entWithdraw(ds.entwithdrawok); return; }
   if(ds.rxscan){ rxScanStart(); return; }
   if(ds.rxgo){ receiveCode($("#rxCode").value); return; }
   if(ds.oauth){ oauth(ds.oauth); return; }
@@ -1825,6 +2194,7 @@ document.addEventListener("input", ev=>{
 document.addEventListener("change", ev=>{
   const el = ev.target;
   if(el.id==="venueSel"){ state.venue = el.value; render(); }
+  if(el.dataset && el.dataset.shot && el.type==="file"){ uploadShot(el); return; }
   if(el.id==="placeSel"){ state.placeType = el.value || null; render(); return; }
   if(el.id==="getOffSel"){ state.getOff = el.value; const box = document.getElementById("transport"); if(box){ box.innerHTML = transportLists(); const s = document.getElementById("getOffSel"); if(s) s.focus(); } return; }
   if(el.dataset && el.dataset.pref){ state.prefs[el.dataset.pref] = el.checked; store.set("ae.prefs", state.prefs); registerPush(); }
@@ -1864,8 +2234,12 @@ if(window.SB){
   authFromUrl();
   SB.onAuth(u=>{ onAuthChange(u); });
   refreshCatalog(); refreshLiveOps();
-  // A #claim- link loads its ticket onto this phone's pass.
-  const claimFromHash = () => SB.ready.then(()=>{ const m = CLAIM_RE.exec(decodeURIComponent(location.hash||"")); if(m && SB.ok){ history.replaceState(null, "", location.pathname + location.search); claimLive(m[1], m[2]); } });
+  // A #claim- link loads its ticket onto this phone's pass; a #badge-<serial>:<code> link claims a printed badge the same way.
+  const claimFromHash = () => SB.ready.then(()=>{
+    let h = location.hash || ""; try{ h = decodeURIComponent(h); }catch(e){}
+    const m = CLAIM_RE.exec(h); if(m && SB.ok){ history.replaceState(null, "", location.pathname + location.search); claimLive(m[1], m[2]); return; }
+    const b = /^#badge-/i.test(h) && BADGE_RE.exec(h); if(b && SB.ok){ history.replaceState(null, "", location.pathname + location.search); badgeSheet({serial:b[1], code:b[2]}); claimBadge(b[1], b[2]); }
+  });
   claimFromHash(); addEventListener("hashchange", claimFromHash);
 }
 })();

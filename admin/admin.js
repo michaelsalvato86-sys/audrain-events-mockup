@@ -15,7 +15,7 @@
     get: function (k, f) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch (e) { return f; } },
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } }
   };
-  var state = { view: store.get("adm.view", "dashboard"), order: null, preview: null, timers: [] };
+  var state = { view: store.get("adm.view", "dashboard"), order: null, pass: null, preview: null, previewRaw: null, timers: [] };
   var cat = null;          // {events, types} - refreshed after every catalogue write
   var VIEWS = {};
 
@@ -38,7 +38,8 @@
   function pill(text, kind) { return '<span class="pill ' + (kind || "") + '">' + esc(text) + "</span>"; }
   function statusPill(s) {
     var k = { paid: "ok", comp: "ok", claimed: "ok", issued: "", valid: "ok", open: "ok", active: "ok", filling: "warn", pending: "warn",
-      partially_refunded: "warn", full: "bad", closed: "bad", refunded: "bad", void: "bad", cancelled: "bad", failed: "bad" }[s];
+      partially_refunded: "warn", full: "bad", closed: "bad", refunded: "bad", void: "bad", cancelled: "bad", failed: "bad",
+      stock: "", submitted: "warn", accepted: "ok", waitlist: "warn", declined: "bad" }[s];
     return pill(String(s || "-").replace(/_/g, " "), k);
   }
   function meter(used, total) {
@@ -244,11 +245,12 @@
   }
   function on(id, evt, fn) { var el = typeof id === "string" ? $("#" + id) : id; if (el) el.addEventListener(evt, busy(el.tagName === "BUTTON" ? el : null, fn)); }
 
-  // ===================================================================================== 1. Dashboard
-  VIEWS.dashboard = function () {
+  // ===================================================================================== 1. Sales and gates (live)
+  // Was the landing view until 2026-10-22; the season Dashboard (analytics.admin_dashboard) is section 9 below.
+  VIEWS.live = function () {
     var from = store.get("adm.fFrom", ""), to = store.get("adm.fTo", "");
     main.innerHTML = '<div class="view">' +
-      '<div class="head"><h1>Dashboard</h1><button type="button" class="btn ghost" id="dRefresh">Refresh</button></div>' +
+      '<div class="head"><h1>Sales and gates</h1><button type="button" class="btn ghost" id="dRefresh">Refresh</button></div>' +
       '<section aria-labelledby="hSales"><h2 id="hSales" class="sr">Sales</h2><div id="dTiles" class="grid tiles"><p class="muted">Loading sales...</p></div></section>' +
       '<section class="panel" aria-labelledby="hTypes"><h2 id="hTypes">Sales by event and ticket type</h2><div id="dTypes"></div></section>' +
       '<section class="panel" aria-labelledby="hGates"><h2 id="hGates">Live gate counts</h2><div id="dGates" class="grid tiles"></div><p class="hint">Today, Eastern time. Refreshes every 30 seconds.</p></section>' +
@@ -461,119 +463,240 @@
     if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
     return rows.filter(function (r) { return r.some(function (x) { return x.trim() !== ""; }); });
   }
-  function checkRecipients(rows) {
-    if (rows.length && /^e-?mail/i.test((rows[0][0] || "").trim())) rows = rows.slice(1);
+  /* Comp list import (2026-10-22). Without a header row each line is email,name. With a header row (a cell named
+     "email") columns are matched by name: email, name, qty, ticket_type (name, "Event - Type" or id), sponsor (name or id),
+     pool (name or id), note. Blank cells take the form's values. issue_comp2 has no sponsor argument - a comp gets its
+     sponsor from its pool - so a sponsor cell picks that sponsor's pool when the pool cell is blank. */
+  var CSV_ALIAS = { email: "email", e_mail: "email", name: "name", qty: "qty", quantity: "qty", tickets: "qty", ticket_type: "ticket_type",
+    type: "ticket_type", ticket: "ticket_type", sponsor: "sponsor", pool: "pool", comp_pool: "pool", note: "note", notes: "note" };
+  function low(s) { return String(s == null ? "" : s).trim().toLowerCase().replace(/\s+/g, " "); }
+  function readCompCSV(rows) {
+    var head = rows.length && rows[0].some(function (c) { return /^\s*e-?mail\s*$/i.test(c); }) ? rows[0] : null, cols = {}, unused = [];
+    if (head) head.forEach(function (h, i) { var k = CSV_ALIAS[low(h).replace(/[\s-]+/g, "_")]; if (k && cols[k] == null) cols[k] = i; else if (low(h)) unused.push(h.trim()); });
+    else { cols = { email: 0, name: 1 }; }
+    return { header: !!head, unused: unused, rows: (head ? rows.slice(1) : rows).map(function (r, i) {
+      var o = { row: i + 1, extra: !head && r.length > 2 && r.slice(2).some(function (x) { return x.trim(); }) };
+      CSV_COLS.forEach(function (k) { o[k] = cols[k] == null ? "" : String(r[cols[k]] || "").trim(); });
+      return o;
+    }) };
+  }
+  var CSV_COLS = ["email", "name", "qty", "ticket_type", "sponsor", "pool", "note"];
+  function matchOne(list, s, label, what) {
+    var k = low(s), hit = list.filter(function (x) { return x.id === s || label(x).some(function (l) { return low(l) === k; }); });
+    if (hit.length === 1) return { item: hit[0] };
+    return { problem: hit.length ? what + ' "' + s + '" matches ' + hit.length + (what === "Ticket type" ? ': use "Event - Type"' : ": use the id") : "Unknown " + what.toLowerCase() + ' "' + s + '"' };
+  }
+  /* ctx: {typeId, qty, poolId, note, pools, sponsors (null = sponsors not switched on)}. Returns rows with resolved
+     typeId / qty / poolId / note, which values came from the file (from.*), and a problem (rows with one are skipped). */
+  function resolveCompRows(parsed, ctx) {
     var seen = {};
-    return rows.map(function (r, i) {
-      var email = (r[0] || "").trim().toLowerCase(), name = (r[1] || "").trim(), problem = "";
-      if (!email) problem = "Email is missing";
-      else if (!EMAIL_RE.test(email)) problem = "Email is not valid";
-      else if (seen[email]) problem = "Listed twice (row " + seen[email] + ")";
-      else if (r.length > 2 && r.slice(2).some(function (x) { return x.trim(); })) problem = "Too many columns: use email,name";
-      else if (name.length > 120) problem = "Name is too long";
-      if (!problem) seen[email] = i + 1;
-      return { row: i + 1, email: email, name: name, problem: problem };
+    return parsed.rows.map(function (r) {
+      var o = { row: r.row, email: r.email.toLowerCase(), name: r.name, qty: ctx.qty, typeId: ctx.typeId || null, poolId: ctx.poolId || null, note: r.note || ctx.note || "",
+        sponsor: null, from: { qty: !!r.qty, type: !!r.ticket_type, pool: !!r.pool, sponsor: !!r.sponsor, note: !!r.note }, problem: "" };
+      function bad(m) { if (!o.problem) o.problem = m; }
+      if (!o.email) bad("Email is missing");
+      else if (!EMAIL_RE.test(o.email)) bad("Email is not valid");
+      if (r.extra) bad("Too many columns: add a header row (email,name,qty,ticket_type,sponsor,pool,note)");
+      if (o.name.length > 120) bad("Name is too long");
+      if (r.qty) o.qty = Number(r.qty);
+      if (!Number.isInteger(o.qty) || o.qty < 1 || o.qty > 10) bad("Qty must be a whole number from 1 to 10");
+      if (r.ticket_type) { var mt = matchOne(cat.types, r.ticket_type, function (t) { return [t.name, typeLabel(t.id)]; }, "Ticket type"); if (mt.item) o.typeId = mt.item.id; else { o.typeId = null; bad(mt.problem); } }
+      if (r.sponsor) {
+        if (!ctx.sponsors) bad("The sponsor column needs the 09 back end (sponsors are not switched on yet)");
+        else { var ms = matchOne(ctx.sponsors, r.sponsor, function (s) { return [s.name]; }, "Sponsor"); if (ms.item) o.sponsor = ms.item; else bad(ms.problem); }
+      }
+      if (r.pool) { var mp = matchOne(ctx.pools, r.pool, function (p) { return [p.name]; }, "Pool"); o.poolId = mp.item ? mp.item.id : null; if (!mp.item) bad(mp.problem); }
+      else if (o.sponsor) {
+        var sp = ctx.pools.filter(function (p) { return p.sponsor_id === o.sponsor.id && (!p.ticket_type_id || !o.typeId || p.ticket_type_id === o.typeId); });
+        if (sp.length === 1) o.poolId = sp[0].id;
+        else bad(sp.length ? o.sponsor.name + " has " + sp.length + " pools: add a pool column" : "No comp pool for " + o.sponsor.name + ": add one under Comp pools");
+      }
+      var pool = ctx.pools.find(function (p) { return p.id === o.poolId; });
+      if (pool && o.sponsor && pool.sponsor_id && pool.sponsor_id !== o.sponsor.id) bad("Pool " + pool.name + " belongs to another sponsor");
+      if (pool && !o.typeId && pool.ticket_type_id) o.typeId = pool.ticket_type_id;
+      if (!o.typeId) bad("No ticket type: add it in the file or choose one above");
+      else if (pool && pool.ticket_type_id && pool.ticket_type_id !== o.typeId) bad("Pool " + pool.name + " is for " + typeLabel(pool.ticket_type_id));
+      if (o.note.length > 500) bad("Note is too long");
+      var key = o.email + "|" + o.typeId;
+      if (!o.problem && seen[key]) bad("Listed twice for this ticket type (row " + seen[key] + ")");
+      if (!o.problem) seen[key] = o.row;
+      if (o.sponsor === null && pool && pool.sponsor_id && ctx.sponsors) o.sponsor = ctx.sponsors.find(function (s) { return s.id === pool.sponsor_id; }) || null;
+      return o;
     });
   }
+  /* One issue_comp2 call per distinct (ticket type, qty per person, pool). p_note is the group's note when every row
+     shares it, else the form note; each recipient also carries its own note (see Contract changes 2026-10-22 ADMIN).
+     issue_comp2 takes at most 200 recipients per call (09), so a bigger group is split into calls of 200. */
+  function groupCompRows(rows, formNote) {
+    var groups = [], by = {};
+    rows.filter(function (x) { return !x.problem; }).forEach(function (x) {
+      var k = x.typeId + "|" + x.qty + "|" + (x.poolId || "");
+      if (!by[k] || by[k].rows.length >= 200) { by[k] = { typeId: x.typeId, qty: x.qty, poolId: x.poolId, rows: [] }; groups.push(by[k]); }
+      by[k].rows.push(x);
+    });
+    groups.forEach(function (g) {
+      var notes = g.rows.map(function (x) { return x.note; });
+      g.note = notes.every(function (n) { return n === notes[0]; }) ? notes[0] : formNote;
+      g.recipients = g.rows.map(function (x) { var r = { email: x.email, name: x.name || null }; if (x.note) r.note = x.note; return r; });
+    });
+    return groups;
+  }
   VIEWS.comps = function () {
-    return Promise.all([loadCatalog(), sel("tix", "comp_reasons", function (q) { return q.order("label"); }), sel("tix", "comp_pools", function (q) { return q.eq("app", APP).order("name"); })])
+    return Promise.all([loadCatalog(), sel("tix", "comp_reasons", function (q) { return q.order("label"); }), sel("tix", "comp_pools", function (q) { return q.eq("app", APP).order("name"); }), loadSponsors()])
       .then(function (r) {
-        var reasons = r[1] || [], pools = r[2] || [];
-        state.preview = null;
+        var reasons = r[1] || [], pools = r[2] || [], sponsors = r[3];
+        state.preview = null; state.previewRaw = null;
         main.innerHTML = '<div class="view"><h1>Comps</h1>' +
           '<section class="panel" aria-labelledby="hIssue"><h2 id="hIssue">Issue comps</h2><form id="cForm" class="form" novalidate>' +
-          fld("cType", "Ticket type", "select", "", { html: typeOptions("", "Choose a ticket type"), required: true }) +
+          fld("cType", "Ticket type", "select", "", { html: typeOptions("", "Choose a ticket type"), required: true, hint: "For a list: the default for rows without a ticket_type" }) +
           fld("cQty", "Tickets per person", "number", 1, { attrs: ' min="1" max="10" step="1"' }) +
           fld("cReason", "Reason", "select", "", { required: true, options: [["", "Choose a reason"]].concat(reasons.map(function (x) { return [x.code, x.label]; })) }) +
           fld("cPool", "Comp pool", "select", "", { options: [["", "No pool"]].concat(pools.map(function (p) { return [p.id, p.name + " (" + Math.max(0, (p.allotment || 0) - (p.used || 0)) + " left)"]; })), hint: "Counts against the pool's allotment" }) +
           fld("cNote", "Note", "textarea", "", { wide: true, hint: "Who asked for it and why. Saved with each comp." }) +
           '<fieldset class="wide" style="border:0;padding:0;margin:0"><legend class="lbl">Recipients</legend><div class="segmented" role="group" aria-label="Recipients"><button type="button" id="cModeOne" aria-pressed="true">One person</button><button type="button" id="cModeList" aria-pressed="false">Upload a list</button></div></fieldset>' +
           '<div class="wide" id="cOne"><div class="form">' + fld("cEmail", "Email", "email", "") + fld("cName", "Name", "text", "") + "</div></div>" +
-          '<div class="wide" id="cList" hidden><div class="form">' + fld("cFile", "CSV file", "file", "", { attrs: ' accept=".csv,text/csv"', hint: "One person per row: email,name. A header row is fine." }) +
-          fld("cPaste", "Or paste rows", "textarea", "", { hint: "email,name on each line" }) + '</div><div class="btns" style="margin-top:8px"><button type="button" class="btn ghost" id="cPreviewBtn">Preview list</button></div><div id="cPreview" style="margin-top:10px"></div></div>' +
+          '<div class="wide" id="cList" hidden><div class="form">' + fld("cFile", "CSV file", "file", "", { attrs: ' accept=".csv,text/csv"', hint: "email,name per row, or a header row with any of email, name, qty, ticket_type, sponsor, pool, note. Blank cells use the values above." }) +
+          fld("cPaste", "Or paste rows", "textarea", "", { hint: "Same format as the file" }) + '</div><div class="btns" style="margin-top:8px"><button type="button" class="btn ghost" id="cPreviewBtn">Preview list</button><button type="button" class="btn ghost" id="cTemplate">Download template</button></div><div id="cPreview" style="margin-top:10px"></div></div>' +
           '<p class="err wide" id="cErr" role="alert"></p><div class="btns wide"><button type="submit" class="btn" id="cIssue">Issue comps</button></div></form></section>' +
           '<section class="panel" aria-labelledby="hPools"><div class="head"><h2 id="hPools">Comp pools</h2><button type="button" class="btn ghost" id="pNew">New pool</button></div><div id="pTable" style="margin-top:10px"></div></section>' +
-          '<section class="panel" aria-labelledby="hCompRep"><h2 id="hCompRep">Comp report</h2><div id="cReport"><p class="muted">Loading...</p></div></section></div>';
-        renderPools(pools);
+          '<section class="panel" aria-labelledby="hCompRep"><h2 id="hCompRep">Comp report</h2><p class="hint">Sponsor package vs straight comps and show rate per sponsor are on the Sponsors page.</p><div id="cReport"><p class="muted">Loading...</p></div></section></div>';
+        renderPools(pools, sponsors);
         var mode = "one";
         function setMode(m) { mode = m; $("#cModeOne").setAttribute("aria-pressed", m === "one"); $("#cModeList").setAttribute("aria-pressed", m === "list"); $("#cOne").hidden = m !== "one"; $("#cList").hidden = m !== "list"; }
         $("#cModeOne").addEventListener("click", function () { setMode("one"); });
         $("#cModeList").addEventListener("click", function () { setMode("list"); });
         $("#cPool").addEventListener("change", function () { var p = pools.find(function (x) { return x.id === $("#cPool").value; }); if (p && p.ticket_type_id) $("#cType").value = p.ticket_type_id; });
-        function preview(text) { state.preview = checkRecipients(parseCSV(text)); renderPreview(); }
+        function ctx() { return { typeId: $("#cType").value, qty: Number($("#cQty").value), poolId: $("#cPool").value || null, note: $("#cNote").value.trim(), pools: pools, sponsors: sponsors }; }
+        // The form values are the defaults for blank cells, so the preview is re-resolved whenever they change.
+        function resolve() { if (!state.previewRaw) return; state.preview = resolveCompRows(state.previewRaw, ctx()); renderPreview(pools); }
+        function preview(text) { state.previewRaw = readCompCSV(parseCSV(text)); resolve(); }
+        ["cType", "cQty", "cPool", "cNote"].forEach(function (id) { $("#" + id).addEventListener("change", resolve); });
         $("#cFile").addEventListener("change", function () {
           var f = $("#cFile").files[0]; if (!f) return;
           if (f.size > 512 * 1024) { $("#cPreview").innerHTML = errBlock("That file is too big. Keep lists under 500 people."); return; }
           f.text().then(preview);
         });
         $("#cPreviewBtn").addEventListener("click", function () { preview($("#cPaste").value); });
+        $("#cTemplate").addEventListener("click", function () {
+          var t = cat.types[0], s = sponsors && sponsors[0];
+          download("concours-comps-template.csv", toCSV([["email", "email"], ["name", "name"], ["qty", "qty"], ["ticket_type", "ticket_type"], ["sponsor", "sponsor"], ["pool", "pool"], ["note", "note"]], [
+            { email: "guest@example.com", name: "Example Guest", qty: 2, ticket_type: t ? typeLabel(t.id) : "Event - Ticket type", sponsor: "", pool: "", note: "Blank cells use the form values" },
+            { email: "partner@example.com", name: "Example Partner", qty: "", ticket_type: "", sponsor: s ? s.name : "Sponsor name", pool: "", note: "Sponsor picks that sponsor's pool" }]));
+        });
         $("#cForm").addEventListener("submit", busy($("#cIssue"), function () {
           $("#cErr").textContent = "";
           var typeId = $("#cType").value, qty = Number($("#cQty").value), reason = $("#cReason").value, poolId = $("#cPool").value || null, note = $("#cNote").value.trim();
-          var recipients, skipped = 0;
-          if (!typeId) return fail("Choose a ticket type.");
           if (!Number.isInteger(qty) || qty < 1 || qty > 10) return fail("Tickets per person must be between 1 and 10.");
           if (!reason) return fail("Choose a reason.");
+          var reasonLabel = (reasons.find(function (x) { return x.code === reason; }) || {}).label || reason;
+          var groups, skipped = 0;
           if (mode === "one") {
+            if (!typeId) return fail("Choose a ticket type.");
             var em = $("#cEmail").value.trim().toLowerCase();
             if (!EMAIL_RE.test(em)) return fail("Enter a valid email for the recipient.");
-            recipients = [{ email: em, name: $("#cName").value.trim() || null }];
+            groups = [{ typeId: typeId, qty: qty, poolId: poolId, note: note, recipients: [{ email: em, name: $("#cName").value.trim() || null }] }];
           } else {
-            if (!state.preview) return fail("Upload a CSV file or paste rows, then preview the list.");
-            recipients = state.preview.filter(function (x) { return !x.problem; }).map(function (x) { return { email: x.email, name: x.name || null }; });
-            skipped = state.preview.length - recipients.length;
-            if (!recipients.length) return fail("No valid rows to issue.");
-            if (recipients.length > 500) return fail("Issue at most 500 people at a time.");
+            if (!state.previewRaw) return fail("Upload a CSV file or paste rows, then preview the list.");
+            resolve();
+            groups = groupCompRows(state.preview, note);
+            skipped = state.preview.filter(function (x) { return x.problem; }).length;
+            if (!groups.length) return fail("No valid rows to issue.");
+            if (state.preview.length - skipped > 500) return fail("Issue at most 500 people at a time.");
           }
-          var total = recipients.length * qty, pool = pools.find(function (p) { return p.id === poolId; });
-          if (pool) {
-            var left = (pool.allotment || 0) - (pool.used || 0);
-            if (pool.ticket_type_id && pool.ticket_type_id !== typeId) return fail("That pool is for " + typeLabel(pool.ticket_type_id) + ". Pick that ticket type or a different pool.");
-            if (total > left) return fail("The pool has " + left + " left; this would issue " + total + ".");
-          }
-          var reasonLabel = (reasons.find(function (x) { return x.code === reason; }) || {}).label || reason;
+          var poolErr = poolCheck(groups, pools); if (poolErr) return fail(poolErr);
+          var people = 0, total = 0;
+          groups.forEach(function (g) { people += g.recipients.length; total += g.recipients.length * g.qty; });
           return confirmAction({
             title: "Issue " + total + " comp ticket" + (total === 1 ? "" : "s") + "?", confirmLabel: "Issue comps", reason: false,
-            message: "<b>" + recipients.length + "</b> " + (recipients.length === 1 ? "person" : "people") + " get " + qty + " x " + esc(typeLabel(typeId)) + " at no charge.<br>Reason: <b>" + esc(reasonLabel) + "</b>" +
-              (pool ? "<br>Pool: " + esc(pool.name) : "") + (skipped ? '<br><span class="err">' + skipped + " row" + (skipped === 1 ? "" : "s") + " with problems will be skipped.</span>" : "")
+            message: (groups.length === 1 ? "<b>" + people + "</b> " + (people === 1 ? "person" : "people") + " get " + groups[0].qty + " x " + esc(typeLabel(groups[0].typeId)) + " at no charge." + (groups[0].poolId ? "<br>Pool: " + esc(poolName(pools, groups[0].poolId)) : "")
+              : "<b>" + people + "</b> people in <b>" + groups.length + "</b> batches (one per ticket type, qty and pool):<br>" + groups.map(function (g) { return g.recipients.length + " x " + g.qty + " " + esc(typeLabel(g.typeId)) + (g.poolId ? " - " + esc(poolName(pools, g.poolId)) : ""); }).join("<br>")) +
+              "<br>Reason: <b>" + esc(reasonLabel) + "</b>" + (skipped ? '<br><span class="err">' + skipped + " row" + (skipped === 1 ? "" : "s") + " with problems will be skipped.</span>" : "")
           }).then(function (ok) {
             if (!ok) return;
-            return rpc("tix", "issue_comp2", { p_app: APP, p_ticket_type_id: typeId, p_qty: qty, p_reason_code: reason, p_note: note || null, p_pool_id: poolId, p_recipients: recipients })
-              .then(function (res) {
-                var n = res && (res.issued_count || (res.tickets && res.tickets.length)) || total;
-                toast(n + " comp ticket" + (n === 1 ? "" : "s") + " issued");
-                return openDialog({ title: "Comps issued", body: '<p>' + n + " ticket" + (n === 1 ? "" : "s") + " issued for " + recipients.length + " " + (recipients.length === 1 ? "person" : "people") + ". Each person gets the ticket on their pass when they sign in with that email.</p>" + (skipped ? '<p class="muted">' + skipped + " row(s) were skipped. Fix them and upload those rows again.</p>" : ""), buttons: [{ label: "Done", value: "cancel", cls: "primary" }] })
-                  .then(function () { return VIEWS.comps(); });
+            // Batches go one after another; the first failure stops the rest so nothing is issued twice on a retry.
+            var done = [], failed = null;
+            return groups.reduce(function (p, g) {
+              return p.then(function () {
+                if (failed) return;
+                return rpc("tix", "issue_comp2", { p_app: APP, p_ticket_type_id: g.typeId, p_qty: g.qty, p_reason_code: reason, p_note: g.note || null, p_pool_id: g.poolId, p_recipients: g.recipients })
+                  .then(function (res) { done.push({ g: g, n: res && (res.issued_count || (res.tickets && res.tickets.length)) || g.recipients.length * g.qty }); }, function (e) { failed = { g: g, e: e }; });
               });
+            }, Promise.resolve()).then(function () { return issuedDialog(done, failed, groups, skipped); }).then(function () { return VIEWS.comps(); });
           });
           function fail(m) { $("#cErr").textContent = m; }
         }));
-        on("pNew", "click", function () { return editPool(null); });
-        $$("[data-pool-edit]", main).forEach(function (b) { on(b, "click", function () { return editPool(pools.find(function (p) { return p.id === b.dataset.poolEdit; })); }); });
+        on("pNew", "click", function () { return editPool(null, sponsors); });
+        $$("[data-pool-edit]", main).forEach(function (b) { on(b, "click", function () { return editPool(pools.find(function (p) { return p.id === b.dataset.poolEdit; }), sponsors); }); });
         return loadCompReport();
       });
   };
-  function renderPreview() {
-    var p = state.preview || [], ok = p.filter(function (x) { return !x.problem; }).length, bad = p.length - ok;
-    $("#cPreview").innerHTML = '<p role="status"><b>' + ok + "</b> ready to issue" + (bad ? ", <b>" + bad + "</b> with problems (will be skipped)" : "") + ".</p>" +
-      '<div class="tablewrap"><table><thead><tr><th scope="col" class="num">Row</th><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Check</th></tr></thead><tbody>' +
-      (p.length ? p.map(function (x) { return '<tr class="' + (x.problem ? "bad" : "") + '"><td class="num">' + x.row + "</td><td>" + esc(x.email || "-") + "</td><td>" + esc(x.name || "-") + "</td><td>" + (x.problem ? pill(x.problem, "bad") : pill("OK", "ok")) + "</td></tr>"; }).join("") : emptyRow(4, "The list is empty.")) +
-      "</tbody></table></div>";
+  function poolName(pools, id) { var p = pools.find(function (x) { return x.id === id; }); return p ? p.name : "-"; }
+  function poolCheck(groups, pools) {
+    var need = {};
+    groups.forEach(function (g) { if (g.poolId) need[g.poolId] = (need[g.poolId] || 0) + g.recipients.length * g.qty; });
+    var msg = "";
+    Object.keys(need).forEach(function (id) {
+      var p = pools.find(function (x) { return x.id === id; }); if (!p || msg) return;
+      var left = (p.allotment || 0) - (p.used || 0);
+      var g = groups.find(function (x) { return x.poolId === id && p.ticket_type_id && x.typeId !== p.ticket_type_id; });
+      if (g) msg = "That pool is for " + typeLabel(p.ticket_type_id) + ". Pick that ticket type or a different pool.";
+      else if (need[id] > left) msg = "Pool " + p.name + " has " + left + " left; this would issue " + need[id] + ".";
+    });
+    return msg;
   }
-  function renderPools(pools) {
-    $("#pTable").innerHTML = '<div class="tablewrap"><table><thead><tr><th scope="col">Pool</th><th scope="col">Ticket type</th><th scope="col">Owner</th><th scope="col">Used</th><th scope="col" class="num">Left</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>' +
+  function issuedDialog(done, failed, groups, skipped) {
+    var n = done.reduce(function (a, d) { return a + d.n; }, 0);
+    if (n) toast(n + " comp ticket" + (n === 1 ? "" : "s") + " issued");
+    var left = failed ? groups.slice(groups.indexOf(failed.g)) : [];
+    return openDialog({
+      title: failed ? "Comps partly issued" : "Comps issued",
+      body: (done.length ? "<p>" + done.map(function (d) { return d.n + " ticket" + (d.n === 1 ? "" : "s") + " - " + d.g.recipients.length + " x " + d.g.qty + " " + esc(typeLabel(d.g.typeId)); }).join("<br>") + "</p><p>Each person gets the tickets on their pass when they sign in with that email.</p>" : "") +
+        (failed ? '<div class="notice warn" role="alert">Stopped at the batch for ' + esc(typeLabel(failed.g.typeId)) + ": " + esc(failed.e.message) + "<br>That batch and the " + (left.length - 1) + " after it were not sent. Download the rows not issued, fix them and upload that file, so nobody gets tickets twice.</div>" +
+          '<div class="btns"><button type="button" class="btn" id="ciLeft">Download rows not issued</button></div>' : "") +
+        (skipped ? '<p class="muted">' + skipped + " row(s) with problems were skipped. Fix them and upload those rows again.</p>" : ""),
+      buttons: [{ label: "Done", value: "cancel", cls: "primary" }],
+      focusButton: true,
+      onOpen: function (b) {
+        var btn = $("#ciLeft", b); if (!btn) return;
+        btn.addEventListener("click", function () {
+          var rows = []; left.forEach(function (g) { g.rows ? g.rows.forEach(function (x) { rows.push({ email: x.email, name: x.name, qty: x.qty, ticket_type: x.typeId, pool: x.poolId || "", note: x.note }); }) : g.recipients.forEach(function (x) { rows.push({ email: x.email, name: x.name, qty: g.qty, ticket_type: g.typeId, pool: g.poolId || "", note: g.note }); }); });
+          download("concours-comps-not-issued-" + todayStr() + ".csv", toCSV([["email", "email"], ["name", "name"], ["qty", "qty"], ["ticket_type", "ticket_type"], ["pool", "pool"], ["note", "note"]], rows));
+        });
+      }
+    });
+  }
+  function renderPreview(pools) {
+    var p = state.preview || [], ok = p.filter(function (x) { return !x.problem; }).length, bad = p.length - ok, raw = state.previewRaw || {};
+    var groups = groupCompRows(p, ""), dflt = ' <span class="hint">(form)</span>';
+    function cell(val, fromFile) { return esc(val) + (fromFile ? "" : dflt); }
+    $("#cPreview").innerHTML = '<p role="status"><b>' + ok + "</b> ready to issue" + (bad ? ", <b>" + bad + "</b> with problems (will be skipped)" : "") +
+      (groups.length ? " - " + groups.length + " batch" + (groups.length === 1 ? "" : "es") + " (one per ticket type, qty and pool)" : "") + ".</p>" +
+      (raw.unused && raw.unused.length ? '<p class="hint">Columns not used: ' + esc(raw.unused.join(", ")) + ". Known columns: " + CSV_COLS.join(", ") + ".</p>" : "") +
+      '<div class="tablewrap"><table><thead><tr><th scope="col" class="num">Row</th><th scope="col">Email</th><th scope="col">Name</th><th scope="col" class="num">Qty</th><th scope="col">Ticket type</th><th scope="col">Pool</th><th scope="col">Sponsor</th><th scope="col">Note</th><th scope="col">Check</th></tr></thead><tbody>' +
+      (p.length ? p.map(function (x) {
+        return '<tr class="' + (x.problem ? "bad" : "") + '"><td class="num">' + x.row + "</td><td>" + esc(x.email || "-") + "</td><td>" + esc(x.name || "-") + '</td><td class="num">' + cell(isNaN(x.qty) ? "?" : x.qty, x.from.qty) +
+          "</td><td>" + (x.typeId ? cell(typeLabel(x.typeId), x.from.type) : "-") + "</td><td>" + (x.poolId ? cell(poolName(pools, x.poolId), x.from.pool || x.from.sponsor) : "-") +
+          "</td><td>" + esc(x.sponsor ? x.sponsor.name : "-") + "</td><td>" + (x.note ? cell(x.note, x.from.note) : "-") + "</td><td>" + (x.problem ? pill(x.problem, "bad wrap") : pill("OK", "ok")) + "</td></tr>";
+      }).join("") : emptyRow(9, "The list is empty.")) +
+      "</tbody></table></div>" + ' <p class="hint">(form) = taken from the form above because the cell was blank.</p>';
+  }
+  function renderPools(pools, sponsors) {
+    var spName = function (id) { var x = sponsors && sponsors.find(function (s) { return s.id === id; }); return x ? x.name : "-"; };
+    $("#pTable").innerHTML = '<div class="tablewrap"><table><thead><tr><th scope="col">Pool</th><th scope="col">Ticket type</th>' + (sponsors ? '<th scope="col">Sponsor</th>' : "") + '<th scope="col">Owner</th><th scope="col">Used</th><th scope="col" class="num">Left</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody>' +
       (pools.length ? pools.map(function (p) {
-        return "<tr><td>" + esc(p.name) + "</td><td>" + esc(typeLabel(p.ticket_type_id)) + "</td><td>" + esc(p.owner_email || "-") + "</td><td>" + meter(p.used || 0, p.allotment) +
+        return "<tr><td>" + esc(p.name) + "</td><td>" + esc(typeLabel(p.ticket_type_id)) + "</td>" + (sponsors ? "<td>" + esc(spName(p.sponsor_id)) + "</td>" : "") + "<td>" + esc(p.owner_email || "-") + "</td><td>" + meter(p.used || 0, p.allotment) +
           '</td><td class="num">' + n0(Math.max(0, (p.allotment || 0) - (p.used || 0))) + '</td><td><button type="button" class="btn ghost sm" data-pool-edit="' + esc(p.id) + '">Edit</button></td></tr>';
-      }).join("") : emptyRow(6, "No pools yet. Pools cap how many comps a sponsor or team can hand out.")) + "</tbody></table></div>";
+      }).join("") : emptyRow(sponsors ? 7 : 6, "No pools yet. Pools cap how many comps a sponsor or team can hand out.")) + "</tbody></table></div>";
   }
-  function editPool(p) {
+  /* sponsors: null when tix.sponsors is not switched on yet - the picker is then left out and sponsor_id is not sent. */
+  function editPool(p, sponsors) {
     var d = p || {};
     return openDialog({
       title: p ? "Edit comp pool" : "New comp pool",
       body: '<div class="form">' + fld("f_name", "Pool name", "text", d.name, { required: true, wide: true, hint: "e.g. A. Lange & Sohne sponsor allotment" }) +
         fld("f_type", "Ticket type", "select", "", { html: typeOptions(d.ticket_type_id, "Any ticket type") }) +
         fld("f_allot", "Allotment", "number", d.allotment, { attrs: ' min="0" step="1"' }) + fld("f_owner", "Owner email", "email", d.owner_email, { hint: "Who manages this allotment" }) +
+        (sponsors ? fld("f_sponsor", "Sponsor", "select", d.sponsor_id || "", { options: [["", "No sponsor (straight comps)"]].concat(sponsors.map(function (s) { return [s.id, s.name + (s.year ? " (" + s.year + ")" : "")]; })), hint: "Comps from this pool count as the sponsor's package" }) : "") +
         (p ? '<p class="hint wide">' + n0(d.used || 0) + " already used.</p>" : "") + "</div>",
       buttons: [{ label: "Save pool", value: "save" }, { label: "Cancel", value: "cancel", cls: "ghost" }],
       validate: function (b) {
@@ -584,6 +707,7 @@
       },
       collect: function (b) {
         var o = { name: v(b, "f_name"), ticket_type_id: v(b, "f_type") || null, allotment: Number(v(b, "f_allot")), owner_email: (v(b, "f_owner") || "").toLowerCase() || null };
+        if (sponsors) o.sponsor_id = v(b, "f_sponsor") || null;
         if (p) o.id = p.id; return o;
       }
     }).then(function (pool) {
@@ -656,7 +780,7 @@
           return '<tr><td class="mono">' + esc(t.serial) + '</td><td class="mono">' + esc(t.pass_serial || "-") + "</td><td>" + esc(t.type || typeLabel(t.ticket_type_id)) + "</td><td>" + esc(t.holder_name || "-") + "</td><td>" + statusPill(t.status) + (t.is_comp ? " " + pill("Comp") : "") +
             "</td><td>" + (sc.length ? sc.map(function (s) { return '<div class="hint">' + fmtDT(s.scanned_at) + " - " + esc(s.gate || "") + " - " + esc(s.result) + "</div>"; }).join("") : '<span class="muted">None</span>') +
             '</td><td><div class="btns">' +
-            (live ? '<button type="button" class="btn ghost sm" data-t-act="move" data-t="' + esc(t.id) + '">Move</button><button type="button" class="btn ghost sm" data-t-act="unlock_phone" data-t="' + esc(t.id) + '">Unlock phone</button><button type="button" class="btn ghost sm" data-t-act="remove" data-t="' + esc(t.id) + '">Remove</button>' : "") +
+            (live ? '<button type="button" class="btn ghost sm" data-t-act="move" data-t="' + esc(t.id) + '">Change type</button><button type="button" class="btn ghost sm" data-t-act="move_account" data-t="' + esc(t.id) + '">Move to account</button><button type="button" class="btn ghost sm" data-t-act="unlock_phone" data-t="' + esc(t.id) + '">Unlock phone</button><button type="button" class="btn ghost sm" data-t-act="remove" data-t="' + esc(t.id) + '">Remove</button>' : "") +
             (live && paid ? '<button type="button" class="btn ghost sm" data-t-act="refund" data-t="' + esc(t.id) + '">Refund ticket</button>' : "") +
             (t.pass_serial ? '<button type="button" class="btn ghost sm" data-t-act="revoke" data-t="' + esc(t.id) + '">Revoke pass</button>' : "") + "</div></td></tr>";
         }).join("") : emptyRow(7, "No tickets on this order.")) + "</tbody></table></div>" +
@@ -706,6 +830,7 @@
     });
   }
   function ticketAction(act, t, o, refundable) {
+    if (act === "move_account") return moveTicketDialog(t, t.pass_serial, function () { return openOrder(state.order); });
     if (act === "refund") {
       var price = (typeById(t.ticket_type_id) || {}).price_cents;
       return refundDialog({ ticket_id: t.id }, Math.min(refundable, price == null ? refundable : price), "ticket " + t.serial);
@@ -1079,4 +1204,753 @@
       return sel("tix", "comp_report", function (q) { return q.eq("app", APP).order("created_at", { ascending: false }).limit(1000); });
     }).then(function (r) { rows = (r || []).map(norm); paint(); }).catch(function (e) { $("#auList").innerHTML = errBlock(e); });
   };
+
+  // ===================================================================================== 9. Curtis call additions (2026-10-22)
+  /* Spec: audrain-apps/docs/2027-CURTIS-CALL-2026-10-22.md sections 1-4 and 6. Everything here calls RPCs from backend
+     file 09, which may not be deployed yet. PostgREST answers PGRST202 (no such function), PGRST205 / 42P01 (no such
+     table) or PGRST106 (schema not exposed); those turn into a plain "not switched on" notice instead of an error. */
+  var NOT_ON = "Not switched on yet - needs the 09 back-end file.";
+  function isMissing(e) {
+    var raw = (e && e.raw) || {};
+    return /^(PGRST202|PGRST205|PGRST106|42P01|42883|3F000)$/.test(String(raw.code || "")) || raw.status === 404 ||
+      /could not find the (function|table)|does not exist|schema must be one of/i.test((e && e.message) || "");
+  }
+  function soft(e) { if (isMissing(e)) { var x = new Error(NOT_ON); x.notOn = true; x.raw = e.raw; throw x; } throw e; }
+  function rpc9(schema, fn, args) { return rpc(schema, fn, args).catch(soft); }
+  function sel9(schema, table, build) { return sel(schema, table, build).catch(soft); }
+  function notOn(what) { return '<div class="notice" role="status">' + (what ? "<b>" + esc(what) + ":</b> " : "") + esc(NOT_ON) + "</div>"; }
+  function fail9(el, what) { return function (e) { if (!e.notOn) console.warn(e); el.innerHTML = e.notOn ? notOn(what) : errBlock(e); }; }
+  // Sponsors for pickers; null (not an error) while tix.sponsors does not exist.
+  function loadSponsors() { return sel9("tix", "sponsors", function (q) { return q.eq("app", APP).order("name"); }).catch(function (e) { if (e.notOn) return null; throw e; }); }
+
+  // The working year: after mid-October the next year's show is the one being sold.
+  function defaultYear() { var d = new Date(); return d.getMonth() > 9 || (d.getMonth() === 9 && d.getDate() >= 15) ? d.getFullYear() + 1 : d.getFullYear(); }
+  function curYear() { var y = Number(store.get("adm.year", 0)); return y >= 2025 && y <= 2100 ? y : defaultYear(); }
+  function yearSelect(id, y) {
+    var out = "", top = defaultYear() + 1;
+    for (var x = top; x >= 2025; x--) out += '<option value="' + x + '"' + (x === y ? " selected" : "") + ">" + x + "</option>";
+    return '<div class="field"><label for="' + id + '">Year</label><select id="' + id + '">' + out + "</select></div>";
+  }
+  function bindYear(id, reload) { $("#" + id).addEventListener("change", function () { store.set("adm.year", Number($("#" + id).value)); reload(); }); }
+  // A calendar day ('YYYY-MM-DD', already an Eastern date from the server) shown without a time-zone shift.
+  function fmtDay(s, o) { if (!s) return "-"; var p = String(s).slice(0, 10).split("-"); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 12)).toLocaleDateString("en-US", Object.assign({ timeZone: "UTC", month: "short", day: "numeric" }, o || {})); }
+  function roasFmt(r) { return r == null || isNaN(r) ? "-" : Number(r).toFixed(2) + "x"; }
+  // Bar for a returned fraction (sell-through, show rate); the number shown is the returned one.
+  function fracMeter(f, label) {
+    if (f == null || isNaN(f)) return '<span class="muted">-</span>';
+    var p = Math.max(0, Math.min(100, Number(f) * 100));
+    return '<div class="barrow"><div class="meter' + (f > 1 ? " over" : "") + '" role="img" aria-label="' + esc(label || "") + " " + pct(f) + '"><i style="width:' + p + '%"></i></div><span class="mono">' + pct(f) + "</span></div>";
+  }
+  function table(cols, rows, empty) {
+    return '<div class="tablewrap"><table><thead><tr>' + cols.map(function (c) { return '<th scope="col"' + (c[2] ? ' class="num"' : "") + ">" + esc(c[0]) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      (rows.length ? rows.map(function (r) { return "<tr>" + cols.map(function (c) { return "<td" + (c[2] ? ' class="num"' : "") + ">" + c[1](r) + "</td>"; }).join("") + "</tr>"; }).join("") : emptyRow(cols.length, empty)) + "</tbody></table></div>";
+  }
+
+  /* Inline SVG charts, no library. One y axis per chart (every series is dollars, or every series is tickets).
+     spec: {rows, title, unit '$'|'n', label(row) -> x label, readout(row) -> text, empty,
+            series:[{key, name, kind 'bar'|'line', cls 's1'|'s2', dash}]}.
+     Hover, tap, or focus and the arrow keys move a highlight and the readout line; a table view sits under each chart. */
+  var chartRO = window.ResizeObserver ? new ResizeObserver(function (es) { es.forEach(function (e) { var el = e.target; if (el._draw && el.isConnected && Math.abs(el.clientWidth - (el._w || 0)) > 8) el._draw(); }); }) : null;
+  function niceMax(m) { if (!(m > 0)) return 1; var p = Math.pow(10, Math.floor(Math.log10(m))), f = m / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
+  function compact(v, unit) {
+    if (v == null) return "-";
+    if (unit === "n") return Math.abs(v) >= 1e3 ? (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + "K" : String(Math.round(v));
+    var d = Number(v) / 100, a = Math.abs(d);
+    return a >= 1e6 ? "$" + (d / 1e6).toFixed(a >= 1e7 ? 0 : 1) + "M" : a >= 1e3 ? "$" + (d / 1e3).toFixed(a >= 1e4 ? 0 : 1) + "K" : "$" + d.toFixed(0);
+  }
+  function roundTop(x, y, w, h) { var r = Math.min(4, w / 2, h); return "M" + x + "," + (y + h) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + h) + "Z"; }
+  function drawChart(el, spec) {
+    var rows = spec.rows || [];
+    if (!rows.length) { el._draw = null; el.innerHTML = '<p class="empty">' + esc(spec.empty || "No data yet.") + "</p>"; return; }
+    el._draw = function () {
+      var W = Math.max(280, el.clientWidth || 640), H = 240, L = 52, R = 14, T = 12, B = 28, pw = W - L - R, ph = H - T - B, n = rows.length, step = pw / n;
+      el._w = el.clientWidth;
+      var max = 0;
+      rows.forEach(function (r) { spec.series.forEach(function (s) { if (r[s.key] != null && Number(r[s.key]) > max) max = Number(r[s.key]); }); });
+      max = niceMax(max);
+      var y = function (val) { return T + ph - ph * Number(val) / max; }, cx = function (i) { return L + step * (i + 0.5); };
+      var g = "", t, every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 74))));
+      for (t = 0; t <= 4; t++) { var ty = y(max * t / 4).toFixed(1); g += '<line class="gl' + (t ? "" : " base") + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + ty + '" y2="' + ty + '"/><text class="tick" x="' + (L - 6) + '" y="' + (+ty + 4) + '" text-anchor="end">' + esc(compact(max * t / 4, spec.unit)) + "</text>"; }
+      rows.forEach(function (r, i) { if ((n - 1 - i) % every === 0) g += '<text class="tick" x="' + cx(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(spec.label(r)) + "</text>"; });
+      var bars = spec.series.filter(function (s) { return s.kind === "bar"; }), gap = 2;
+      var bw = Math.max(1, Math.min(28, (step * 0.72 - gap * (bars.length - 1)) / Math.max(1, bars.length)));
+      bars.forEach(function (s, j) {
+        rows.forEach(function (r, i) {
+          var val = Number(r[s.key]); if (r[s.key] == null || !(val > 0)) return;
+          var x = cx(i) - (bw * bars.length + gap * (bars.length - 1)) / 2 + j * (bw + gap);
+          g += '<path class="bar ' + s.cls + '" d="' + roundTop(+x.toFixed(1), +y(val).toFixed(1), +bw.toFixed(1), +(ph * val / max).toFixed(1)) + '"/>';
+        });
+      });
+      spec.series.filter(function (s) { return s.kind === "line"; }).forEach(function (s) {
+        var d = "", pen = false, dots = "";
+        rows.forEach(function (r, i) {
+          if (r[s.key] == null) { pen = false; return; }
+          d += (pen ? "L" : "M") + cx(i).toFixed(1) + "," + y(r[s.key]).toFixed(1); pen = true;
+          if (n <= 40) dots += '<circle class="dot ' + s.cls + '" cx="' + cx(i).toFixed(1) + '" cy="' + y(r[s.key]).toFixed(1) + '" r="4"/>';
+        });
+        g += '<path class="ln ' + s.cls + (s.dash ? " dash" : "") + '" d="' + d + '"/>' + dots;
+      });
+      el.innerHTML = (spec.series.length > 1 ? '<div class="legend" aria-hidden="true">' + spec.series.map(function (s) { return '<span><i class="sw ' + s.cls + (s.kind === "line" ? " ln" : "") + (s.dash ? " dash" : "") + '"></i>' + esc(s.name) + "</span>"; }).join("") + "</div>" : "") +
+        '<p class="readout" aria-live="polite">' + esc(spec.hint || "Point at, tap or arrow through the chart to read each value.") + "</p>" +
+        '<svg class="chart" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="img" aria-label="' + esc(spec.title + ". " + n + " points. Use the left and right arrow keys to read each one; the table below has every value.") + '">' +
+        '<rect class="hl" x="0" y="' + T + '" width="' + step.toFixed(1) + '" height="' + ph + '" visibility="hidden"/><g aria-hidden="true">' + g + "</g></svg>";
+      var svg = $("svg", el), hl = $(".hl", el), out = $(".readout", el), cur = -1;
+      function set(i) { cur = Math.max(0, Math.min(n - 1, i)); hl.setAttribute("x", (L + step * cur).toFixed(1)); hl.setAttribute("visibility", "visible"); out.textContent = spec.readout(rows[cur]); }
+      function at(e) { var b = svg.getBoundingClientRect(), i = Math.floor((e.clientX - b.left - L) / step); if (i >= 0 && i < n) set(i); }
+      svg.addEventListener("pointermove", at);
+      svg.addEventListener("pointerdown", at);
+      svg.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && document.activeElement !== svg) hl.setAttribute("visibility", "hidden"); });
+      svg.addEventListener("focus", function () { set(cur < 0 ? n - 1 : cur); });
+      svg.addEventListener("blur", function () { hl.setAttribute("visibility", "hidden"); });
+      svg.addEventListener("keydown", function (e) {
+        var k = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: -1, ArrowUp: 1 }[e.key];
+        if (k) { e.preventDefault(); set(cur + k); } else if (e.key === "Home") { e.preventDefault(); set(0); } else if (e.key === "End") { e.preventDefault(); set(n - 1); }
+      });
+    };
+    el._draw();
+    if (chartRO) chartRO.observe(el);
+  }
+  function tableView(label, html) { return '<details class="tview"><summary>' + esc(label) + "</summary>" + html + "</details>"; }
+
+  // ===================================================================================== 10. Dashboard (analytics.admin_dashboard)
+  /* The season view for Michael and Curtis. Every number is shown exactly as the RPC returns it; the page only formats
+     cents as dollars and works out a row's share of a total the RPC returned. */
+  VIEWS.dashboard = function () {
+    var year = curYear();
+    main.innerHTML = '<div class="view"><div class="head"><div><h1>Dashboard</h1><div class="muted" id="dbAsOf"></div></div><div class="btns">' + yearSelect("dbYear", year) +
+      '<button type="button" class="btn ghost" id="dbRefresh" style="align-self:flex-end">Refresh</button></div></div><div id="dbBody"><p class="muted" role="status">Loading...</p></div></div>';
+    function load() {
+      return rpc9("analytics", "admin_dashboard", { p_app: APP, p_year: Number($("#dbYear").value) }).then(renderDashboard).catch(fail9($("#dbBody"), "Dashboard"));
+    }
+    bindYear("dbYear", load);
+    on("dbRefresh", "click", load);
+    return load();
+  };
+  function renderDashboard(d) {
+    d = d || {};
+    var k = d.kpis || {}, daily = d.daily || [], weekly = d.weekly || [], yoy = (d.yoy || []).slice().sort(function (a, b) { return b.days_out - a.days_out; });
+    var noSales = !k.orders && !k.paid_tickets && !k.comp_tickets && !daily.some(function (r) { return r.gross_cents || r.paid_tickets; });
+    $("#dbAsOf").textContent = (d.year ? d.year + " season" : "") + (d.as_of ? " - as of " + fmtDT(d.as_of) : "");
+    var gross = k.gross_cents;
+    $("#dbBody").innerHTML =
+      (noSales ? '<div class="notice" role="status">No sales yet for ' + esc(d.year || "this year") + ". The tiles and charts fill in as orders come in.</div>" : "") +
+      '<section aria-labelledby="hKpi" style="margin-top:' + (noSales ? "18px" : "0") + '"><h2 id="hKpi" class="sr">Key numbers</h2><div class="grid tiles">' +
+      tile("Gross sales", money(k.gross_cents), "Paid orders before tax and fees") +
+      tile("Of goal", k.pct_of_goal == null ? "-" : k.pct_of_goal + "%", d.goal_cents != null ? "Goal " + money(d.goal_cents) : "No goal set (Ad spend and goal)") +
+      tile("Net sales", money(k.net_cents), money(k.refunded_cents) + " refunded") +
+      tile("Paid tickets", k.paid_tickets == null ? "-" : n0(k.paid_tickets)) + tile("Comp tickets", k.comp_tickets == null ? "-" : n0(k.comp_tickets)) +
+      tile("Comp face value", money(k.comp_face_value_cents), "Ticket price of comps issued") +
+      tile("Orders", k.orders == null ? "-" : n0(k.orders), "Average " + money(k.aov_cents)) +
+      tile("Ad spend", money(k.ad_spend_cents), "Logged under Ad spend and goal") +
+      tile("ROAS", roasFmt(k.roas), k.roas == null ? "No ad spend logged" : "Gross sales per $1 of ad spend") + "</div></section>" +
+      '<section class="panel" aria-labelledby="hSalesC"><div class="head"><h2 id="hSalesC">Sales and ad spend</h2><div class="segmented" role="group" aria-label="Period"><button type="button" id="dbDay" aria-pressed="true">Daily</button><button type="button" id="dbWeek" aria-pressed="false">Weekly</button></div></div>' +
+      '<p class="hint">Gross sales and ad spend on the same dollar scale. Eastern days; weeks start Monday.</p><div id="dbSales" class="chartbox"></div><div id="dbSalesT"></div></section>' +
+      '<section class="panel" aria-labelledby="hYoy"><div class="head"><h2 id="hYoy">This year vs last year</h2><div class="segmented" role="group" aria-label="Measure"><button type="button" id="dbYg" aria-pressed="true">Gross</button><button type="button" id="dbYt" aria-pressed="false">Tickets</button></div></div>' +
+      '<p class="hint">Cumulative, lined up on days before the first event.</p><div id="dbYoyNote"></div><div id="dbYoy" class="chartbox"></div><div id="dbYoyT"></div></section>' +
+      '<section class="panel" aria-labelledby="hByEv"><h2 id="hByEv">By event</h2>' + table([
+        ["Event", function (r) { return esc(r.event); }], ["Starts", function (r) { return fmtDT(r.starts_at); }], ["Paid", function (r) { return n0(r.paid_tickets); }, 1], ["Comp", function (r) { return n0(r.comp_tickets); }, 1],
+        ["Gross", function (r) { return money(r.gross_cents); }, 1], ["Capacity", function (r) { return r.capacity == null ? "No limit" : n0(r.capacity); }, 1], ["Sell-through", function (r) { return fracMeter(r.sell_through, r.event + " sell-through"); }]
+      ], d.by_event || [], "No events with sales yet.") + "</section>" +
+      '<div class="grid two"><section class="panel" aria-labelledby="hByCh"><h2 id="hByCh">By channel</h2>' + table([
+        ["Channel", function (r) { return esc(r.channel || "-"); }], ["Orders", function (r) { return n0(r.orders); }, 1], ["Gross", function (r) { return money(r.gross_cents); }, 1],
+        ["Share of gross", function (r) { return fracMeter(ratio(Number(r.gross_cents || 0), Number(gross || 0)), (r.channel || "") + " share"); }]
+      ], d.by_channel || [], "No orders yet.") + "</section>" +
+      '<section class="panel" aria-labelledby="hByCr"><h2 id="hByCr">By creative</h2><p class="hint">From the utm tags on each order, matched to logged ad spend.</p>' + table([
+        ["Platform", function (r) { return esc(r.platform || "-"); }], ["Campaign", function (r) { return esc(r.campaign || "(none)"); }], ["Content", function (r) { return esc(r.content || "-"); }],
+        ["Purchases", function (r) { return n0(r.purchases); }, 1], ["Gross", function (r) { return money(r.gross_cents); }, 1], ["Spend", function (r) { return money(r.spend_cents); }, 1], ["ROAS", function (r) { return roasFmt(r.roas); }, 1]
+      ], d.by_creative || [], "No tagged orders or ad spend yet.") + "</section></div>";
+
+    var period = "day";
+    function sales() {
+      var rows = period === "day" ? daily : weekly, lab = period === "day" ? function (r) { return fmtDay(r.day); } : function (r) { return fmtDay(r.week_start); };
+      $("#dbDay").setAttribute("aria-pressed", period === "day"); $("#dbWeek").setAttribute("aria-pressed", period === "week");
+      drawChart($("#dbSales"), { rows: rows, unit: "$", title: (period === "day" ? "Daily" : "Weekly") + " gross sales with ad spend", label: lab, empty: "No sales yet.",
+        series: [{ key: "gross_cents", name: "Gross sales", kind: "bar", cls: "s1" }, { key: "ad_spend_cents", name: "Ad spend", kind: "line", cls: "s2" }],
+        readout: function (r) { return (period === "day" ? fmtDay(r.day, { weekday: "short" }) : "Week of " + fmtDay(r.week_start)) + ": gross " + money(r.gross_cents) + " - " + n0(r.paid_tickets) + " paid, " + n0(r.comp_tickets) + " comp" + (r.orders != null ? " - " + n0(r.orders) + " orders" : "") + " - ad spend " + money(r.ad_spend_cents); } });
+      $("#dbSalesT").innerHTML = rows.length ? tableView("Show as a table", table([[period === "day" ? "Day" : "Week of", function (r) { return esc(period === "day" ? r.day : r.week_start); }], ["Gross", function (r) { return money(r.gross_cents); }, 1],
+        ["Paid", function (r) { return n0(r.paid_tickets); }, 1], ["Comp", function (r) { return n0(r.comp_tickets); }, 1], ["Ad spend", function (r) { return money(r.ad_spend_cents); }, 1]], rows, "")) : "";
+    }
+    var measure = "g";
+    function yoyDraw() {
+      var g = measure === "g", tk = g ? "this_year_gross_cents" : "this_year_tickets", lk = g ? "last_year_gross_cents" : "last_year_tickets";
+      var noBase = yoy.length && yoy.every(function (r) { return r.last_year_gross_cents == null && r.last_year_tickets == null; });
+      $("#dbYg").setAttribute("aria-pressed", g); $("#dbYt").setAttribute("aria-pressed", !g);
+      $("#dbYoyNote").innerHTML = noBase ? '<div class="notice" role="status"><b>Baseline not loaded.</b> Last year\'s numbers are imported from a verified source (ACMW report or Showpass export), never typed in. Until then only this year shows.</div>' : "";
+      drawChart($("#dbYoy"), { rows: yoy, unit: g ? "$" : "n", title: "Cumulative " + (g ? "gross sales" : "paid tickets") + ", this year vs last year, by days before the event", label: function (r) { return r.days_out + "d"; }, empty: "No sales yet to compare.",
+        series: [{ key: tk, name: "This year", kind: "line", cls: "s1" }].concat(noBase ? [] : [{ key: lk, name: "Last year", kind: "line", cls: "s2", dash: true }]),
+        readout: function (r) { var f = g ? money : function (x) { return x == null ? "-" : n0(x); }; return r.days_out + " days out: this year " + f(r[tk]) + " - last year " + (r[lk] == null ? "not loaded" : f(r[lk])); } });
+      $("#dbYoyT").innerHTML = yoy.length ? tableView("Show as a table", table([["Days out", function (r) { return n0(r.days_out); }, 1], ["This year gross", function (r) { return money(r.this_year_gross_cents); }, 1],
+        ["Last year gross", function (r) { return r.last_year_gross_cents == null ? "-" : money(r.last_year_gross_cents); }, 1], ["This year tickets", function (r) { return r.this_year_tickets == null ? "-" : n0(r.this_year_tickets); }, 1],
+        ["Last year tickets", function (r) { return r.last_year_tickets == null ? "-" : n0(r.last_year_tickets); }, 1]], yoy, "")) : "";
+    }
+    $("#dbDay").addEventListener("click", function () { period = "day"; sales(); });
+    $("#dbWeek").addEventListener("click", function () { period = "week"; sales(); });
+    $("#dbYg").addEventListener("click", function () { measure = "g"; yoyDraw(); });
+    $("#dbYt").addEventListener("click", function () { measure = "t"; yoyDraw(); });
+    sales(); yoyDraw();
+  }
+
+  // ===================================================================================== 11. Badges and accounts
+  /* Pre-loaded badges are printed passes: serial (the account number Curtis asks for on the phone) + an 8-character claim
+     code. Codes are returned once, by admin_mint_badges, and only ever live in the print file. */
+  VIEWS.badges = function () {
+    return Promise.all([loadCatalog(), sel("tix", "comp_reasons", function (q) { return q.order("label"); }), sel("tix", "comp_pools", function (q) { return q.eq("app", APP).order("name"); }), loadSponsors()]).then(function (r) {
+      var reasons = r[1] || [], pools = r[2] || [], sponsors = r[3], year = curYear();
+      main.innerHTML = '<div class="view"><h1>Badges and accounts</h1>' +
+        '<section class="panel" aria-labelledby="hFind"><h2 id="hFind">Find an account</h2><form id="bfForm" class="btns" role="search"><div class="field" style="flex:1;min-width:220px"><label for="bfQ">Account number, email or name</label>' +
+        '<input type="search" id="bfQ" aria-describedby="bfQh" value="' + esc(store.get("adm.bfQ", "")) + '"><span class="hint" id="bfQh">The last 4 or more characters of the account number are enough.</span></div><button class="btn" type="submit" id="bfGo" style="align-self:flex-start;margin-top:22px">Find</button></form>' +
+        '<div id="bfList" style="margin-top:10px"></div><div id="bfDetail" style="margin-top:14px"></div></section>' +
+        '<section class="panel" aria-labelledby="hLoad"><h2 id="hLoad">Load tickets onto an account</h2><p class="hint">Issues comp tickets onto a badge or a person\'s pass. The pass re-signs, so the holder\'s QR refreshes.</p><form id="blForm" class="form" novalidate>' +
+        fld("blSerial", "Account number", "text", "", { required: true, hint: "Full number or the last 4+ characters", attrs: ' autocomplete="off" spellcheck="false"' }) +
+        fld("blType", "Ticket type", "select", "", { html: typeOptions("", "Choose a ticket type"), required: true }) +
+        fld("blQty", "How many", "number", 1, { attrs: ' min="1" max="20" step="1"' }) +
+        fld("blReason", "Reason", "select", "", { required: true, options: [["", "Choose a reason"]].concat(reasons.map(function (x) { return [x.code, x.label]; })) }) +
+        fld("blPool", "Comp pool", "select", "", { options: [["", "No pool"]].concat(pools.map(function (p) { return [p.id, p.name + " (" + Math.max(0, (p.allotment || 0) - (p.used || 0)) + " left)"]; })) }) +
+        (sponsors ? fld("blSponsor", "Sponsor", "select", "", { options: [["", "No sponsor"]].concat(sponsors.map(function (s) { return [s.id, s.name]; })), hint: "Filled from the pool when it has one" }) : "") +
+        fld("blHolder", "Holder name", "text", "", { hint: "Optional: the name to print on the tickets" }) +
+        fld("blNote", "Note", "textarea", "", { wide: true, hint: "Who asked for it and why" }) +
+        '<p class="err wide" id="blErr" role="alert"></p><div class="btns wide"><button type="submit" class="btn" id="blGo">Load tickets</button></div></form></section>' +
+        '<section class="panel" aria-labelledby="hMint"><h2 id="hMint">Mint a batch of badges</h2><div class="notice warn" style="margin-bottom:12px"><b>The claim codes are shown once.</b> Minting downloads the print file (serial, code, qr) straight away. It is the only copy: the codes cannot be looked up again. Save it to the print shared folder.</div>' +
+        '<form id="bmForm" class="form" novalidate>' + fld("bmCount", "How many badges", "number", "", { required: true, attrs: ' min="1" max="2000" step="1"', hint: "Up to 2,000 per batch" }) +
+        fld("bmBatch", "Batch name", "text", "", { required: true, hint: "e.g. sponsors-wave-1", attrs: ' maxlength="60"' }) + fld("bmYear", "Year", "number", year, { attrs: ' min="2025" max="2100" step="1"' }) +
+        fld("bmNote", "Note", "textarea", "", { wide: true }) + '<p class="err wide" id="bmErr" role="alert"></p><div class="btns wide"><button type="submit" class="btn" id="bmGo">Mint and download print file</button></div></form></section></div>';
+      function setPool() { var p = pools.find(function (x) { return x.id === $("#blPool").value; }); if (!p) return; if (p.ticket_type_id) $("#blType").value = p.ticket_type_id; if (sponsors && p.sponsor_id) $("#blSponsor").value = p.sponsor_id; }
+      $("#blPool").addEventListener("change", setPool);
+      $("#bfForm").addEventListener("submit", busy($("#bfGo"), findPasses));
+      $("#blForm").addEventListener("submit", busy($("#blGo"), function () { return loadTickets(reasons, pools, sponsors); }));
+      $("#bmForm").addEventListener("submit", busy($("#bmGo"), mintBadges));
+      if (state.pass) return openPass(state.pass);
+      if ($("#bfQ").value.trim().length >= 3) return findPasses();
+    });
+  };
+  function findPasses() {
+    var q = $("#bfQ").value.trim(); store.set("adm.bfQ", q);
+    if (q.length < 3) { $("#bfList").innerHTML = '<p class="err" role="alert">Enter at least 3 characters.</p>'; return; }
+    $("#bfDetail").innerHTML = "";
+    return rpc9("tix", "admin_find_pass", { p_app: APP, p_q: q }).then(function (rows) {
+      rows = rows || [];
+      $("#bfList").innerHTML = '<p class="hint" role="status">' + rows.length + (rows.length >= 50 ? "+ matches (first 50). Type more of the number." : " match" + (rows.length === 1 ? "" : "es") + ".") + "</p>" + table([
+        ["Account number", function (p) { return '<span class="mono">' + esc(p.serial) + "</span>"; }], ["Status", function (p) { return statusPill(p.status); }], ["Kind", function (p) { return esc(p.kind || "-"); }],
+        ["Holder", function (p) { return esc(p.holder_name || "-") + '<div class="muted">' + esc(p.email || "") + "</div>"; }], ["Tickets", function (p) { return n0(p.ticket_count); }, 1],
+        ["Batch", function (p) { return esc(p.batch || "-"); }], ["Claimed", function (p) { return p.claimed_at ? fmtDT(p.claimed_at) : '<span class="muted">-</span>'; }],
+        ["", function (p) { return '<button type="button" class="btn ghost sm" data-pass="' + esc(p.serial) + '">Open</button>'; }]
+      ], rows, "No account matches.");
+      $$("[data-pass]").forEach(function (b) { on(b, "click", function () { return openPass(b.dataset.pass); }); });
+      if (rows.length === 1) return openPass(rows[0].serial);
+    }).catch(fail9($("#bfList"), "Find an account"));
+  }
+  /* Pass detail. tix.admin_pass_detail is an additive ask (Contract changes 2026-10-22 ADMIN); until it exists the
+     tickets are gathered from the orders that carry the serial (admin_orders matches pass serials). */
+  function passDetail(serial) {
+    return rpc9("tix", "admin_pass_detail", { p_app: APP, p_serial: serial }).catch(function (e) {
+      if (!e.notOn) throw e;
+      return Promise.all([rpc9("tix", "admin_find_pass", { p_app: APP, p_q: serial }), rpc("tix", "admin_orders", { p_app: APP, p_q: serial, p_limit: 20 })]).then(function (r) {
+        var pass = (r[0] || []).find(function (p) { return p.serial === serial; }) || { serial: serial };
+        return Promise.all((r[1] || []).map(function (o) { return rpc("tix", "admin_order_detail", { p_order_id: o.id }); })).then(function (ds) {
+          var tickets = [];
+          ds.forEach(function (d) { ((d && d.tickets) || []).forEach(function (t) { if (t.pass_serial === serial) tickets.push(Object.assign({ order_id: d.order && d.order.id }, t)); }); });
+          return { pass: pass, tickets: tickets, partial: true };
+        });
+      });
+    });
+  }
+  function openPass(serial) {
+    state.pass = serial;
+    return passDetail(serial).then(function (d) {
+      d = d || {}; var p = d.pass || { serial: serial }, tickets = d.tickets || [];
+      $("#bfDetail").innerHTML = '<section class="panel inset" aria-labelledby="hPass"><div class="head"><div><h3 id="hPass">Account <span class="mono">' + esc(p.serial) + "</span></h3>" +
+        '<div class="muted">' + esc(p.holder_name || "No holder yet") + (p.email ? " - " + esc(p.email) : "") + " - " + esc(p.kind || "attendee") + (p.batch ? " - batch " + esc(p.batch) : "") + (p.claimed_at ? " - claimed " + fmtDT(p.claimed_at) : p.status === "stock" ? " - not claimed" : "") + "</div></div>" +
+        '<div class="btns">' + statusPill(p.status) + '<button type="button" class="btn sm" id="bpLoad">Load tickets onto this account</button>' +
+        (p.printed_badge ? '<button type="button" class="btn danger sm" id="bpVoid">Void badge</button>' : "") + '<button type="button" class="btn ghost sm" id="bpClose">Close</button></div></div>' +
+        (d.partial ? '<p class="hint">Tickets gathered from this account\'s orders (the full pass view needs admin_pass_detail).</p>' : "") +
+        (p.badge_void_at ? '<p class="hint">Printed badge voided ' + fmtDT(p.badge_void_at) + ": its printed code no longer claims or scans.</p>" : "") +
+        '<div style="margin-top:10px">' + table([
+          ["Ticket", function (t) { return '<span class="mono">' + esc(t.serial) + "</span>"; }], ["Type", function (t) { return esc(t.type || t.type_name || typeLabel(t.ticket_type_id)); }],
+          ["Holder", function (t) { return esc(t.holder_name || "-"); }], ["Status", function (t) { return statusPill(t.status) + (t.is_comp ? " " + pill(t.reason_code || "Comp") : ""); }],
+          ["Scans", function (t) { var sc = t.scans || []; return sc.length ? sc.map(function (s) { return '<div class="hint">' + fmtDT(s.scanned_at) + " - " + esc(s.result) + "</div>"; }).join("") : '<span class="muted">' + (t.scans_valid ? n0(t.scans_valid) + " valid" : "None") + "</span>"; }],
+          ["Actions", function (t) {
+            var live = t.status !== "void" && t.status !== "refunded" && t.status !== "removed";
+            return '<div class="btns">' + (live ? '<button type="button" class="btn ghost sm" data-mv="' + esc(t.id) + '">Move to another account</button>' : "") + (t.order_id ? '<button type="button" class="btn ghost sm" data-ord="' + esc(t.order_id) + '">Order</button>' : "") + "</div>";
+          }]
+        ], tickets, "No tickets on this account yet.") + "</div></section>";
+      on("bpClose", "click", function () { state.pass = null; $("#bfDetail").innerHTML = ""; });
+      on("bpLoad", "click", function () { $("#blSerial").value = p.serial; $("#blSerial").scrollIntoView({ block: "center" }); $("#blSerial").focus(); });
+      on("bpVoid", "click", function () { return voidBadge(p, tickets); });
+      $$("[data-mv]").forEach(function (b) { var t = tickets.find(function (x) { return x.id === b.dataset.mv; }); on(b, "click", function () { return moveTicketDialog(t, p.serial, function () { return refreshAccount(p.serial); }); }); });
+      $$("[data-ord]").forEach(function (b) { b.addEventListener("click", function () { state.order = b.dataset.ord; go("orders"); }); });
+      $("#bfDetail").scrollIntoView({ block: "nearest" });
+    }).catch(function (e) { state.pass = null; fail9($("#bfDetail"), "Account detail")(e); });
+  }
+  /* A lost printed badge (tix.admin_void_badge): the printed code stops claiming and scanning for good. An unclaimed
+     badge becomes void; a claimed one stays the holder's account and their phone pass re-signs. */
+  function voidBadge(p, tickets) {
+    var live = (tickets || []).filter(function (t) { return t.status === "issued" || t.status === "claimed"; }).length, stock = p.status === "stock";
+    return confirmAction({ title: "Void printed badge " + p.serial + "?", danger: true, confirmLabel: "Void badge",
+      message: "The printed code on badge <b class=\"mono\">" + esc(p.serial) + "</b> stops working for good: nobody can add it to an account or get in with it. This cannot be undone.<br>" +
+        (stock ? "The badge is not claimed, so the whole badge becomes void." + (live ? " Its " + live + " live ticket" + (live === 1 ? " stays" : "s stay") + " on the void badge until you move " + (live === 1 ? "it" : "them") + " to another account." : "")
+          : "The account stays active for " + esc(p.holder_name || p.email || "its holder") + "; their phone pass re-signs and keeps working.") }).then(function (why) {
+      if (!why) return;
+      return rpc9("tix", "admin_void_badge", { p_app: APP, p_serial: p.serial, p_reason: why }).then(function (r) {
+        toast("Printed badge " + p.serial + " voided" + (r && r.tickets_left && r.status === "void" ? " - " + r.tickets_left + " ticket" + (r.tickets_left === 1 ? "" : "s") + " still on it" : ""));
+        return refreshAccount(p.serial);
+      });
+    });
+  }
+  // After a change on an account: re-run the search above (its status and ticket counts change too), then show that account.
+  function refreshAccount(serial) {
+    var q = $("#bfQ") ? $("#bfQ").value.trim() : "";
+    return Promise.resolve(q.length >= 3 ? findPasses() : null).then(function () { if (state.pass !== serial || !$("#hPass")) return openPass(serial); });
+  }
+  /* Turns what was typed (full serial or its last 4+ characters) into exactly one pass, or explains why not.
+     Without admin_find_pass the typed value is passed through and the server decides. */
+  function resolveSerial(typed) {
+    var want = typed.trim().toUpperCase();
+    return rpc9("tix", "admin_find_pass", { p_app: APP, p_q: typed.trim() }).catch(function (e) { if (e.notOn) return null; throw e; }).then(function (list) {
+      if (!list) return { serial: typed.trim() };
+      var exact = list.filter(function (p) { return String(p.serial).toUpperCase() === want; });
+      var m = exact.length ? exact : list.filter(function (p) { var s = String(p.serial).toUpperCase(); return s.slice(-want.length) === want; });
+      if (m.length === 1) return m[0];
+      if (m.length) throw new Error("That matches " + m.length + " accounts (" + m.slice(0, 4).map(function (p) { return p.serial; }).join(", ") + (m.length > 4 ? ", ..." : "") + "). Enter more of the number.");
+      throw new Error("No account number ends with " + typed.trim() + ".");
+    });
+  }
+  function moveTicketDialog(t, fromSerial, after) {
+    var r;
+    return openDialog({
+      title: "Move ticket " + t.serial + " to another account",
+      body: '<div class="notice">The ticket leaves account <b class="mono">' + esc(fromSerial || "-") + "</b> and goes onto the account you enter. Both passes re-sign, so both QR codes refresh. No money moves.</div>" +
+        fld("mvTo", "To account number", "text", "", { required: true, hint: "Full number or the last 4+ characters", attrs: ' autocomplete="off" spellcheck="false"' }) +
+        fld("mvReason", "Reason (required, saved in the audit log)", "textarea", "", { required: true, attrs: ' minlength="3" maxlength="500"' }),
+      buttons: [{ label: "Next", value: "ok" }, { label: "Cancel", value: "cancel", cls: "ghost" }],
+      validate: function (b) { if (v(b, "mvTo").length < 4) return "Enter the account number (at least the last 4 characters)."; if (v(b, "mvReason").length < 3) return "Enter a reason (at least 3 characters)."; },
+      collect: function (b) { return { to: v(b, "mvTo"), reason: v(b, "mvReason") }; }
+    }).then(function (x) {
+      if (!x) return; r = x;
+      return resolveSerial(r.to).then(function (p) {
+        if (fromSerial && p.serial === fromSerial) throw new Error("The ticket is already on account " + p.serial + ".");
+        if (p.status === "void" || p.status === "refunded") throw new Error("Account " + p.serial + " is " + p.status + ". Pick an active account.");
+        return confirmAction({ title: "Move to " + p.serial + "?", reason: false, confirmLabel: "Move ticket",
+          message: "Ticket <b class=\"mono\">" + esc(t.serial) + "</b> (" + esc(t.type || t.type_name || typeLabel(t.ticket_type_id)) + ") moves from " + esc(fromSerial || "-") + " to <b class=\"mono\">" + esc(p.serial) + "</b>" +
+            (p.holder_name || p.email ? " - " + esc(p.holder_name || "") + " " + esc(p.email || "") : "") + ".<br>Reason: " + esc(r.reason) }).then(function (ok) {
+          if (!ok) return;
+          return rpc9("tix", "admin_move_ticket", { p_ticket_id: t.id, p_to_serial: p.serial, p_reason: r.reason }).then(function () { toast("Ticket moved to " + p.serial); return after && after(); });
+        });
+      });
+    });
+  }
+  function loadTickets(reasons, pools, sponsors) {
+    var err = $("#blErr"); err.textContent = "";
+    var serial = $("#blSerial").value.trim(), typeId = $("#blType").value, qty = Number($("#blQty").value), reason = $("#blReason").value, poolId = $("#blPool").value || null;
+    var sponsorId = sponsors ? $("#blSponsor").value || null : null, holder = $("#blHolder").value.trim(), note = $("#blNote").value.trim();
+    if (serial.length < 4) { err.textContent = "Enter the account number (at least the last 4 characters)."; return; }
+    if (!typeId) { err.textContent = "Choose a ticket type."; return; }
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) { err.textContent = "How many must be between 1 and 20."; return; }
+    if (!reason) { err.textContent = "Choose a reason."; return; }
+    var pool = pools.find(function (p) { return p.id === poolId; });
+    if (pool && pool.ticket_type_id && pool.ticket_type_id !== typeId) { err.textContent = "That pool is for " + typeLabel(pool.ticket_type_id) + "."; return; }
+    if (pool && qty > (pool.allotment || 0) - (pool.used || 0)) { err.textContent = "The pool has " + Math.max(0, (pool.allotment || 0) - (pool.used || 0)) + " left."; return; }
+    if (pool && sponsorId && pool.sponsor_id && pool.sponsor_id !== sponsorId) { err.textContent = "That pool belongs to a different sponsor."; return; }
+    if (holder.length > 120) { err.textContent = "The holder name is too long."; return; }
+    return resolveSerial(serial).then(function (p) {
+      if (p.status === "void" || p.status === "refunded") throw new Error("Account " + p.serial + " is " + p.status + ".");
+      var rl = (reasons.find(function (x) { return x.code === reason; }) || {}).label || reason, sp = sponsors && sponsors.find(function (s) { return s.id === sponsorId; });
+      return confirmAction({ title: "Load " + qty + " ticket" + (qty === 1 ? "" : "s") + " onto " + p.serial + "?", reason: false, confirmLabel: "Load tickets",
+        message: "<b>" + qty + " x " + esc(typeLabel(typeId)) + "</b> at no charge onto account <b class=\"mono\">" + esc(p.serial) + "</b>" + (p.holder_name ? " (" + esc(p.holder_name) + ")" : p.status === "stock" ? " (unclaimed badge)" : "") +
+          ".<br>Reason: <b>" + esc(rl) + "</b>" + (pool ? "<br>Pool: " + esc(pool.name) : "") + (sp ? "<br>Sponsor: " + esc(sp.name) : "") }).then(function (ok) {
+        if (!ok) return;
+        return rpc9("tix", "admin_load_pass", { p_app: APP, p_serial: p.serial, p_ticket_type_id: typeId, p_qty: qty, p_reason_code: reason, p_pool_id: poolId, p_sponsor_id: sponsorId, p_note: note || null, p_holder_name: holder || null })
+          .then(function (res) {
+            res = res || {};
+            var n = res.issued_count != null ? res.issued_count : qty;
+            toast(n + " ticket" + (n === 1 ? "" : "s") + " loaded onto " + (res.serial || p.serial) + (res.pool_remaining != null ? " - pool has " + res.pool_remaining + " left" : ""));
+            $("#blHolder").value = ""; $("#blNote").value = "";
+            return refreshAccount(res.serial || p.serial);
+          });
+      });
+    });
+  }
+  function mintBadges() {
+    var err = $("#bmErr"); err.textContent = "";
+    var count = Number($("#bmCount").value), batch = $("#bmBatch").value.trim(), year = Number($("#bmYear").value), note = $("#bmNote").value.trim();
+    if (!Number.isInteger(count) || count < 1 || count > 2000) { err.textContent = "How many badges must be a whole number from 1 to 2,000."; return; }
+    if (!/^[A-Za-z0-9 ._-]{2,60}$/.test(batch)) { err.textContent = "Give the batch a name: 2 to 60 letters, numbers, spaces, dots, dashes or underscores."; return; }
+    if (!Number.isInteger(year) || year < 2025 || year > 2100) { err.textContent = "Enter the year, e.g. " + defaultYear() + "."; return; }
+    return confirmAction({ title: "Mint " + n0(count) + " badge" + (count === 1 ? "" : "s") + "?", reason: false, confirmLabel: "Mint and download",
+      message: "Creates " + n0(count) + " unclaimed badge pass" + (count === 1 ? "" : "es") + " for " + year + " in batch <b>" + esc(batch) + "</b>.<br>The print file downloads straight away and is <b>the only copy of the claim codes</b>." }).then(function (ok) {
+      if (!ok) return;
+      return rpc9("tix", "admin_mint_badges", { p_app: APP, p_year: year, p_count: count, p_batch: batch, p_note: note || null }).then(function (res) {
+        var badges = (res && res.badges) || [], name = "concours-badges-" + year + "-" + batch.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + todayStr() + ".csv";
+        var csv = toCSV([["serial", "serial"], ["code", "code"], ["qr", "qr"]], badges), minted = badges.length;
+        badges = null;
+        download(name, csv);
+        $("#bmCount").value = ""; $("#bmNote").value = "";
+        return openDialog({
+          title: "Print file downloaded",
+          body: '<div class="notice warn" role="alert"><b>This is the only time these codes are available.</b> Check that <span class="mono">' + esc(name) + "</span> is in your downloads and move it to the print shared folder. Once you close this box the codes are gone from this page.</div>" +
+            '<p>Batch <b>' + esc((res && res.batch) || batch) + "</b>: " + n0(minted) + " badge" + (minted === 1 ? "" : "s") + " in the file.</p>" +
+            '<div class="btns"><button type="button" class="btn" id="bmAgain">Download again</button></div>',
+          buttons: [{ label: "I have the file", value: "cancel", cls: "ghost" }], focusButton: true,
+          onOpen: function (b) { $("#bmAgain", b).addEventListener("click", function () { download(name, csv); }); }
+        }).then(function () { csv = null; $("#dlgBody").innerHTML = ""; });
+      });
+    });
+  }
+
+  // ===================================================================================== 12. Sponsors and comp report
+  VIEWS.sponsors = function () {
+    var year = curYear();
+    main.innerHTML = '<div class="view"><div class="head"><h1>Sponsors</h1><div class="btns">' + yearSelect("spYear", year) + '<button type="button" class="btn" id="spNew" style="align-self:flex-end">New sponsor</button></div></div>' +
+      '<section class="panel" aria-labelledby="hSpList"><h2 id="hSpList">Sponsors</h2><p class="hint">Link a sponsor to a comp pool (Comps page) so its comps count as the sponsor\'s package.</p><div id="spList"><p class="muted">Loading...</p></div></section>' +
+      '<section class="panel" aria-labelledby="hSpRep"><h2 id="hSpRep">Comp report</h2><p class="hint">Sponsor package = a comp from a sponsor\'s pool or with the sponsor reason; everything else is a straight comp. Attended = scanned in at least once.</p><div id="spReport"><p class="muted">Loading...</p></div></section></div>';
+    var list = [];
+    function load() {
+      var y = Number($("#spYear").value);
+      return Promise.all([
+        sel9("tix", "sponsors", function (q) { return q.eq("app", APP).eq("year", y).order("name"); }).then(function (rows) {
+          list = rows || []; renderSponsors(list, y);
+          $$("[data-sp]").forEach(function (b) { on(b, "click", function () { return editSponsor(list.find(function (s) { return s.id === b.dataset.sp; }), y, list).then(function (saved) { if (saved) return load(); }); }); });
+        }).catch(fail9($("#spList"), "Sponsors")),
+        rpc9("tix", "admin_comp_report", { p_app: APP, p_year: y }).then(renderCompReport9).catch(fail9($("#spReport"), "Comp report"))
+      ]);
+    }
+    bindYear("spYear", load);
+    on("spNew", "click", function () { return editSponsor(null, Number($("#spYear").value), list).then(function (saved) { if (saved) return load(); }); });
+    return load();
+  };
+  function renderSponsors(rows, year) {
+    $("#spList").innerHTML = table([
+      ["Sponsor", function (s) { return esc(s.name); }], ["Tier", function (s) { return esc(s.tier || "-"); }], ["Package", function (s) { return money(s.package_cents); }, 1],
+      ["Contact", function (s) { return esc(s.contact_name || "-") + (s.contact_email ? '<div class="muted">' + esc(s.contact_email) + "</div>" : ""); }], ["Notes", function (s) { return esc(s.notes || ""); }],
+      ["", function (s) { return '<button type="button" class="btn ghost sm" data-sp="' + esc(s.id) + '">Edit</button>'; }]
+    ], rows, "No sponsors for " + year + " yet. Use New sponsor to add one.");
+  }
+  function editSponsor(s, year, list) {
+    var d = s || { year: year }, tiers = [];
+    list.forEach(function (x) { if (x.tier && tiers.indexOf(x.tier) < 0) tiers.push(x.tier); });
+    return openDialog({
+      title: s ? "Edit sponsor " + s.name : "New sponsor",
+      body: '<div class="form">' + fld("f_name", "Sponsor name", "text", d.name, { required: true, wide: true }) +
+        fld("f_tier", "Tier", "text", d.tier, { attrs: ' list="f_tiers"', hint: "e.g. Presenting, Gold, Partner" }) + '<datalist id="f_tiers">' + tiers.map(function (t) { return '<option value="' + esc(t) + '">'; }).join("") + "</datalist>" +
+        fld("f_pkg", "Package value (dollars)", "text", d.package_cents == null ? "" : dollars(d.package_cents), { attrs: ' inputmode="decimal"', hint: "What the sponsorship is worth; blank if not set" }) +
+        fld("f_year", "Year", "number", d.year || year, { attrs: ' min="2025" max="2100" step="1"' }) +
+        fld("f_cname", "Contact name", "text", d.contact_name) + fld("f_cemail", "Contact email", "email", d.contact_email) +
+        fld("f_notes", "Notes", "textarea", d.notes, { wide: true }) + "</div>",
+      buttons: [{ label: "Save sponsor", value: "save" }, { label: "Cancel", value: "cancel", cls: "ghost" }],
+      validate: function (b) {
+        if (!v(b, "f_name")) return "Enter the sponsor name.";
+        var p = v(b, "f_pkg"); if (p && (isNaN(toCents(p)) || toCents(p) < 0)) return "Enter the package value in dollars, or leave it blank.";
+        if (!isInt(v(b, "f_year"), 2025, 2100) || !v(b, "f_year")) return "Enter the year.";
+        if (v(b, "f_cemail") && !EMAIL_RE.test(v(b, "f_cemail"))) return "Enter a valid contact email, or leave it blank.";
+      },
+      collect: function (b) {
+        var o = { name: v(b, "f_name"), tier: v(b, "f_tier") || null, package_cents: v(b, "f_pkg") ? toCents(v(b, "f_pkg")) : null, year: Number(v(b, "f_year")),
+          contact_name: v(b, "f_cname") || null, contact_email: (v(b, "f_cemail") || "").toLowerCase() || null, notes: v(b, "f_notes") || null };
+        if (s) o.id = s.id; return o;
+      }
+    }).then(function (o) {
+      if (!o) return false;
+      // A changed package value is money on the books, so it asks for a reason like the other money edits.
+      var step = s && (o.package_cents || null) !== (s.package_cents == null ? null : s.package_cents)
+        ? confirmAction({ title: "Change the package value?", confirmLabel: "Save change", message: esc(s.name) + ": " + money(s.package_cents) + " to <b>" + money(o.package_cents) + "</b>." }) : Promise.resolve("");
+      return step.then(function (reason) {
+        if (reason === null) return false;
+        if (reason) o._reason = reason;
+        return rpc9("tix", "admin_upsert_sponsor", { p_app: APP, p_sponsor: o }).then(function () { toast("Sponsor saved"); return true; });
+      });
+    });
+  }
+  function renderCompReport9(r) {
+    r = r || {}; var t = r.totals || {}, pk = t.package || {}, st = t.straight || {}, bp = ratio(Number(pk.issued || 0), Number(t.issued || 0));
+    $("#spReport").innerHTML = '<div class="grid tiles">' + tile("Comps issued", n0(t.issued)) + tile("Claimed", n0(t.claimed), "On someone's pass") +
+      tile("Attended", n0(t.attended), pct(ratio(Number(t.attended || 0), Number(t.issued || 0))) + " of issued") + tile("Face value", money(t.face_value_cents), "Ticket price of comps issued") + "</div>" +
+      '<h3 style="margin:16px 0 8px">Sponsor package vs straight comps</h3>' +
+      (t.issued ? '<div class="split" role="img" aria-label="' + esc("Sponsor package " + pct(bp) + " of comps issued, straight comps " + pct(ratio(Number(st.issued || 0), Number(t.issued || 0)))) + '"><i class="s1" style="flex-basis:' + (100 * (bp || 0)) + '%"></i><i class="s2" style="flex-basis:' + (100 * (ratio(Number(st.issued || 0), Number(t.issued || 0)) || 0)) + '%"></i></div>' : "") +
+      '<div class="grid two" style="margin-top:10px">' +
+      '<div class="tile"><div class="k"><i class="sw s1" aria-hidden="true"></i> Sponsor package</div><div class="v">' + n0(pk.issued) + '</div><div class="s">issued - ' + n0(pk.attended) + " attended (" + pct(ratio(Number(pk.attended || 0), Number(pk.issued || 0))) + ")</div></div>" +
+      '<div class="tile"><div class="k"><i class="sw s2" aria-hidden="true"></i> Straight comps</div><div class="v">' + n0(st.issued) + '</div><div class="s">issued - ' + n0(st.attended) + " attended (" + pct(ratio(Number(st.attended || 0), Number(st.issued || 0))) + ")</div></div></div>" +
+      '<h3 style="margin:16px 0 8px">By sponsor</h3>' + table([
+        ["Sponsor", function (x) { return esc(x.sponsor || "-"); }], ["Tier", function (x) { return esc(x.tier || "-"); }], ["Package", function (x) { return money(x.package_cents); }, 1],
+        ["Allotment", function (x) { return x.allotment == null ? "-" : n0(x.allotment); }, 1], ["Issued", function (x) { return n0(x.issued); }, 1], ["Claimed", function (x) { return n0(x.claimed); }, 1],
+        ["Attended", function (x) { return n0(x.attended); }, 1], ["Show rate", function (x) { return fracMeter(x.show_rate, (x.sponsor || "") + " show rate"); }]
+      ], r.by_sponsor || [], "No sponsor comps yet.") +
+      '<h3 style="margin:16px 0 8px">By reason</h3>' + table([
+        ["Reason", function (x) { return esc(x.label || x.reason_code); }], ["Class", function (x) { return pill(x["class"] === "package" ? "Sponsor package" : "Straight", x["class"] === "package" ? "ok" : ""); }],
+        ["Issued", function (x) { return n0(x.issued); }, 1], ["Claimed", function (x) { return n0(x.claimed); }, 1], ["Attended", function (x) { return n0(x.attended); }, 1],
+        ["Show rate", function (x) { return pct(ratio(Number(x.attended || 0), Number(x.issued || 0))); }, 1], ["Face value", function (x) { return money(x.face_value_cents); }, 1]
+      ], r.by_reason || [], "No comps issued yet.");
+  }
+
+  // ===================================================================================== 13. Ad spend and goal
+  var PLATFORMS = [["meta", "Meta"], ["google", "Google"], ["tiktok", "TikTok"], ["other", "Other"]];
+  var PLATFORM_ALIAS = { meta: "meta", facebook: "meta", fb: "meta", instagram: "meta", ig: "meta", google: "google", "google ads": "google", adwords: "google", youtube: "google", tiktok: "tiktok", "tik tok": "tiktok", other: "other" };
+  // Accepts 2026-10-03, 10/3/2026 or 10/3/26; returns YYYY-MM-DD or "" when it is not a real date.
+  function isoDay(s) {
+    s = String(s || "").trim(); var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s), y, mo, d;
+    if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; } else if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/.exec(s))) { mo = +m[1]; d = +m[2]; y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; } else return "";
+    var t = new Date(Date.UTC(y, mo - 1, d));
+    return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d ? t.toISOString().slice(0, 10) : "";
+  }
+  VIEWS.adspend = function () {
+    var year = curYear(), grid = [blankSpend(), blankSpend(), blankSpend()];
+    main.innerHTML = '<div class="view"><h1>Ad spend and goal</h1>' +
+      '<section class="panel" aria-labelledby="hGoal"><h2 id="hGoal">Gross sales goal</h2><form id="gForm" class="form" novalidate>' + yearSelect("gYear", year) +
+      fld("gAmt", "Goal (dollars)", "text", "", { attrs: ' inputmode="decimal"', hint: "Gross ticket sales before tax and fees" }) + fld("gNote", "Note", "text", "", { hint: "e.g. agreed with Curtis 2026-10-22" }) +
+      fld("gDate", "First event day", "date", "", { hint: "Only needed for a year sold outside this system (2026 on Showpass), so this year vs last year lines up. Blank keeps the saved date." }) +
+      '<div class="btns" style="align-self:flex-end"><button type="submit" class="btn" id="gGo">Save goal</button></div><p class="err wide" id="gErr" role="alert"></p></form><div id="gNow" style="margin-top:10px"></div></section>' +
+      '<section class="panel" aria-labelledby="hSpend"><h2 id="hSpend">Enter ad spend</h2><p class="hint">One row per day, platform, campaign and content (the utm_campaign and utm_content on the ads). Saving a row with the same day, platform, campaign and content replaces the figure saved before.</p>' +
+      '<div class="tablewrap"><table><thead><tr><th scope="col">Day</th><th scope="col">Platform</th><th scope="col">Campaign</th><th scope="col">Content</th><th scope="col">Spend ($)</th><th scope="col">Check</th><th scope="col"><span class="sr">Actions</span></th></tr></thead><tbody id="asRows"></tbody></table></div>' +
+      '<div class="btns" style="margin-top:8px"><button type="button" class="btn ghost sm" id="asAdd">Add row</button><button type="button" class="btn ghost sm" id="asClear">Clear rows</button></div>' +
+      '<div class="form" style="margin-top:12px">' + fld("asPaste", "Or paste from a spreadsheet or CSV", "textarea", "", { wide: true, hint: "Columns: day, platform, campaign, content, spend (dollars). A header row is fine; tabs or commas." }) + '</div><div class="btns" style="margin-top:8px"><button type="button" class="btn ghost" id="asUse">Add pasted rows</button></div>' +
+      '<p class="err" id="asErr" role="alert" style="margin-top:8px"></p><div class="btns" style="margin-top:8px"><button type="button" class="btn" id="asSave">Save ad spend</button></div></section>' +
+      '<section class="panel" aria-labelledby="hSpRecent"><h2 id="hSpRecent">Recently saved</h2><div id="asRecent"><p class="muted">Loading...</p></div></section></div>';
+    function readGrid() {
+      grid = $$("#asRows tr").filter(function (tr) { return $("[data-k=day]", tr); }).map(function (tr) {
+        var o = {}; ["day", "platform", "campaign", "content", "spend"].forEach(function (k) { o[k] = $("[data-k=" + k + "]", tr).value.trim(); }); return o;
+      });
+    }
+    function paintGrid(checked) {
+      $("#asRows").innerHTML = grid.map(function (r, i) {
+        var lab = function (k, t) { return '<label class="sr" for="as_' + k + i + '">Row ' + (i + 1) + " " + t + "</label>"; };
+        return "<tr" + (r.problem ? ' class="bad"' : "") + "><td>" + lab("d", "day") + '<input type="date" id="as_d' + i + '" data-k="day" value="' + esc(isoDay(r.day) || r.day) + '"></td>' +
+          "<td>" + lab("p", "platform") + '<select id="as_p' + i + '" data-k="platform"><option value="">Choose</option>' + PLATFORMS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === r.platform ? " selected" : "") + ">" + p[1] + "</option>"; }).join("") + "</select></td>" +
+          "<td>" + lab("c", "campaign") + '<input type="text" id="as_c' + i + '" data-k="campaign" value="' + esc(r.campaign) + '" maxlength="200"></td>' +
+          "<td>" + lab("o", "content") + '<input type="text" id="as_o' + i + '" data-k="content" value="' + esc(r.content) + '" maxlength="200"></td>' +
+          "<td>" + lab("s", "spend in dollars") + '<input type="text" id="as_s' + i + '" data-k="spend" inputmode="decimal" value="' + esc(r.spend) + '" style="max-width:120px"></td>' +
+          "<td>" + (r.problem ? pill(r.problem, "bad wrap") : checked && !isBlank(r) ? pill("OK", "ok") : "") + '</td><td><button type="button" class="btn ghost sm" data-rm="' + i + '" aria-label="Remove row ' + (i + 1) + '">Remove</button></td></tr>';
+      }).join("") || '<tr><td colspan="7" class="empty">No rows. Add a row or paste some.</td></tr>';
+    }
+    function isBlank(r) { return !r.day && !r.platform && !r.campaign && !r.content && !r.spend; }
+    function check() {
+      var seen = {}, bad = 0;
+      grid.forEach(function (r, i) {
+        r.problem = "";
+        if (isBlank(r)) return;
+        var c = toCents(r.spend), key = [isoDay(r.day), r.platform, low(r.campaign), low(r.content)].join("|");
+        if (!isoDay(r.day)) r.problem = "Day is not a date";
+        else if (!r.platform) r.problem = r.badPlatform ? 'Unknown platform "' + r.badPlatform + '"' : "Choose a platform";
+        else if (isNaN(c) || c < 0) r.problem = "Spend must be 0 or more";
+        else if (c > 100000000) r.problem = "Spend looks too big";
+        else if (seen[key] != null) r.problem = "Same as row " + (seen[key] + 1);
+        if (r.problem) bad++; else seen[key] = i;
+      });
+      return bad;
+    }
+    function fromPaste(text) {
+      var lines = String(text || "").replace(/^﻿/, "").split(/\r?\n/).filter(function (l) { return l.trim(); });
+      var rows = /\t/.test(lines.join("\n")) ? lines.map(function (l) { return l.split("\t"); }) : parseCSV(lines.join("\n"));
+      var cols = { day: 0, platform: 1, campaign: 2, content: 3, spend: 4 };
+      if (rows.length && /^(day|date)$/i.test((rows[0][0] || "").trim()) || rows.length && rows[0].some(function (c) { return /^\s*spend\s*(\(.*\))?\s*$/i.test(c); })) {
+        var alias = { day: "day", date: "day", platform: "platform", campaign: "campaign", utm_campaign: "campaign", content: "content", utm_content: "content", ad: "content", creative: "content", spend: "spend", amount: "spend", cost: "spend" };
+        cols = {}; rows[0].forEach(function (h, i) { var k = alias[low(h).replace(/\s*\(.*\)$/, "").replace(/\s+/g, "_")]; if (k && cols[k] == null) cols[k] = i; });
+        rows = rows.slice(1);
+      }
+      return rows.map(function (r) {
+        var g = function (k) { return cols[k] == null ? "" : String(r[cols[k]] || "").trim(); };
+        var pl = PLATFORM_ALIAS[low(g("platform"))] || "";
+        return { day: isoDay(g("day")) || g("day"), platform: pl, campaign: g("campaign"), content: g("content"), spend: g("spend").replace(/[$,\s]/g, ""), badPlatform: pl ? "" : g("platform") };
+      });
+    }
+    paintGrid();
+    $("#asRows").addEventListener("click", function (e) { var b = e.target.closest("[data-rm]"); if (!b) return; readGrid(); grid.splice(Number(b.dataset.rm), 1); paintGrid(); });
+    $("#asAdd").addEventListener("click", function () { readGrid(); grid.push(blankSpend()); paintGrid(); });
+    $("#asClear").addEventListener("click", function () { grid = [blankSpend()]; paintGrid(); $("#asErr").textContent = ""; });
+    $("#asUse").addEventListener("click", function () {
+      readGrid();
+      var add = fromPaste($("#asPaste").value);
+      if (!add.length) { $("#asErr").textContent = "Nothing to add: paste rows of day, platform, campaign, content, spend."; return; }
+      grid = grid.filter(function (r) { return !isBlank(r); }).concat(add);
+      $("#asPaste").value = "";
+      check(); paintGrid(true);
+      $("#asErr").textContent = "";
+      toast(add.length + " row" + (add.length === 1 ? "" : "s") + " added. Check them, then Save.");
+    });
+    on("asSave", "click", function () {
+      readGrid(); $("#asErr").textContent = "";
+      var bad = check(); paintGrid(true);
+      var rows = grid.filter(function (r) { return !isBlank(r); });
+      if (bad) { $("#asErr").textContent = bad + " row" + (bad === 1 ? " has a" : "s have") + " problem" + (bad === 1 ? "" : "s") + ". Fix or remove " + (bad === 1 ? "it" : "them") + ", then save."; return; }
+      if (!rows.length) { $("#asErr").textContent = "Add at least one row."; return; }
+      if (rows.length > 1000) { $("#asErr").textContent = "Save at most 1,000 rows at a time."; return; }
+      var days = rows.map(function (r) { return isoDay(r.day); }).sort();
+      return confirmAction({ title: "Save " + rows.length + " ad spend row" + (rows.length === 1 ? "" : "s") + "?", reason: false, confirmLabel: "Save ad spend",
+        message: rows.length + " row" + (rows.length === 1 ? "" : "s") + " from " + fmtDay(days[0], { year: "numeric" }) + " to " + fmtDay(days[days.length - 1], { year: "numeric" }) + ". Rows matching one already saved (same day, platform, campaign and content) replace it." }).then(function (ok) {
+        if (!ok) return;
+        return rpc9("analytics", "admin_upsert_ad_spend", { p_app: APP, p_rows: rows.map(function (r) { return { day: isoDay(r.day), platform: r.platform, campaign: r.campaign || null, content: r.content || null, spend_cents: toCents(r.spend) }; }) })
+          .then(function (res) { toast((res && res.upserted != null ? res.upserted : rows.length) + " row" + (rows.length === 1 ? "" : "s") + " saved"); grid = [blankSpend()]; paintGrid(); return loadRecent(); });
+      });
+    });
+    function loadRecent() {
+      return sel9("analytics", "ad_spend", function (q) { return q.eq("app", APP).order("day", { ascending: false }).limit(100); }).then(function (rows) {
+        rows = rows || [];
+        $("#asRecent").innerHTML = '<p class="hint">Latest 100 rows. Edit copies a row into the grid above.</p>' + table([
+          ["Day", function (r) { return esc(r.day); }], ["Platform", function (r) { return esc(r.platform); }], ["Campaign", function (r) { return esc(r.campaign || "-"); }], ["Content", function (r) { return esc(r.content || "-"); }],
+          ["Spend", function (r) { return money(r.spend_cents); }, 1], ["Source", function (r) { return esc(r.source || "manual"); }], ["", function (r, i) { return '<button type="button" class="btn ghost sm" data-ase="' + esc(r.id) + '">Edit</button>'; }]
+        ], rows, "No ad spend saved yet.");
+        $$("[data-ase]").forEach(function (b) { b.addEventListener("click", function () {
+          var r = rows.find(function (x) { return String(x.id) === b.dataset.ase; }); readGrid();
+          grid = grid.filter(function (x) { return !isBlank(x); }).concat([{ day: r.day, platform: r.platform, campaign: r.campaign || "", content: r.content || "", spend: dollars(r.spend_cents) }]); paintGrid(); $("#asRows").scrollIntoView({ block: "nearest" });
+        }); });
+      }).catch(fail9($("#asRecent"), "Ad spend"));
+    }
+    function loadGoal() {
+      return sel9("analytics", "goals", function (q) { return q.eq("app", APP).order("year", { ascending: false }); }).then(function (rows) {
+        rows = rows || [];
+        var cur = rows.find(function (g) { return g.year === Number($("#gYear").value); });
+        if (cur && !$("#gAmt").value) { $("#gAmt").value = dollars(cur.gross_goal_cents); $("#gNote").value = cur.note || ""; $("#gDate").value = cur.event_date || ""; }
+        $("#gNow").innerHTML = table([["Year", function (g) { return esc(g.year); }], ["Goal", function (g) { return money(g.gross_goal_cents); }, 1], ["First event day", function (g) { return g.event_date ? esc(fmtDay(g.event_date, { year: "numeric" })) : "-"; }], ["Note", function (g) { return esc(g.note || ""); }]], rows, "No goal set yet.");
+      }).catch(fail9($("#gNow"), "Goals"));
+    }
+    $("#gYear").addEventListener("change", function () { store.set("adm.year", Number($("#gYear").value)); $("#gAmt").value = ""; $("#gNote").value = ""; $("#gDate").value = ""; loadGoal(); });
+    $("#gForm").addEventListener("submit", busy($("#gGo"), function () {
+      var y = Number($("#gYear").value), c = toCents($("#gAmt").value), note = $("#gNote").value.trim(), ed = $("#gDate").value;
+      $("#gErr").textContent = "";
+      if (isNaN(c) || c <= 0) { $("#gErr").textContent = "Enter the goal in dollars, e.g. 1,000,000."; return; }
+      return confirmAction({ title: "Set the " + y + " goal?", reason: false, confirmLabel: "Save goal", message: "The " + y + " gross sales goal becomes <b>" + money(c) + "</b>" + (ed ? ", first event day " + esc(fmtDay(ed, { year: "numeric" })) : "") + ". The Dashboard's % of goal uses it." }).then(function (ok) {
+        if (!ok) return;
+        var args = { p_app: APP, p_year: y, p_cents: c, p_note: note || null };
+        if (ed) args.p_event_date = ed;   // left out when blank, so 09 keeps the stored date
+        return rpc9("analytics", "admin_set_goal", args).then(function () { toast("Goal saved"); return loadGoal(); });
+      });
+    }));
+    return Promise.all([loadGoal(), loadRecent()]);
+  };
+  function blankSpend() { return { day: "", platform: "", campaign: "", content: "", spend: "" }; }
+
+  // ===================================================================================== 14. Entrants (replaces Paperform)
+  var APP_STATUS = [["", "All statuses"], ["submitted", "Submitted"], ["accepted", "Accepted"], ["waitlist", "Waitlist"], ["declined", "Declined"], ["withdrawn", "Withdrawn"], ["draft", "Draft"]];
+  // Placeholder categories until Katelyn sends the real Paperform questions (spec section 4).
+  var APP_CATS = [["", "All categories"], ["concours", "Concours"], ["supercar", "Supercar"], ["gathering", "Gathering"], ["other", "Other"]];
+  var PHOTO_BUCKET = "entrant-photos";
+  /* admin_applications rows, read tolerantly: nested {profile, vehicle, photos} as pinned in Contract changes, or flat columns. */
+  function appRow(a) {
+    var p = a.profile || {}, vh = a.vehicle || {};
+    return { id: a.id, status: a.status, category: a.category, submitted_at: a.submitted_at, decided_at: a.decided_at, decision_note: a.decision_note, class_assigned: a.class_assigned,
+      name: p.name || a.name || "", email: p.email || a.email || "", profile: p, vehicle: vh, answers: a.answers || {}, waiver_name: a.waiver_name, waiver_signed_at: a.waiver_signed_at,
+      car: [vh.year || a.vehicle_year, vh.make || a.make, vh.model || a.model].filter(Boolean).join(" ") || "-", photos: a.photos || vh.photos || [] };
+  }
+  VIEWS.entrants = function () {
+    var year = curYear(), f = store.get("adm.enF", { status: "submitted", category: "", q: "" }), rows = [], shots = [];
+    main.innerHTML = '<div class="view"><h1>Entrants</h1>' +
+      '<form id="enForm" class="btns" role="search">' + yearSelect("enYear", year) +
+      '<div class="field"><label for="enStatus">Status</label><select id="enStatus">' + APP_STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === f.status ? " selected" : "") + ">" + s[1] + "</option>"; }).join("") + "</select></div>" +
+      '<div class="field"><label for="enCat">Category</label><select id="enCat">' + APP_CATS.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === f.category ? " selected" : "") + ">" + s[1] + "</option>"; }).join("") + "</select></div>" +
+      '<div class="field" style="flex:1;min-width:200px"><label for="enQ">Search</label><input type="search" id="enQ" placeholder="Name, email, make or model" value="' + esc(f.q) + '"></div>' +
+      '<button class="btn" type="submit" id="enGo" style="align-self:flex-end">Apply</button></form>' +
+      '<section class="panel" aria-labelledby="hEnQ"><h2 id="hEnQ">Applications</h2><div id="enList"><p class="muted">Loading...</p></div></section>' +
+      '<section class="panel" aria-labelledby="hEnS"><h2 id="hEnS">Stats</h2><p class="hint">For questions like "we got 120 applications for this kind of car - do we build an event?"</p><div id="enStats"><p class="muted">Loading...</p></div></section>' +
+      '<section class="panel" aria-labelledby="hEnR"><h2 id="hEnR">Previous applicants</h2><p>Everyone who applied before, for the "applications are open" email.</p><div class="btns">' +
+      '<div class="field"><label for="enFrom">Applied since</label><input type="number" id="enFrom" min="2020" max="2100" step="1" value="' + (year - 1) + '"></div><button type="button" class="btn" id="enCsv" style="align-self:flex-end">Download previous applicants CSV</button></div>' +
+      '<p class="hint" id="enCsvNote" role="status"></p><div class="notice" style="margin-top:8px">The file has names and emails. Keep it in the marketing shared folder only and delete local copies after the send.</div></section></div>';
+    function paint() {
+      var c = $("#enCat").value, list = rows.filter(function (a) { return !c || a.category === c; });
+      $("#enList").innerHTML = '<p class="hint" role="status">' + list.length + " application" + (list.length === 1 ? "" : "s") + (c ? " in " + esc(c) : "") + ".</p>" + table([
+        ["Submitted", function (a) { return a.submitted_at ? fmtDT(a.submitted_at) : '<span class="muted">Not yet</span>'; }], ["Entrant", function (a) { return esc(a.name || "-") + '<div class="muted">' + esc(a.email) + "</div>"; }],
+        ["Car", function (a) { return esc(a.car); }], ["Category", function (a) { return esc(a.category || "-"); }], ["Status", function (a) { return statusPill(a.status) + (a.class_assigned ? '<div class="hint">' + esc(a.class_assigned) + "</div>" : ""); }],
+        ["Photos", function (a) { return n0(a.photos.length); }, 1], ["", function (a) { return '<button type="button" class="btn ghost sm" data-app="' + esc(a.id) + '">Open</button>'; }]
+      ], list, "No applications match.");
+      $$("[data-app]").forEach(function (b) { on(b, "click", function () { return openApplication(rows.find(function (a) { return a.id === b.dataset.app; }), shots, load); }); });
+    }
+    function load() {
+      var y = Number($("#enYear").value); f = { status: $("#enStatus").value, category: $("#enCat").value, q: $("#enQ").value.trim() }; store.set("adm.enF", f);
+      return Promise.all([
+        rpc9("entrants", "admin_applications", { p_app: APP, p_year: y, p_status: f.status || null, p_q: f.q || null }).then(function (r) { rows = (r || []).map(appRow); paint(); }).catch(fail9($("#enList"), "Applications")),
+        rpc9("entrants", "admin_stats", { p_app: APP, p_year: y }).then(renderEntrantStats).catch(fail9($("#enStats"), "Stats"))
+      ]);
+    }
+    $("#enForm").addEventListener("submit", busy($("#enGo"), load));
+    $("#enCat").addEventListener("change", paint);
+    bindYear("enYear", load);
+    on("enCsv", "click", function () {
+      var y = Number($("#enFrom").value);
+      if (!Number.isInteger(y) || y < 2020 || y > 2100) { $("#enCsvNote").textContent = "Enter a year, e.g. " + (curYear() - 1) + "."; return; }
+      $("#enCsvNote").textContent = "Preparing...";
+      return rpc9("entrants", "admin_reopen_list", { p_app: APP, p_from_year: y }).then(function (r) {
+        r = r || [];
+        download("concours-previous-applicants-since-" + y + "-" + todayStr() + ".csv", toCSV([["email", "email"], ["name", "name"], ["vehicles", function (x) { return carList(x.vehicles); }], ["last_status", "last_status"]], r));
+        $("#enCsvNote").textContent = r.length + " applicant" + (r.length === 1 ? "" : "s") + " downloaded.";
+      }).catch(function (e) { $("#enCsvNote").textContent = e.message; });
+    });
+    return Promise.all([sel("entrants", "shots", function (q) { return q.order("sort"); }).then(function (s) { shots = s || []; }).catch(function () { shots = []; }), load()]);
+  };
+  function carList(vs) {
+    if (!vs) return "";
+    if (!Array.isArray(vs)) return String(vs);
+    return vs.map(function (x) { return typeof x === "string" ? x : [x.year, x.make, x.model].filter(Boolean).join(" "); }).join("; ");
+  }
+  // admin_stats buckets: [{key, count}] as pinned, or an object {key: count}; both are shown as returned.
+  function statRows(x) {
+    if (!x) return [];
+    if (Array.isArray(x)) return x.map(function (r) { return { key: r.key != null ? r.key : (r.status || r.category || r.make || r.decade || r.label || "-"), count: Number(r.count != null ? r.count : r.n) }; });
+    return Object.keys(x).map(function (k) { return { key: k, count: Number(x[k]) }; }).sort(function (a, b) { return b.count - a.count; });
+  }
+  function renderEntrantStats(s) {
+    s = s || {};
+    function box(title, rows) {
+      var top = rows.reduce(function (a, r) { return Math.max(a, r.count || 0); }, 0);
+      return '<div><h3 style="margin-bottom:6px">' + esc(title) + "</h3>" + table([["", function (r) { return esc(r.key == null || r.key === "" ? "-" : r.key); }], ["Applications", function (r) { return n0(r.count); }, 1],
+        ["", function (r) { return '<div class="meter" aria-hidden="true"><i style="width:' + (top ? 100 * r.count / top : 0) + '%"></i></div>'; }]], rows.slice(0, 20), "None yet.") +
+        (rows.length > 20 ? '<p class="hint">and ' + (rows.length - 20) + " more</p>" : "") + "</div>";
+    }
+    $("#enStats").innerHTML = '<div class="grid two">' + box("By status", statRows(s.by_status)) + box("By category", statRows(s.by_category)) + box("By make", statRows(s.by_make)) + box("By decade", statRows(s.by_decade)) + "</div>";
+  }
+  function signedUrls(paths) {
+    if (!paths.length) return Promise.resolve({});
+    return SB.ready.then(function () {
+      if (!SB.ok) throw new Error("No connection to the server right now");
+      return SB.client.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 900);
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      var m = {}; (r.data || []).forEach(function (x) { if (x.signedUrl && !x.error) m[x.path] = x.signedUrl; }); return m;
+    });
+  }
+  function openApplication(a, shots, reload) {
+    var label = {}; shots.forEach(function (s) { label[s.code] = s.label; });
+    var have = {}; a.photos.forEach(function (p) { have[p.shot] = true; });
+    var missing = shots.filter(function (s) { return s.required && !have[s.code]; }).map(function (s) { return s.label; });
+    var vh = a.vehicle, p = a.profile, ans = a.answers || {};
+    function kv(pairs) { return '<dl class="kv">' + pairs.filter(function (x) { return x[1] != null && x[1] !== ""; }).map(function (x) { return "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>"; }).join("") + "</dl>"; }
+    var undecided = a.status === "submitted" || a.status === "waitlist";
+    return openDialog({
+      title: a.car + " - " + (a.name || a.email), wide: true,
+      body: '<div class="btns">' + statusPill(a.status) + (a.category ? pill(a.category) : "") + (a.class_assigned ? pill("Class: " + a.class_assigned, "ok") : "") + "</div>" +
+        (missing.length ? '<div class="notice warn">Missing required photos: ' + esc(missing.join(", ")) + "</div>" : "") +
+        '<div class="grid two"><div><h3>Entrant</h3>' + kv([["Name", a.name], ["Email", a.email], ["Phone", p.phone], ["Location", [p.city, p.state, p.country].filter(Boolean).join(", ")], ["Instagram", p.instagram]]) + "</div>" +
+        "<div><h3>Car</h3>" + kv([["Year", vh.year], ["Make", vh.make], ["Model", vh.model], ["Body", vh.body], ["Chassis no.", vh.chassis_no], ["Colour", vh.color], ["Engine", vh.engine], ["Notes", vh.notes]]) + "</div></div>" +
+        "<h3>Photos</h3>" + (a.photos.length ? '<div class="photos" id="enPhotos">' + a.photos.map(function (ph, i) { return '<figure><div class="ph" data-i="' + i + '">Loading photo...</div><figcaption>' + esc(label[ph.shot] || ph.shot) + "</figcaption></figure>"; }).join("") + "</div>" : '<p class="muted">No photos uploaded.</p>') +
+        "<h3>Answers</h3>" + (Object.keys(ans).length ? kv(Object.keys(ans).map(function (k) { var x = ans[k]; return [k.replace(/_/g, " "), typeof x === "object" ? JSON.stringify(x) : x]; })) : '<p class="muted">No answers.</p>') +
+        kv([["Waiver signed by", a.waiver_name], ["Waiver signed", a.waiver_signed_at ? fmtDT(a.waiver_signed_at) : ""], ["Submitted", a.submitted_at ? fmtDT(a.submitted_at) : ""], ["Decided", a.decided_at ? fmtDT(a.decided_at) : ""], ["Decision note", a.decision_note]]),
+      buttons: (a.status === "draft" || a.status === "withdrawn" ? [] : [{ label: "Accept", value: "accepted" }, { label: "Waitlist", value: "waitlist", cls: "ghost" }, { label: "Decline", value: "declined", cls: "danger" }]
+        .concat(a.status === "submitted" ? [] : [{ label: "Undo decision", value: "submitted", cls: "ghost" }]))
+        .filter(function (b) { return b.value !== a.status; }).concat([{ label: "Close", value: "cancel", cls: "ghost" }]),
+      focusButton: true,
+      onOpen: function (b) {
+        if (!a.photos.length) return;
+        signedUrls(a.photos.map(function (x) { return x.storage_path; })).then(function (m) {
+          a.photos.forEach(function (ph, i) {
+            var box = $('.ph[data-i="' + i + '"]', b); if (!box) return;
+            var u = m[ph.storage_path];
+            box.innerHTML = u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="' + esc((label[ph.shot] || ph.shot) + " - " + a.car) + '" loading="lazy"></a>' : '<span class="muted">Photo not found</span>';
+          });
+        }).catch(function (e) { $$(".ph", b).forEach(function (x) { x.textContent = "Could not load photos: " + e.message; }); });
+      }
+    }).then(function (status) {
+      if (!status || status === "cancel") return;
+      return decideApplication(a, status, undecided).then(function (done) { if (done) return reload(); });
+    });
+  }
+  function decideApplication(a, status, undecided) {
+    var word = { accepted: "Accept", waitlist: "Waitlist", declined: "Decline", submitted: "Undo the decision on" }[status];
+    return openDialog({
+      title: word + " " + (a.name || a.email) + "'s " + a.car + "?",
+      body: '<div class="notice' + (status === "declined" ? " warn" : "") + '">' + (undecided ? "" : "This changes a decision already made (" + esc(a.status) + "). ") + "The entrant sees the new status in the app.</div>" +
+        (status === "accepted" || status === "waitlist" ? fld("dcClass", "Class", "text", a.class_assigned, { hint: "Optional, e.g. Pre-war American", attrs: ' maxlength="80"' }) : "") +
+        fld("dcNote", "Note (required, saved with the decision)", "textarea", "", { required: true, attrs: ' minlength="3" maxlength="500"' }),
+      buttons: [{ label: status === "submitted" ? "Undo decision" : word, value: "ok", cls: status === "declined" ? "danger" : "primary" }, { label: "Cancel", value: "cancel", cls: "ghost" }],
+      validate: function (b) { if (v(b, "dcNote").length < 3) return "Enter a note (at least 3 characters)."; },
+      collect: function (b) { return { cls: status === "accepted" || status === "waitlist" ? v(b, "dcClass") : null, note: v(b, "dcNote") }; }
+    }).then(function (r) {
+      if (!r) return false;
+      return rpc9("entrants", "admin_decide", { p_id: a.id, p_status: status, p_class: r.cls || null, p_note: r.note }).then(function () { toast({ accepted: "Accepted", waitlist: "Moved to the waitlist", declined: "Declined", submitted: "Decision undone - back to submitted" }[status]); return true; });
+    });
+  }
 })();
