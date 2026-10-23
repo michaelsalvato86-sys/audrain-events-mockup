@@ -1410,7 +1410,7 @@
         fld("blHolder", "Holder name", "text", "", { hint: "Optional: the name to print on the tickets" }) +
         fld("blNote", "Note", "textarea", "", { wide: true, hint: "Who asked for it and why" }) +
         '<p class="err wide" id="blErr" role="alert"></p><div class="btns wide"><button type="submit" class="btn" id="blGo">Load tickets</button></div></form></section>' +
-        '<section class="panel" aria-labelledby="hMint"><h2 id="hMint">Mint a batch of badges</h2><div class="notice warn" style="margin-bottom:12px"><b>The claim codes are shown once.</b> Minting downloads the print file (serial, code, qr) straight away. It is the only copy: the codes cannot be looked up again. Save it to the print shared folder.</div>' +
+        '<section class="panel" aria-labelledby="hMint"><h2 id="hMint">Mint a batch of badges</h2><div class="notice warn" style="margin-bottom:12px"><b>The claim codes are shown once.</b> Minting downloads the print file (serial, code, qr, entry) straight away; print the <b>qr</b> column as the badge QR. It is the only copy: the codes cannot be looked up again. Save it to the print shared folder.</div>' +
         '<form id="bmForm" class="form" novalidate>' + fld("bmCount", "How many badges", "number", "", { required: true, attrs: ' min="1" max="2000" step="1"', hint: "Up to 2,000 per batch" }) +
         fld("bmBatch", "Batch name", "text", "", { required: true, hint: "e.g. sponsors-wave-1", attrs: ' maxlength="60"' }) + fld("bmYear", "Year", "number", year, { attrs: ' min="2025" max="2100" step="1"' }) +
         fld("bmNote", "Note", "textarea", "", { wide: true }) + '<p class="err wide" id="bmErr" role="alert"></p><div class="btns wide"><button type="submit" class="btn" id="bmGo">Mint and download print file</button></div></form></section></div>';
@@ -1578,22 +1578,55 @@
     return confirmAction({ title: "Mint " + n0(count) + " badge" + (count === 1 ? "" : "s") + "?", reason: false, confirmLabel: "Mint and download",
       message: "Creates " + n0(count) + " unclaimed badge pass" + (count === 1 ? "" : "es") + " for " + year + " in batch <b>" + esc(batch) + "</b>.<br>The print file downloads straight away and is <b>the only copy of the claim codes</b>." }).then(function (ok) {
       if (!ok) return;
-      return rpc9("tix", "admin_mint_badges", { p_app: APP, p_year: year, p_count: count, p_batch: batch, p_note: note || null }).then(function (res) {
+      var res;
+      return rpc9("tix", "admin_mint_badges", { p_app: APP, p_year: year, p_count: count, p_batch: batch, p_note: note || null }).then(function (r) {
+        res = r;
+        return signBadges(((res && res.badges) || []).map(function (b) { return b.serial; }));
+      }).then(function (signed) {
         var badges = (res && res.badges) || [], name = "concours-badges-" + year + "-" + batch.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + todayStr() + ".csv";
-        var csv = toCSV([["serial", "serial"], ["code", "code"], ["qr", "qr"]], badges), minted = badges.length;
-        badges = null;
+        // qr = what goes in the ONE printed QR: the claim string, plus the signed entry after '|' when signing worked
+        var rows = badges.map(function (b) { var en = signed.entries[b.serial] || ""; return { serial: b.serial, code: b.code, qr: en ? b.qr + "|" + en : b.qr, entry: en }; });
+        var csv = toCSV([["serial", "serial"], ["code", "code"], ["qr", "qr"], ["entry", "entry"]], rows), minted = badges.length;
+        var unsigned = rows.filter(function (x) { return !x.entry; }).length;
+        badges = null; rows = null;
         download(name, csv);
         $("#bmCount").value = ""; $("#bmNote").value = "";
         return openDialog({
           title: "Print file downloaded",
           body: '<div class="notice warn" role="alert"><b>This is the only time these codes are available.</b> Check that <span class="mono">' + esc(name) + "</span> is in your downloads and move it to the print shared folder. Once you close this box the codes are gone from this page.</div>" +
             '<p>Batch <b>' + esc((res && res.batch) || batch) + "</b>: " + n0(minted) + " badge" + (minted === 1 ? "" : "s") + " in the file.</p>" +
+            (unsigned ? '<div class="notice warn" role="status" id="bmUnsigned"><b>' + n0(unsigned) + " badge" + (unsigned === 1 ? "" : "s") + " scan online only.</b> " + esc(signed.note || "Those rows have no signed entry, so a gate phone without signal cannot check them.") + " The entry column is blank for " + (unsigned === 1 ? "it" : "them") + ".</div>"
+              : '<p class="hint" id="bmSigned">Every badge carries a signed entry, so gate phones can check them with no signal.</p>') +
             '<div class="btns"><button type="button" class="btn" id="bmAgain">Download again</button></div>',
           buttons: [{ label: "I have the file", value: "cancel", cls: "ghost" }], focusButton: true,
           onOpen: function (b) { $("#bmAgain", b).addEventListener("click", function () { download(name, csv); }); }
         }).then(function () { csv = null; $("#dlgBody").innerHTML = ""; });
       });
     });
+  }
+
+  /* Signed entry strings for printed badges (2026-10-22 OFFLINE BADGES): POST credential/badges (admin JWT) ->
+     {badges:[{serial, entry}], skipped}. Never fails the mint: on any error the print file still downloads, with the
+     entry column blank and a note that those badges scan online only. */
+  function signBadges(serials) {
+    var out = { entries: {}, note: "" };
+    if (!serials.length) return Promise.resolve(out);
+    return SB.ready.then(function () {
+      if (!SB.ok) throw new Error("No connection to the server right now");
+      return SB.client.functions.invoke("credential/badges", { body: { serials: serials, app: APP } });
+    }).then(function (r) {
+      if (!r.error) return r.data;
+      var ctx = r.error.context;
+      var read = ctx && typeof ctx.json === "function" ? ctx.json().catch(function () { return null; }) : Promise.resolve(null);
+      return read.then(function (j) {
+        if (j && j.error === "not_configured") throw new Error("The badge signing key is not set up yet (credential function: " + (j.missing || []).join(", ") + ").");
+        throw new Error("Signing failed: " + ((j && (j.message || j.error)) || r.error.message || "the request failed") + ".");
+      });
+    }).then(function (data) {
+      ((data && data.badges) || []).forEach(function (b) { if (b && b.serial && /^AUD1\./.test(b.entry || "")) out.entries[b.serial] = b.entry; });
+      if (Object.keys(out.entries).length < serials.length) out.note = "The signing service skipped some badges.";
+      return out;
+    }).catch(function (e) { out.entries = {}; out.note = e && e.message || "Signing failed."; return out; });
   }
 
   // ===================================================================================== 12. Sponsors and comp report

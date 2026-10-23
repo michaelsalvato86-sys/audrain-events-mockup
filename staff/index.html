@@ -164,6 +164,7 @@ h2{font-size:20px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>window.SB_CONFIG = {url:"https://jlqxorlegyqlpbnwroaz.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXhvcmxlZ3lxbHBibndyb2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1ODE1MTcsImV4cCI6MjEwNzE1NzUxN30.eOye3dMBepkoV_oOA3EbdGnyUH9VyyZ9yjbIRfJky4s", app:"concours", storageKey:"sb-concours-staff", guest:false};</script>
 <script src="sb.js"></script>
+<script src="../shared/pass.js"></script>
 
 </head>
 <body>
@@ -673,7 +674,7 @@ async function goLive(name){
   LIVE.me = me; LIVE.uid = SB.user.id;
   if(me.team && TEAMS[me.team]){ state.team = me.team; store.set("st.team", me.team); }
   state.session = {email:me.email, name:me.name, at:Date.now()}; store.set("st.session", state.session);
-  await loadLive(); startLive(); flushScans();
+  await loadLive(); startLive(); flushScans(); refreshBundle();
   $("#chatDot").hidden = true;
   return me;
 }
@@ -830,7 +831,7 @@ function liveAlerts(){
 }
 
 // ---------- Gate tab: scanning (live or demo), offline queue, door sales, lanyards, admin panel
-const RESULT = {valid:["VALID","#1f8a4c","Let them in"], already_used:["ALREADY USED","#b3261e","This ticket has already been scanned"], not_valid:["NOT VALID","#b3261e","Not a valid ticket"], wrong_session:["WRONG SESSION","#c25e00","Not valid at this time"], offline:["SAVED OFFLINE","#1d5c94","No connection. It is checked as soon as this device is back online."], error:["CHECK FAILED","#5b6576",""]};
+const RESULT = {valid:["VALID","#1f8a4c","Let them in"], already_used:["ALREADY USED","#b3261e","This ticket has already been scanned"], not_valid:["NOT VALID","#b3261e","Not a valid ticket"], wrong_session:["WRONG SESSION","#c25e00","Not valid at this time"], wrong_zone:["WRONG GATE","#c25e00","This pass is not for this gate"], revoked:["REVOKED","#b3261e","This pass was cancelled or replaced. Send them to the box office."], offline:["SAVED OFFLINE","#1d5c94","No connection. It is checked as soon as this device is back online."], error:["CHECK FAILED","#5b6576",""]};
 function logScan(kind, r, synced){ const log = store.get("st.scanlog", []); log.unshift({at:new Date().toISOString(), result:kind, serial:(r&&r.serial)||"", holder:(r&&r.holder)||"", demo:!!(r&&r.demo), synced:!!synced}); store.set("st.scanlog", log.slice(0,30)); }
 function views_gate(){
   const live = isLive(), q = store.get("st.scanq", []), log = store.get("st.scanlog", []);
@@ -842,6 +843,7 @@ function views_gate(){
       <button class="btn bigscan" type="button" data-scanmode="ticket">Scan tickets</button>
       <form id="manualScan" style="display:flex;gap:8px"><input id="scanIn" placeholder="Camera won't read it? Paste the code" autocomplete="off" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 10px"><button class="btn ghost" type="submit">Check</button></form>
       ${live ? `<div class="kv" id="gcounts"><span class="sub">Loading counts…</span></div>` : ""}
+      ${badgeListLine()}
       ${q.length ? `<div class="sub" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${q.length} scan${q.length===1?"":"s"} saved offline, waiting to be checked. <button class="btn ghost" type="button" data-syncscans="1" style="padding:6px 10px">Sync now</button></div>` : ""}
     </section>
     ${can("staff") ? `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px"><div class="label">Desk</div><div class="btns"><button class="btn" type="button" data-doorsale="1">Door sale</button><button class="btn ghost" type="button" data-lanyard="1">Lanyard pickup</button></div><div class="sub">Door sale: take payment first (cash or card reader), then the guest scans their ticket from this screen.</div></section>` : live ? `<div class="notice">Door sales and lanyards open when an admin makes you staff.</div>` : ""}
@@ -862,8 +864,151 @@ function demoScan(qr){
   seen.add(qr); store.set("st.demoscans", [...seen].slice(-200)); return "valid";
 }
 function queueScan(qr){ const q = store.get("st.scanq", []); q.push({qr, gate:state.gate, at:new Date().toISOString()}); store.set("st.scanq", q); }
+
+// ---------- Printed badges, online and OFFLINE (2026-10-22). The printed QR is AUDRAIN-BADGE:<serial>:<code>|AUD1.<claims>.<sig>
+// (older prints: no |AUD1 part; a bare AUD1 badge string with k "b" is read too). Online: tix.scan_badge checks the printed
+// code. Offline: AudrainPass.verify proves the signed part genuine with the public key from tix.scanner_bundle, then the
+// cached bundle's badges list decides (serial listed, r <= rev, zone, tickets_left minus this device's own admits since the
+// list was fetched). Every badge scan is queued with a scan id and uploaded through tix.scan_badge (p_offline true,
+// deduped on p_scan_id), so the server records it once and has the last word.
+const gateCode = gk => { const k = gk || state.gate, g = GATES[k] || GATES.MAIN; return "AUDRAIN-CHECKIN:" + g.ev + ":" + (GATES[k] ? k : "MAIN"); };
+const BUNDLE_MAX_AGE = 24*3600*1000;   // an older list is not trusted: a badge voided since then would still pass
+const newScanId = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+const eastDay = (d) => new Intl.DateTimeFormat("en-CA", {timeZone:"America/New_York"}).format(d || new Date());
+function parseBadge(txt){
+  const s = String(txt||"").trim(), bar = s.indexOf("|");
+  const printed = bar >= 0 ? s.slice(0, bar).trim() : s, tail = bar >= 0 ? s.slice(bar+1).trim() : "";
+  const m = /^AUDRAIN-BADGE:([A-Z0-9]+(?:-[A-Z0-9]+)*)(?::([A-Z0-9 -]{0,24}))?$/i.exec(printed);
+  if(m) return {serial:m[1].toUpperCase(), code:(m[2]||"").replace(/[\s-]/g,"").toUpperCase(), entry:/^AUD1\.[^.]+\.[^.]+$/.test(tail) ? tail : ""};
+  if(/^AUD1\.[^.]+\.[^.]+$/.test(s)){   // a signed badge string on its own (3 parts, no rotating code)
+    try{ const c = JSON.parse(new TextDecoder().decode(AudrainPass.b64u.decode(s.split(".")[1]))); if(c && c.k === "b" && typeof c.s === "string") return {serial:c.s.toUpperCase(), code:"", entry:s}; }catch(e){}
+  }
+  return null;
+}
+function cachedBundle(){ const b = store.get("st.bundle." + gateCode(), null); return b && Date.now() - (b._fetched||0) < BUNDLE_MAX_AGE ? b : null; }
+let bundleBusy = false;
+async function refreshBundle(){
+  if(bundleBusy || !isLive() || navigator.onLine===false) return;
+  bundleBusy = true; const code = gateCode(), t0 = Date.now();
+  try{ const b = await SB.rpc("tix", "scanner_bundle", {p_app:APP, p_gate:code}); if(b && Array.isArray(b.badges)){ b._fetched = t0; store.set("st.bundle." + code, b); } }
+  catch(e){ console.warn("[staff] scanner bundle:", e.message); }
+  finally{ bundleBusy = false; }
+  const el = document.getElementById("badgeList"); if(el) el.outerHTML = badgeListLine();
+}
+function badgeListLine(){
+  if(!isLive() && !cachedBundle()) return "";
+  const b = cachedBundle();
+  return `<div class="sub" id="badgeList">${b ? `Offline badge list: ${b.badges.length} badge${b.badges.length===1?"":"s"}, updated ${hm(new Date(b._fetched).toISOString())}.` : "Offline badge list not loaded yet: printed badges need a connection."}</div>`;
+}
+// This device's own admits (printed badges and phone passes share the serial, so one list), so a second scan of the
+// same pass is caught before the server sees the first.
+function noteAdmit(serial, code, at, scan_id, synced_at){
+  const a = store.get("st.badgeadmits", []).filter(x => x.day >= eastDay(new Date(Date.now() - 2*86400000)));
+  a.push(Object.assign({serial:String(serial).toUpperCase(), gate:code, day:eastDay(), at, scan_id}, synced_at ? {synced_at} : {}));
+  store.set("st.badgeadmits", a.slice(-2000));
+}
+function localAdmits(serial, b){
+  const day = eastDay(), code = gateCode();
+  return store.get("st.badgeadmits", []).filter(a => a.serial===serial && a.gate===code && a.day===day && (!a.synced_at || a.synced_at >= (b._fetched||0))).length;
+}
+async function badgeOffline(p, b){
+  if(!p.entry || !window.AudrainPass) return null;   // nothing to check offline: old print or pass.js missing
+  const v = await AudrainPass.verify(p.entry, {publicKeys:b.public_keys||{}});
+  const say = (kind, msg) => ({kind, msg});
+  if(!v.ok) return say("not_valid", v.reason==="expired" || v.reason==="not_yet_valid" ? "Badge is not for this year." : "Badge signature does not check out.");
+  const c = v.claims;
+  if(c.k !== "b" || (p.serial && String(c.s).toUpperCase() !== p.serial)) return say("not_valid", "Badge signature does not match the printed number.");
+  const row = (b.badges||[]).find(x => x.serial === String(c.s).toUpperCase());
+  if(!row) return say("not_valid", "Not on this gate's badge list: no tickets, voided or unknown.");
+  if(Number(c.r) > Number(row.rev)) return say("not_valid", "Badge signature is newer than this gate's list.");
+  const z = (b.gate && b.gate.zone_code) || "";
+  if(!(row.zones||[]).some(x => x===z || x==="all")) return say("wrong_zone");
+  if(b.gate && b.gate.kind === "exit") return say("valid");
+  if(Number(row.tickets_left||0) - localAdmits(row.serial, b) <= 0) return say("already_used");
+  return say("valid");
+}
+async function handleBadge(qr, p){
+  const serial = p.serial, at = new Date().toISOString(), scan_id = newScanId(), code = gateCode();
+  // the upload string: the printed part with its code, else the serial alone (scan_badge then trusts this device's signature check)
+  const upload = "AUDRAIN-BADGE:" + serial + (p.code ? ":" + p.code : "");
+  if(isLive() && navigator.onLine!==false && p.code){
+    try{ const r = await SB.rpc("tix", "scan_badge", {p_app:APP, p_qr:upload, p_gate:code, p_device:DEVICE, p_scan_id:scan_id});
+      showResult(r.result, Object.assign({serial}, r, {type:r.ticket && r.ticket.type, is_comp:r.ticket && r.ticket.is_comp})); flushScans(); return; }
+    catch(e){ if(!isNetErr(e)){ showResult("error", {serial, msg:e.message}); return; } }
+  }
+  const b = cachedBundle();
+  if(!b && !isLive()){ showResult(demoScan(qr), {serial, demo:true}); return; }
+  const d = b ? await badgeOffline(p, b) : null;
+  const q = store.get("st.scanq", []);
+  q.push({kind:"badge", qr:upload, gate:state.gate, gate_code:code, scan_id, at, local:d ? d.kind : "offline"}); store.set("st.scanq", q);
+  if(d && d.kind==="valid" && !(b.gate && b.gate.kind==="exit")) noteAdmit(serial, code, at, scan_id);
+  if(!d){ showResult("offline", {serial}); }
+  else showResult(d.kind, {serial, offline:true, msg:(d.msg ? d.msg + " " : "") + "Checked on this device with no signal. It uploads when the connection is back."});
+  if(isLive() && navigator.onLine!==false) flushScans();
+}
+
+// ---------- Phone passes, online and OFFLINE (2026-10-23). The attendee app shows AUD1.<claims>.<sig>.<t>.<devsig>, redrawn
+// every 15 s and signed by the phone's own P-256 key. AudrainPass.verify with requireRotating proves the server signature
+// (bundle public_keys), the time step (+/-2 steps of this device's clock, corrected by the bundle's server_time) and the
+// phone's signature over serial|t, so a screenshot fails once its step is stale and a 3-part copy fails as not rotating.
+// Online the gate decision is tix.scan_pass with the claims' serial + rev. Offline the cached bundle decides: revocations,
+// the claims' zone short codes (z) against the gate's zone_code ('all' passes), and anti-passback as for badges: the
+// bundle's per-pass tickets_left for this gate (bundle.passes) minus this device's own admits, so a phone holding four
+// tickets admits four times. A pass missing from that list (bought after the list was made) or an older bundle without
+// it falls back to the admitted list plus this device's own admits. Queued as kind 'pass' and uploaded through tix.scan_pass with p_offline true
+// and the same scan id, so the server records it once and has the last word.
+const PASS_MSG = {stale_code:"Old code: a screenshot or a frozen screen. Ask them to open the pass in the app.",
+  not_rotating:"This code does not move: a screenshot or copy of a pass. Ask them to open the pass in the app.",
+  bad_device_sig:"The code was not made on the phone this pass belongs to.", bad_signature:"Pass signature does not check out.",
+  bad_format:"Not a readable pass code.", expired:"This pass is not valid any more.", not_yet_valid:"This pass is not valid yet."};
+// unix ms on the server's clock, as far as the last bundle tells (a phone gate with a wrong clock still checks the 15 s step)
+function gateNow(b){ const st = Number(b && b.server_time); return st > 1e9 && b._fetched ? Date.now() + (st*1000 - b._fetched) : Date.now(); }
+function passOffline(c, b){
+  const z = (b.gate && b.gate.zone_code) || "", serial = String(c.s).toUpperCase();
+  if(!(Array.isArray(c.z) ? c.z : []).some(x => x===z || x==="all")) return {kind:"wrong_zone"};
+  if(b.gate && b.gate.kind === "exit") return {kind:"valid"};   // exits never consume an admission
+  const row = Array.isArray(b.passes) ? b.passes.find(x => String(x.serial).toUpperCase() === serial) : null;
+  if(row) return Number(row.tickets_left||0) - localAdmits(serial, b) > 0 ? {kind:"valid"} : {kind:"already_used", msg:"Every ticket on this pass for this gate is used."};
+  if((b.admitted||[]).map(x => String(x).toUpperCase()).includes(serial) || localAdmits(serial, b) > 0) return {kind:"already_used", msg:"Already admitted today."};
+  return {kind:"valid"};
+}
+async function handlePass(qr){
+  const at = new Date().toISOString(), scan_id = newScanId(), code = gateCode();
+  if(!isLive()){ showResult(demoScan(qr), {demo:true}); return; }
+  if(!window.AudrainPass){ showResult("error", {msg:"The phone pass check (pass.js) is missing on this device. Reload the app."}); return; }
+  let online = navigator.onLine!==false, b = cachedBundle();
+  if(!b && online){ await refreshBundle(); b = cachedBundle(); }
+  // no keys: the pass cannot be proven, and an unproven upload would let a screenshot through, so nothing is queued
+  if(!b){ showResult("error", {msg:"Phone passes cannot be checked: this gate's key list is not loaded. Connect once, or use the box office."}); return; }
+  const check = bb => AudrainPass.verify(qr, {publicKeys:bb.public_keys||{}, revoked:online ? null : (bb.revocations||[]), now:gateNow(bb), requireRotating:true});
+  let v = await check(b);
+  if(!v.ok && v.reason==="bad_signature" && online && v.claims && !(b.public_keys||{})[v.claims.kid]){   // a key newer than the list
+    await refreshBundle(); b = cachedBundle() || b; v = await check(b);
+  }
+  const c = v.claims || {}, serial = String(c.s||"").toUpperCase(), who = {serial, holder:c.n||null};
+  if(!v.ok){ showResult(v.reason==="revoked" ? "revoked" : "not_valid", Object.assign(who, {offline:!online, msg:PASS_MSG[v.reason]})); return; }
+  const rev = Number(c.r)||0;
+  if(online){
+    try{ const r = await SB.rpc("tix", "scan_pass", {p_app:APP, p_serial:serial, p_rev:rev, p_gate:code, p_device:DEVICE, p_scan_id:scan_id, p_device_time:at, p_offline:false});
+      if(r.result==="valid" && r.direction!=="out") noteAdmit(serial, code, at, scan_id, Date.now());
+      showResult(r.result, Object.assign(who, r, {holder:r.holder || who.holder, type:r.ticket && r.ticket.type, is_comp:r.ticket && r.ticket.is_comp})); flushScans(); return; }
+    catch(e){ if(!isNetErr(e)){ showResult("error", {serial, msg:e.message}); return; } }
+    online = false;
+    v = await check(b);   // the network dropped mid-scan: judge again with the bundle's revocations
+    if(!v.ok){ showResult(v.reason==="revoked" ? "revoked" : "not_valid", Object.assign(who, {offline:true, msg:PASS_MSG[v.reason]})); return; }
+  }
+  const d = passOffline(c, b);
+  const q = store.get("st.scanq", []);
+  q.push({kind:"pass", serial, rev, gate:state.gate, gate_code:code, scan_id, at, local:d.kind}); store.set("st.scanq", q);
+  if(d.kind==="valid" && !(b.gate && b.gate.kind==="exit")) noteAdmit(serial, code, at, scan_id);
+  showResult(d.kind, Object.assign(who, {offline:true, msg:(d.msg ? d.msg + " " : "") + "Checked on this device with no signal. It uploads when the connection is back."}));
+  if(isLive() && navigator.onLine!==false) flushScans();
+}
+
 async function handleScan(qr){
   qr = String(qr||"").trim(); if(!qr){ if(SCAN) SCAN.busy = false; return; }
+  const badge = parseBadge(qr); if(badge) return handleBadge(qr, badge);
+  if(/^AUD1\./.test(qr)) return handlePass(qr);   // phone pass (old CONCOURS-TICKET / lanyard codes stay on tix.scan below)
   const serial = (qr.split(":")[1]||qr).toUpperCase();
   if(!isLive()){ const k = demoScan(qr); showResult(k, {serial, demo:true}); return; }
   if(navigator.onLine===false){ queueScan(qr); showResult("offline", {serial}); return; }
@@ -875,20 +1020,34 @@ async function flushScans(){
   if(flushing || !isLive() || navigator.onLine===false) return;
   const q = store.get("st.scanq", []); if(!q.length) return;
   flushing = true; let ok = 0, bad = 0; const left = [];
+  const synced = {};
   for(const s of q){
-    try{ const r = await SB.rpc("tix", "scan", {p_app:APP, p_qr:s.qr, p_gate:s.gate, p_device:DEVICE, p_scanned_at:s.at}); if(r.result==="valid") ok++; else bad++; logScan(r.result, Object.assign({serial:(s.qr.split(":")[1]||"").toUpperCase()}, r), true); }
+    try{
+      let r;
+      if(s.kind==="badge"){   // same scan id as on the device, so a retried upload is a replay, never a second entry
+        r = await SB.rpc("tix", "scan_badge", {p_app:APP, p_qr:s.qr, p_gate:s.gate_code || gateCode(s.gate), p_device:DEVICE, p_scan_id:s.scan_id, p_device_time:s.at, p_offline:true});
+        synced[s.scan_id] = Date.now();
+      } else if(s.kind==="pass"){   // a phone pass the device already proved: serial + rev, as tix.scan_pass takes them
+        r = await SB.rpc("tix", "scan_pass", {p_app:APP, p_serial:s.serial, p_rev:s.rev, p_gate:s.gate_code || gateCode(s.gate), p_device:DEVICE, p_scan_id:s.scan_id, p_device_time:s.at, p_offline:true});
+        synced[s.scan_id] = Date.now();
+      } else r = await SB.rpc("tix", "scan", {p_app:APP, p_qr:s.qr, p_gate:s.gate, p_device:DEVICE, p_scanned_at:s.at});
+      if(r.result==="valid") ok++; else bad++; logScan(r.result, Object.assign({serial:s.serial || (String(s.qr||"").split(":")[1]||"").toUpperCase()}, r), true);
+    }
     catch(e){ if(isNetErr(e)) left.push(s); else bad++; }
   }
+  if(Object.keys(synced).length) store.set("st.badgeadmits", store.get("st.badgeadmits", []).map(a => synced[a.scan_id] ? Object.assign(a, {synced_at:synced[a.scan_id]}) : a));
   store.set("st.scanq", left); flushing = false;
   if(ok+bad) toast(`Checked ${ok+bad} offline scan${ok+bad===1?"":"s"}: ${ok} valid, ${bad} problem${bad===1?"":"s"}`);
+  if(Object.keys(synced).length) refreshBundle();
   if(state.tab==="gate") render();
 }
-addEventListener("online", ()=>flushScans());
+addEventListener("online", ()=>{ flushScans(); refreshBundle(); });
+setInterval(()=>refreshBundle(), 5*60*1000);   // keep the offline badge list fresh while there is signal
 let resT = null;
 function showResult(kind, r){
   const [h, bg, sub] = RESULT[kind] || RESULT.error, el = document.getElementById("scanRes");
   el.style.background = bg; el.dataset.result = kind;
-  el.innerHTML = `<div class="rk">${r && r.demo ? "Demo · " : ""}${esc((GATES[state.gate]||GATES.MAIN).name)}</div><h1>${h}</h1>${r && r.holder ? `<div class="rh">${esc(r.holder)}</div>` : ""}<div class="rd">${esc([r && r.type, r && r.serial].filter(Boolean).join(" · "))}${r && r.is_comp ? " · COMP" : ""}</div><div class="rs">${esc((r && r.msg) || sub)}</div><button type="button" class="btn" data-resnext="1">Next guest</button>`;
+  el.innerHTML = `<div class="rk">${r && r.demo ? "Demo · " : ""}${r && r.offline ? "Offline · " : ""}${esc((GATES[state.gate]||GATES.MAIN).name)}</div><h1>${h}</h1>${r && r.holder ? `<div class="rh">${esc(r.holder)}</div>` : ""}<div class="rd">${esc([r && r.type, r && r.serial].filter(Boolean).join(" · "))}${r && r.is_comp ? " · COMP" : ""}</div><div class="rs">${esc((r && r.msg) || sub)}</div><button type="button" class="btn" data-resnext="1">Next guest</button>`;
   el.hidden = false; logScan(kind, r);
   try{ navigator.vibrate && navigator.vibrate(kind==="valid" ? [60,40,60] : [300]); }catch(e){}
   clearTimeout(resT); if(kind==="valid") resT = setTimeout(nextGuest, 2500);
@@ -1101,9 +1260,10 @@ async function actGo(id, act, btn){
 }
 async function rosterSave(uid){
   const g = a => document.querySelector(`[data-${a}="${uid}"]`);
-  const patch = {role:g("rrole").value, team:g("rteam").value || null, active:g("ractive").checked};
-  if(LIVE.me.can_override) patch.can_override = g("rover").checked;
-  try{ await SB.update("staff", "members", {user_id:uid, app:APP}, patch); LIVE.roster = await SB.select("staff", "members", q=>q.eq("app",APP).order("name")); toast("Saved"); }catch(e){ toast(e.message); }
+  // Concours roles change only through staff.admin_set_member (07-concours-security blocks direct writes to role/override).
+  const args = {p_app:APP, p_user_id:uid, p_role:g("rrole").value, p_team:g("rteam").value || null, p_active:g("ractive").checked,
+    p_can_override: LIVE.me.can_override ? g("rover").checked : null};
+  try{ await SB.rpc("staff", "admin_set_member", args); LIVE.roster = await SB.select("staff", "members", q=>q.eq("app",APP).order("name")); toast("Saved"); }catch(e){ toast(e.message); }
 }
 
 // ---------- Sign-in sheet (header button) and real staff sign-in
@@ -1153,7 +1313,7 @@ document.addEventListener("submit", ev=>{
   if(ev.target.id==="admFind"){ ev.preventDefault(); afFind(); }
 });
 document.addEventListener("change", ev=>{
-  if(ev.target.id==="gateSel2"){ state.gate = ev.target.value; store.set("st.gate", state.gate); render(); }
+  if(ev.target.id==="gateSel2"){ state.gate = ev.target.value; store.set("st.gate", state.gate); render(); refreshBundle(); }
   if(ev.target.id==="dsType" || ev.target.id==="dsQty") dsTotal();
 });
 document.addEventListener("input", ev=>{ if(ev.target.id==="dsQty") dsTotal(); });

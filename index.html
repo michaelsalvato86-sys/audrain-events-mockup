@@ -305,6 +305,10 @@ details summary{cursor:pointer}
 .fileinp:focus-visible + label{outline:3px solid var(--gold);outline-offset:2px}
 .fileinp:disabled + label{opacity:.6;cursor:progress}
 .shot label.buy{cursor:pointer}
+/* The real entrant application (entrants.form): one row per question, hidden while its show_if does not match */
+.aqrow{display:flex;flex-direction:column;gap:6px}
+.aqrow select{width:100%;padding:11px 12px;border-color:#8a93a6;background:var(--bg);font-size:inherit}
+.sheet ul.rail{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important;scroll-behavior:auto!important} }
 </style>
 <style>/* Leaflet 1.9.4 */
@@ -1293,6 +1297,8 @@ const rxScanStart = () => camScan("rxScanBox", "rxVid", "rxMsg", "Point the came
 function rxScanStop(){ if(!rxCam) return; clearInterval(rxCam.timer); rxCam.stream.getTracks().forEach(t=>t.stop()); rxCam = null; }
 
 // ---------- printed badges (tix.claim_badge): stock passes handed out by the office, QR AUDRAIN-BADGE:<serial>:<code>
+// Since 2026-10-22 (offline badges) the printed QR may also carry the gate's signed entry after a bar:
+// AUDRAIN-BADGE:<serial>:<code>|AUD1.<claims>.<sig>. The \b after the code stops at the bar, so both forms claim the same way.
 const BADGE_RE = /(?:AUDRAIN-BADGE:|#badge-)([A-Z0-9]+(?:-[A-Z0-9]+)*):([A-Z0-9]{4,16})\b/i;
 // RPC call that keeps the PostgREST code and HTTP status, so "not deployed yet" can be told apart from a real refusal.
 async function rpcX(schema, fn, args){
@@ -1840,6 +1846,8 @@ async function loadEntrant(){
   try{
     const r = await rpcX("entrants","my_entrant",{p_app:APP}); if(seq!==entSeq) return;
     state.ent = SB.isGuest() ? {st:"guest", uid} : {st:"ok", uid, d:normEnt(r)};
+    // The real application questions (10-concours-entrant-form). Without them the placeholder form below is used.
+    if(!state.entForm) try{ state.entForm = await rpcX("entrants","form",{p_app:APP}); }catch(e){ if(!isMissing(e)) console.warn("[entrant form]", e.message); }
   }catch(e){
     if(seq!==entSeq) return;
     state.ent = isMissing(e) ? {st:"missing", uid} : SB.isGuest() ? {st:"guest", uid} : {st:"error", uid, err:e.message};
@@ -1959,6 +1967,8 @@ function entApplySheet(vid){
   const d = entD(), v = d && d.vehicles.find(x=>x.id===vid); if(!v) return;
   if(!d.profile){ entProfileSheet(); entSay("Add your details first. They go with the application."); return; }
   const a = appFor(d, v), ans = (a && a.answers) || {}, miss = missingShots(d, v);
+  const F = state.entForm;
+  if(F && Array.isArray(F.questions) && F.questions.length) return entFormSheet(d, v, a, ans, miss, F);   // the real form (10); else the placeholder below
   openSheet("Apply: " + carName(v), `<p class="price">${d.open_year} Audrain Concours. The selection committee reviews every application; the decision shows here, on your car.</p>
     ${miss.length ? `<div class="warn" id="apMissing">Add the required photos first: ${miss.map(s=>esc(s.label)).join(", ")}.</div>` : ""}
     <label class="price" for="apCat">Category</label><select id="apCat" aria-required="true"><option value="">Choose a category</option>${ENT_CATS.map(([k,l])=>`<option value="${k}" ${(a && a.category)===k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
@@ -1972,11 +1982,46 @@ function entApplySheet(vid){
     <div class="price" id="apMsg" role="status" aria-live="polite"></div>
     <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-entsubmit="${esc(v.id)}" ${miss.length ? `disabled aria-describedby="apMissing"` : ""}>Submit application</button></div>`);
 }
+// ---------- the real application (entrants.form): questions by section, asked only when their show_if matches
+const entAsked = (q, ans) => !q.show_if || Object.keys(q.show_if).every(k => String(ans[k]||"").toLowerCase()===String(q.show_if[k]).toLowerCase());
+function entQField(q, val){
+  const id = "aq_" + q.code, req = q.required ? ` aria-required="true"` : "", lab = `<label class="price" for="${id}">${esc(q.label)}${q.required ? " *" : ""}</label>`,
+    help = q.help ? `<p class="rail">${esc(q.help)}</p>` : "";
+  let input;
+  if(q.kind==="textarea") input = `<textarea class="inp" id="${id}" data-aq="${esc(q.code)}" rows="3"${req}>${esc(val||"")}</textarea>`;
+  else if(q.kind==="yesno") input = `<select id="${id}" data-aq="${esc(q.code)}"${req}><option value="">Choose</option><option value="yes" ${val==="yes"?"selected":""}>Yes</option><option value="no" ${val==="no"?"selected":""}>No</option></select>`;
+  else if(q.kind==="dropdown") input = `<select id="${id}" data-aq="${esc(q.code)}"${req}><option value="">Choose</option>${(q.options||[]).map(o=>`<option ${val===o?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+  else input = `<input class="inp" id="${id}" data-aq="${esc(q.code)}" type="${q.kind==="email"?"email":q.kind==="phone"?"tel":q.kind==="number"?"number":"text"}" autocomplete="off" value="${esc(val||"")}"${req}>`;
+  return `<div class="aqrow" data-aqwrap="${esc(q.code)}">${lab}${help}${input}</div>`;
+}
+function entFormAnswers(){ const o = {}; document.querySelectorAll("[data-aq]").forEach(el => { o[el.dataset.aq] = el.value.trim(); }); return o; }
+function entFormToggle(){
+  const F = state.entForm, ans = entFormAnswers(); if(!F) return;
+  F.questions.forEach(q => { const w = document.querySelector(`[data-aqwrap="${q.code}"]`); if(w) w.hidden = !entAsked(q, ans); });
+}
+function entFormSheet(d, v, a, ans, miss, F){
+  const cats = (F.categories && F.categories.length ? F.categories.map(c=>[c.code, c.label]) : ENT_CATS), secs = [];
+  F.questions.forEach(q => { if(!secs.includes(q.section)) secs.push(q.section); });
+  openSheet("Apply: " + carName(v), `<p class="price">${esc(String(F.open_year || d.open_year))} Audrain Newport Concours d'Elegance.</p>
+    <ul class="rail">${(F.intro||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+    ${miss.length ? `<div class="warn" id="apMissing">Add the required photos first: ${miss.map(s=>esc(s.label)).join(", ")}.</div>` : ""}
+    <label class="price" for="apCat">Show *</label><select id="apCat" aria-required="true"><option value="">Choose</option>${cats.map(([k,l])=>`<option value="${esc(k)}" ${(a && a.category)===k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    ${secs.map(s => `<h3>${esc(s)}</h3>` + F.questions.filter(q=>q.section===s).map(q=>entQField(q, ans[q.code])).join("")).join("")}
+    ${F.benefits_note ? `<p class="rail">${esc(F.benefits_note)}</p>` : ""}
+    <h3>Confirm</h3><p class="price">${esc(F.declaration || "")}</p>
+    <label class="price" for="apName">Type your full name</label><input class="inp" id="apName" autocomplete="name" value="${esc((a && a.waiver_name) || "")}">
+    ${(F.contacts||[]).length ? `<p class="rail">Questions: ${F.contacts.map(c=>`${esc(c.name)} <a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`).join(" or ")}</p>` : ""}
+    <div class="price" id="apMsg" role="status" aria-live="polite"></div>
+    <div class="sheetfoot"><button class="buy ghost" type="button" data-close="1">Cancel</button><button class="buy" type="button" data-entsubmit="${esc(v.id)}" ${miss.length ? `disabled aria-describedby="apMissing"` : ""}>Submit application</button></div>`);
+  document.querySelectorAll("[data-aq]").forEach(el => el.addEventListener("change", entFormToggle));
+  entFormToggle();
+}
 async function entSubmit(vid){
   if(!entGate()) return;
   const d = entD(), v = d && d.vehicles.find(x=>x.id===vid), msg = $("#apMsg"), say = s => { if(msg) msg.textContent = s; };
   if(!v) return;
   if(missingShots(d, v).length) return say("Add the required photos first.");
+  if(document.querySelector("[data-aq]")) return entFormSubmit(d, v, say);
   const cat = $("#apCat").value, name = $("#apName").value.trim();
   if(!cat) return say("Choose a category.");
   if(name.length<3) return say("Type your full name to sign the waiver.");
@@ -1984,6 +2029,20 @@ async function entSubmit(vid){
   try{
     await rpcX("entrants","submit_application",{p_app:APP, p_year:d.open_year, p_vehicle_id:v.id, p_category:cat,
       p_answers:{history:$("#apHistory").value.trim(), shown_before:$("#apShown").value.trim(), condition:$("#apCond").value}, p_waiver_name:name});
+    closeSheet(); toast("Application sent. The decision will show on your car."); loadEntrant();
+  }catch(e){ say(isMissing(e) ? "Car applications aren't switched on yet. Nothing was sent." : /shot|photo/i.test(e.message) ? "Add the required photos first." : e.message); if(btn) btn.disabled = false; }
+}
+async function entFormSubmit(d, v, say){
+  const F = state.entForm, all = entFormAnswers(), cat = $("#apCat").value, name = $("#apName").value.trim();
+  if(!cat) return say("Choose the show you're applying for.");
+  // Only questions that are asked are sent; the server checks the same rule (entrants._missing_answers).
+  const ans = {}; F.questions.forEach(q => { if(entAsked(q, all) && all[q.code]) ans[q.code] = all[q.code]; });
+  const gap = F.questions.find(q => q.required && entAsked(q, all) && !ans[q.code]);
+  if(gap){ say("Answer: " + gap.label); const el = document.getElementById("aq_" + gap.code); if(el) el.focus(); return; }
+  if(name.length<3) return say("Type your full name to confirm.");
+  const btn = document.querySelector("[data-entsubmit]"); if(btn) btn.disabled = true; say("Sending…");
+  try{
+    await rpcX("entrants","submit_application",{p_app:APP, p_year:F.open_year || d.open_year, p_vehicle_id:v.id, p_category:cat, p_answers:ans, p_waiver_name:name});
     closeSheet(); toast("Application sent. The decision will show on your car."); loadEntrant();
   }catch(e){ say(isMissing(e) ? "Car applications aren't switched on yet. Nothing was sent." : /shot|photo/i.test(e.message) ? "Add the required photos first." : e.message); if(btn) btn.disabled = false; }
 }
