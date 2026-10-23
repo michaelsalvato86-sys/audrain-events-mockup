@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+/* Runs first, before anything else on the page: the driver link is track/#v=<vehicle id>&t=<token>. Move both into
+   sessionStorage and clear the hash, so the token is not left in the address bar, the history or a bookmark. */
+(function () {
+  var h = location.hash.replace(/^#/, ""), p, v, t;
+  if (!h) return;
+  try { p = new URLSearchParams(h); v = p.get("v"); t = p.get("t"); } catch (e) { p = null; }
+  if (v && t) {
+    window.__trkLink = { v: v, t: t };   // memory copy for browsers that refuse sessionStorage
+    try { sessionStorage.setItem("trk.v", v); sessionStorage.setItem("trk.t", t); sessionStorage.removeItem("trk.n"); } catch (e) { /* private mode */ }
+  }
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#00112E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Trolley Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Driver tracker: one job, one big button. Same palette and type as staff/ - dark-first, high contrast, readable at arm's length on a dash mount. */
+:root{
+  --bg:#001a33; --panel:#062a4c; --panel-2:#0b345c; --fg:#eef3f8; --muted:#9fb3c9; --line:#1b4570;
+  --gold:#DBAB1A; --urgent:#e0533f; --ok:#3fae6b; --info:#4a90d9;
+  --display:"Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#eef1f6; --panel:#ffffff; --panel-2:#f3f5f9; --fg:#0f1a2c; --muted:#56627a; --line:#d6dce8; color-scheme:light } }
+:root[data-theme="light"]{ --bg:#eef1f6; --panel:#ffffff; --panel-2:#f3f5f9; --fg:#0f1a2c; --muted:#56627a; --line:#d6dce8; color-scheme:light }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:5;background:#00112E;color:#eef1f6;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;border-bottom:3px solid var(--rc,#DBAB1A)}
+.row1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em;text-transform:uppercase;line-height:1.05}
+.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.16em;color:#DBAB1A}
+.net{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:4px 10px;border:1px solid #2c3f63;white-space:nowrap}
+.net.off{background:var(--urgent);border-color:var(--urgent);color:#fff}
+main{flex:1;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+h1,h2{font-family:var(--display);font-weight:700;margin:0;letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+h1{font-size:34px;line-height:1}
+.label{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sub{font-size:13px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.veh{padding:14px 16px;display:flex;flex-direction:column;gap:4px;border-left:6px solid var(--rc,#DBAB1A)}
+.go{width:100%;min-height:148px;border:0;border-radius:20px;background:var(--ok);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.go b{font-family:var(--display);font-size:54px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.go small{font-size:14px;font-weight:600;opacity:.92}
+.go[aria-pressed="true"]{background:var(--urgent)}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.status{font-weight:700;font-size:16px;display:flex;gap:10px;align-items:flex-start}
+.status i{flex:0 0 auto;width:12px;height:12px;border-radius:50%;margin-top:5px;background:var(--muted)}
+.status.ok i{background:var(--ok);box-shadow:0 0 0 4px rgba(63,174,107,.25)}
+.status.warn i{background:var(--gold)}
+.status.bad i{background:var(--urgent)}
+.errbox{border:1px solid var(--urgent);border-left:6px solid var(--urgent);background:rgba(224,83,63,.12);border-radius:12px;padding:12px 14px;font-weight:600}
+.notebox{border:1px solid var(--line);border-left:6px solid var(--gold);background:var(--panel);border-radius:12px;padding:10px 14px;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);overflow:hidden}
+.stats>div{background:var(--panel);padding:12px 14px;min-width:0}
+.stats b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;overflow-wrap:anywhere}
+.tips{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.tips ul{margin:6px 0 0;padding-left:18px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:12px;font-size:16px;width:100%}
+.btn{border:0;border-radius:10px;padding:12px 16px;font-weight:700;background:var(--gold);color:#16120a;align-self:flex-start}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="row1"><div class="brand"><small>Audrain Concours</small>Trolley tracker</div><span class="net" id="net" role="status">Online</span></div></header>
+  <main id="main">
+    <section id="setup" hidden aria-labelledby="hSetup" style="display:flex;flex-direction:column;gap:14px">
+      <h1 id="hSetup">Open the driver link</h1>
+      <p style="margin:0">This page needs the driver link for your trolley. Scan the QR code from the transport lead (admin portal, Parking and trolleys), or paste the link they sent you.</p>
+      <form id="pasteForm" class="field" novalidate>
+        <label class="label" for="pasteIn">Driver link</label>
+        <input id="pasteIn" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://.../track/#v=...&amp;t=...">
+        <button class="btn" type="submit">Use this link</button>
+        <div id="pasteErr" role="alert" class="sub"></div>
+      </form>
+    </section>
+    <section id="run" hidden style="display:flex;flex-direction:column;gap:14px">
+      <div class="panel veh"><span class="label">Vehicle</span><h1 id="vName">Trolley</h1><div class="sub" id="vRoute">Route shows once this trolley is on the map.</div></div>
+      <button id="go" class="go" type="button" aria-pressed="false" aria-describedby="status"><b id="goLabel">Start</b><small id="goSub">Share this trolley's position with guests</small></button>
+      <div id="status" class="status" role="status"><i aria-hidden="true"></i><span id="statusText">Not tracking. This trolley is not on the guest map.</span></div>
+      <div id="err" class="errbox" role="alert" hidden></div>
+      <div id="note" class="notebox" hidden></div>
+      <div class="panel stats">
+        <div><span class="label">Last fix</span><b id="fixAt">-</b><span class="sub" id="fixAgo"></span></div>
+        <div><span class="label">Accuracy</span><b id="acc">-</b></div>
+        <div><span class="label">Sent</span><b id="sent">0</b><span class="sub" id="sentAgo"></span></div>
+        <div><span class="label">Screen</span><b id="lockState">-</b></div>
+      </div>
+      <div class="tips"><b>Keep this page open on the screen while you drive.</b>
+        <ul>
+          <li>Plug the phone into the trolley's charger and mount it where it can see the sky.</li>
+          <li>Phones stop sharing location when the screen locks or you switch apps. On iPhone set Settings &gt; Display &amp; Brightness &gt; Auto-Lock to Never for the shift.</li>
+          <li>No signal? Keep driving. The latest position is sent as soon as the phone is back online.</li>
+          <li>Tap Stop at the end of your shift.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+<script>window.SB_CONFIG = {url:"https://jlqxorlegyqlpbnwroaz.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXhvcmxlZ3lxbHBibndyb2F6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1ODE1MTcsImV4cCI6MjEwNzE1NzUxN30.eOye3dMBepkoV_oOA3EbdGnyUH9VyyZ9yjbIRfJky4s", app:"concours"}; // same project and public anon key as staff/; the vehicle token is the credential</script>
+<script>
+/* 2026-10-23 DRIVER TRACKER. Stand-in for AirTags (no API): this phone rides on the trolley and reports its position with
+   ops.report_position(p_vehicle_id, p_token, p_lat, p_lng, p_heading, p_speed) - the RPC is granted to anon and checks the
+   token against the vehicle's stored hash. Called straight through PostgREST (no supabase-js, no guest account).
+   Sending rule: the first fix at once; then when the trolley has moved more than 25 m, or 10 s have passed (a heartbeat,
+   so a parked trolley stays on the map - ops.live drops fixes older than 3 min). Never faster than every 3 s (the server
+   ignores repeats inside 2 s). Offline: only the latest fix is kept, and it is sent on reconnect. */
+(function () {
+  "use strict";
+  var CFG = window.SB_CONFIG || {};
+  var REST = CFG.url + "/rest/v1/rpc/";
+  var SEND_MS = 10000, MOVE_M = 25, MIN_GAP_MS = 3000, MAX_ACC_M = 100, STALE_MS = 120000, RETRY_MS = 15000, NAME_MS = 60000;
+  var $ = function (id) { return document.getElementById(id); };
+  var ss = {
+    get: function (k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } },
+    del: function (k) { try { sessionStorage.removeItem(k); } catch (e) { /* private mode */ } }
+  };
+  var mem = window.__trkLink || {};
+  var V = ss.get("trk.v") || mem.v || null, T = ss.get("trk.t") || mem.t || null;
+  delete window.__trkLink;
+
+  var S = { running: false, watch: null, tick: null, lock: null, lockMsg: "-", fix: null, shown: null, sent: null, inflight: false,
+    count: 0, offline: navigator.onLine === false, down: null, lastTry: 0, fatal: null, hiddenAt: 0, named: false, nameTry: 0 };
+
+  // ---------------------------------------------------------------- helpers
+  function distM(a, b) {
+    var R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+  function num(v) { return v == null || !isFinite(v) ? null : Number(v); }
+  function clock(ms) { return new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" }); }
+  function ago(ms) { var s = Math.max(0, Math.round((Date.now() - ms) / 1000)); return s < 60 ? s + " s ago" : Math.round(s / 60) + " min ago"; }
+  function rpc(fn, args) {
+    var ctl = window.AbortController ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 10000) : 0;
+    return fetch(REST + fn, { method: "POST", cache: "no-store", signal: ctl ? ctl.signal : undefined,
+      headers: { "apikey": CFG.anon, "Authorization": "Bearer " + CFG.anon, "Content-Type": "application/json", "Content-Profile": "ops", "Accept-Profile": "ops" },
+      body: JSON.stringify(args) })
+      .then(function (r) {
+        clearTimeout(timer);
+        return r.text().then(function (txt) {
+          var b = null; try { b = txt ? JSON.parse(txt) : null; } catch (e) { b = null; }
+          if (r.ok) return b;
+          var e = new Error((b && b.message) || ("HTTP " + r.status)); e.status = r.status; e.code = b && b.code; throw e;
+        });
+      }, function () { clearTimeout(timer); var e = new Error("network"); e.network = true; throw e; });
+  }
+  // ops.report_position raises "Not allowed" (P0001) for a wrong token or an unknown / inactive vehicle; a vehicle id that
+  // is not a uuid comes back as 22P02. Both mean the link itself is bad: stop and say so.
+  function isBadLink(e) { return (e.code === "P0001" && /not allowed/i.test(e.message)) || e.code === "22P02" || e.code === "22023"; }
+
+  // ---------------------------------------------------------------- painting
+  function setStatus(kind, text) { $("status").className = "status " + (kind || ""); $("statusText").textContent = text; }
+  function showErr(text) { var el = $("err"); el.textContent = text || ""; el.hidden = !text; }
+  function showNote(text) { var el = $("note"); el.textContent = text || ""; el.hidden = !text; }
+  function paintNet() { var n = $("net"), off = S.offline; n.textContent = off ? "Offline" : "Online"; n.classList.toggle("off", off); }
+  function paint() {
+    var f = S.shown;
+    $("fixAt").textContent = f ? clock(f.got) : "-";
+    $("fixAgo").textContent = f ? ago(f.got) : "";
+    $("acc").textContent = f ? "±" + Math.round(f.acc) + " m" : "-";
+    $("sent").textContent = String(S.count);
+    $("sentAgo").textContent = S.sent ? "last " + ago(S.sent.at) : "";
+    $("lockState").textContent = S.running ? S.lockMsg : "-";
+    var go = $("go");
+    go.setAttribute("aria-pressed", S.running ? "true" : "false");
+    $("goLabel").textContent = S.running ? "Stop" : "Start";
+    $("goSub").textContent = S.running ? "Tap at the end of your shift" : "Share this trolley's position with guests";
+    paintNet();
+  }
+  function paintState() {
+    if (S.fatal) return;
+    if (!S.running) return setStatus("", "Not tracking. This trolley is not on the guest map.");
+    if (S.offline) return setStatus("bad", "No connection. The latest position is kept and sent when the signal comes back.");
+    if (S.down) return setStatus("bad", S.down);
+    if (!S.shown) return setStatus("warn", "Waiting for GPS. Keep the phone where it can see the sky.");
+    if (S.shown.acc > MAX_ACC_M) return setStatus("warn", "Weak GPS (±" + Math.round(S.shown.acc) + " m). Waiting for a better fix before sending.");
+    if (!S.count) return setStatus("warn", "GPS found. Sending the first position...");
+    setStatus("ok", "Tracking. Guests can see this trolley on the map.");
+  }
+
+  // ---------------------------------------------------------------- vehicle name (ops.live lists a vehicle once it has a fix under 3 min old)
+  function loadName() {
+    if (S.named || !V) return;
+    S.nameTry = Date.now();
+    rpc("live", { p_app: CFG.app }).then(function (r) {
+      var vs = (r && r.vehicles) || [], routes = (r && r.routes) || [], me = null, rt = null;
+      vs.forEach(function (x) { if (String(x.vehicle_id || x.id) === V) me = x; });
+      if (!me) routes.forEach(function (x) { (x.vehicles || []).forEach(function (y) { if (String(y.id || y.vehicle_id) === V) { me = y; rt = x; } }); });
+      if (!me) return;
+      if (!rt) routes.forEach(function (x) { if (String(x.id) === String(me.route_id)) rt = x; });
+      S.named = true;
+      $("vName").textContent = me.name || "Trolley";
+      $("vRoute").textContent = rt ? rt.name : "No route set. Ask the transport lead to pick one in the admin portal.";
+      if (rt && /^#[0-9a-f]{3,8}$/i.test(rt.color || "")) document.documentElement.style.setProperty("--rc", rt.color);
+      document.title = (me.name || "Trolley") + " - Tracker";
+      ss.set("trk.n", JSON.stringify({ name: me.name, route: rt ? rt.name : null, color: rt ? rt.color : null }));
+    }).catch(function () { /* the name is cosmetic; tracking does not depend on it */ });
+  }
+  function restoreName() {
+    var n = null; try { n = JSON.parse(ss.get("trk.n") || "null"); } catch (e) { n = null; }
+    if (!n || !n.name) { $("vName").textContent = "Vehicle " + String(V).slice(0, 8); return; }
+    $("vName").textContent = n.name; if (n.route) $("vRoute").textContent = n.route;
+    if (/^#[0-9a-f]{3,8}$/i.test(n.color || "")) document.documentElement.style.setProperty("--rc", n.color);
+  }
+
+  // ---------------------------------------------------------------- sending
+  function due(force) {
+    var f = S.fix, now = Date.now();
+    if (!S.running || S.inflight || S.fatal || !f) return false;
+    if (now - f.got > STALE_MS) { S.fix = null; return false; }      // never report a position minutes old as "now"
+    if ((S.offline || S.down) && !force) return now - S.lastTry >= RETRY_MS;
+    if (!S.sent) return true;
+    var gap = now - S.sent.at;
+    if (gap < MIN_GAP_MS) return false;
+    return force || gap >= SEND_MS || distM(S.sent, f) > MOVE_M;
+  }
+  function maybeSend(force) { if (due(force)) send(S.fix); }
+  function send(f) {
+    S.inflight = true; S.lastTry = Date.now();
+    rpc("report_position", { p_vehicle_id: V, p_token: T, p_lat: f.lat, p_lng: f.lng, p_heading: f.heading, p_speed: f.speed }).then(function () {
+      S.inflight = false; S.count++; S.sent = { lat: f.lat, lng: f.lng, at: Date.now() };
+      S.offline = false; S.down = null;
+      if (!S.named && (S.count === 1 || Date.now() - S.nameTry > NAME_MS)) setTimeout(loadName, 1500);
+      paint(); paintState();
+    }, function (e) {
+      S.inflight = false;
+      if (e.network) { S.offline = true; }
+      else if (isBadLink(e)) { return fatal("This driver link no longer works: its key was replaced, or the vehicle was removed. Tracking has stopped. Ask the transport lead for a new link or QR code (admin portal, Parking and trolleys, Issue new token)."); }
+      else if (/bad position/i.test(e.message)) { S.fix = null; }
+      else if (e.status === 404 || e.code === "PGRST202" || e.code === "PGRST106") { S.down = "The tracking server is not switched on yet, so positions are not being saved. Retrying every 15 seconds."; }
+      else { S.down = "The server did not accept the position (" + (e.status || "error") + "). Retrying every 15 seconds."; }
+      paint(); paintState();
+    });
+  }
+
+  // ---------------------------------------------------------------- geolocation
+  function onFix(pos) {
+    var c = pos.coords;
+    var f = { lat: c.latitude, lng: c.longitude, acc: num(c.accuracy) == null ? 9999 : c.accuracy, heading: num(c.heading), speed: num(c.speed), got: Date.now() };
+    if (f.heading != null && (f.heading < 0 || f.heading > 360)) f.heading = null;
+    if (f.speed != null && f.speed < 0) f.speed = null;
+    S.shown = f;
+    if (f.acc <= MAX_ACC_M) S.fix = f;   // only the latest good fix is kept; it replaces whatever was waiting
+    showErr(""); paint(); paintState(); maybeSend(false);
+  }
+  function onGeoErr(e) {
+    if (e && e.code === 1) return fatal("Location is blocked for this page, so the trolley is not on the map. iPhone: Settings > Privacy & Security > Location Services, turn it on, then Safari Websites > While Using the App, with Precise Location on. Android: tap the icon left of the address, then Permissions > Location > Allow. Then tap Start again.", true);
+    if (S.running) setStatus("warn", e && e.code === 3 ? "Still waiting for GPS. Keep the phone where it can see the sky." : "No GPS signal right now. Keep the phone where it can see the sky.");
+  }
+
+  // ---------------------------------------------------------------- screen wake lock (re-acquired whenever the page is visible again)
+  function lockOn() {
+    if (!S.running || S.lock || S.lockPending || document.visibilityState !== "visible") return;
+    if (!("wakeLock" in navigator)) { S.lockMsg = "Set Auto-Lock to Never"; paint(); return; }
+    S.lockMsg = "Asking..."; S.lockPending = true;
+    navigator.wakeLock.request("screen").then(function (l) {
+      S.lockPending = false;
+      if (!S.running) { l.release(); return; }
+      S.lock = l; S.lockMsg = "Kept on";
+      l.addEventListener("release", function () { if (S.lock === l) { S.lock = null; S.lockMsg = S.running ? "Can lock" : "-"; paint(); } });
+      paint();
+    }, function () { S.lockPending = false; S.lockMsg = "Can lock - keep it on"; paint(); });
+  }
+  function lockOff() { var l = S.lock; S.lock = null; if (l) { try { l.release(); } catch (e) { /* already gone */ } } }
+
+  // ---------------------------------------------------------------- start / stop
+  function start() {
+    if (!navigator.geolocation) return fatal("This browser cannot share location. Open the driver link in Safari (iPhone) or Chrome (Android).", true);
+    S.fatal = null; showErr(""); showNote("");
+    S.running = true; ss.set("trk.run", "1");
+    S.watch = navigator.geolocation.watchPosition(onFix, onGeoErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    if (!S.tick) S.tick = setInterval(tick, 1000);
+    lockOn(); paint(); paintState();
+  }
+  // Every second: heartbeat / retry check, and refresh the "ago" labels. A parked phone may stop firing watchPosition,
+  // so after 45 s without a fix ask for one, which keeps the 10 s heartbeat honest instead of resending an old fix.
+  function tick() {
+    maybeSend(false); paint();
+    if (S.running && !S.polling && navigator.geolocation && (!S.shown || Date.now() - S.shown.got > 45000)) {
+      S.polling = true;
+      navigator.geolocation.getCurrentPosition(function (p) { S.polling = false; if (S.running) onFix(p); }, function () { S.polling = false; }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+    }
+    if (!S.named && S.count && Date.now() - S.nameTry > NAME_MS) loadName();
+  }
+  function stop(keepRun) {
+    S.running = false;
+    if (!keepRun) ss.del("trk.run");
+    if (S.watch != null && navigator.geolocation) navigator.geolocation.clearWatch(S.watch);
+    S.watch = null; if (S.tick) clearInterval(S.tick); S.tick = null;
+    S.fix = null; lockOff(); S.lockMsg = "-";
+    paint(); paintState();
+  }
+  function fatal(text, canRetry) {
+    stop();
+    S.fatal = text; showErr(text);
+    setStatus("bad", canRetry ? "Not tracking. Fix the problem above, then tap Start." : "Not tracking. This link has stopped working.");
+    $("go").disabled = !canRetry;
+    if (!canRetry) $("setup").hidden = false;   // paste or scan the new link
+  }
+
+  // ---------------------------------------------------------------- events
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") { S.hiddenAt = Date.now(); return; }
+    if (!S.running) return;
+    var away = S.hiddenAt ? Date.now() - S.hiddenAt : 0; S.hiddenAt = 0;
+    if (away > 20000) showNote("Welcome back. The phone may have stopped sharing location while the screen was off or another app was open (" + (away < 60000 ? Math.round(away / 1000) + " s" : Math.round(away / 60000) + " min") + "). Keep this page on the screen.");
+    lockOn(); maybeSend(true);
+  });
+  addEventListener("offline", function () { S.offline = true; paint(); paintState(); });
+  addEventListener("online", function () { S.offline = false; S.down = null; paint(); paintState(); maybeSend(true); });
+  addEventListener("pagehide", function () { lockOff(); });
+
+  function useLink(raw) {
+    var s = String(raw || "").trim(), i = s.indexOf("#"), p = new URLSearchParams(i >= 0 ? s.slice(i + 1) : s);
+    var v = p.get("v"), t = p.get("t");
+    if (!v || !t) return false;
+    V = v; T = t; ss.set("trk.v", v); ss.set("trk.t", t); ss.del("trk.n");
+    return true;
+  }
+  $("pasteForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!useLink($("pasteIn").value)) { $("pasteErr").textContent = "That is not a driver link. It should end in #v=...&t=... Ask the transport lead to send it again."; return; }
+    $("pasteIn").value = ""; boot();
+  });
+  $("go").addEventListener("click", function () { if (S.running) stop(); else start(); });
+
+  function boot() {
+    var have = !!(V && T);
+    $("setup").hidden = have; $("run").hidden = !have;
+    if (!have) return;
+    S.fatal = null; showErr(""); $("go").disabled = false; S.count = 0; S.sent = null; S.named = false;
+    restoreName(); loadName(); paint(); paintState();
+    if (ss.get("trk.run") === "1") start();   // a reload mid-shift carries on
+  }
+  window.__trk = { state: S, distM: distM };   // read-only hook for the tests
+  boot();
+})();
+</script>
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>

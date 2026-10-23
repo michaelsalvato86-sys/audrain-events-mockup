@@ -1601,6 +1601,10 @@ function startLive(){ if(liveTimer) return; liveTimer = setInterval(()=>{ if(sta
 const liveLots = () => (state.live && state.live.lots) || [];
 const liveRoutes = () => (state.live && state.live.routes) || [];
 const liveGates = () => (state.live && state.live.gates) || [];
+// ops.live only returns fixes under 3 minutes old, so a snapshot older than that (the cached copy on reopen, or no
+// connection) would show trolleys frozen where they were. Hide them until a fresh snapshot arrives (2026-10-23 DRIVER TRACKER).
+const VEH_FRESH_MS = 180000;
+const liveVehicles = () => (state.live && Date.now() - state.live.at < VEH_FRESH_MS && state.live.vehicles) || [];
 const routeById = id => liveRoutes().find(r=>r.id===String(id));
 const walkMin = m => Math.max(1, Math.round(m/80));
 function etaText(s, rt){
@@ -1631,7 +1635,7 @@ function transportLists(){
     : `<div class="notice">Live parking and trolley status appears here during the event. Showing the 2026 plan for ${dp.wd}.</div>`;
   const lotRows = lots.length ? `<div class="list">${lots.map(l=>`<button type="button" class="row two" data-flyll="${l.ll ? l.ll.join(",") : ""}" style="background:none;border:0;border-top:1px solid var(--line);text-align:left;width:100%" ${l.ll ? "" : "disabled"}><div class="info"><div class="title">${esc(l.name)}</div><div class="meta">${l.capacity ? `<span>${l.capacity.toLocaleString("en-US")} spaces</span>` : ""}${l.note ? `<span>${esc(l.note)}</span>` : ""}${l.updated_at ? `<span>Updated ${esc(rel(l.updated_at))}</span>` : ""}</div></div><div class="actions"><span class="ls ${l.status}" data-lot="${esc(l.id)}">${LOT_STATUS[l.status]}</span></div></button>`).join("")}</div>`
     : (()=>{ const ls = LOTS.filter(l=>l.days[D]); return ls.length ? `<div class="list">${ls.map(l=>`<button type="button" class="row two" data-flyll="${l.ll.join(",")}" style="background:none;border:0;border-top:1px solid var(--line);text-align:left;width:100%"><div class="info"><div class="title">${esc(l.name)}</div><div class="meta"><span>${esc(l.addr)}</span><span>2026: ${hm(l.days[D][0])} to ${hm(l.days[D][1])}</span></div></div></button>`).join("")}</div>` : `<div class="notice">No event parking listed for this day.</div>`; })();
-  const vehicles = (live && live.vehicles) || [];
+  const vehicles = liveVehicles();
   const trolley = routes.length ? `<div class="list">${routes.map(rt=>{ const vs = vehicles.filter(v=>v.route_id===rt.id);
       return `<div class="loop"><div class="title" style="display:flex;align-items:center;gap:8px"><i class="swatch" style="background:${rt.color}" aria-hidden="true"></i>${esc(rt.name)}</div>
         <div class="price">${rt.headway ? `Every ~${rt.headway} min` : ""}${rt.headway && rt.runs ? " · " : ""}${esc(rt.runs)}${vs.length ? ` · ${vs.length} trolley${vs.length===1?"":"s"} on the map` : ""}</div>
@@ -1682,7 +1686,7 @@ function buildTransport(){
       if(line.length>1) L.polyline(line, {color:rt.color, weight:5, opacity:.9}).addTo(G.trolley);
       rt.stops.forEach(s=>{ const m = liveMarker(s.ll, mkIcon("mk-stop","T"), "Trolley stop: " + s.name, `<b>Trolley stop: ${esc(s.name)}</b><br>${esc(rt.name)}<br>${esc(etaText(s, rt))}`, G.trolley); if(m) pts.push(m.getLatLng()); });
     });
-    ((state.live && state.live.vehicles) || []).forEach(v=>{ const rt = routeById(v.route_id);
+    liveVehicles().forEach(v=>{ const rt = routeById(v.route_id);
       L.circleMarker(v.ll, {radius:9, color:"#fff", weight:3, fillColor: rt ? rt.color : "#003057", fillOpacity:1}).bindTooltip(`${esc(v.name)}${rt ? " · " + esc(rt.name) : ""}${v.at ? " · " + esc(rel(v.at)) : ""}`).addTo(G.trolley); });
   } else {
     const seen = {}, sLL = k => posOf("s:"+k, STOPS[k].ll);

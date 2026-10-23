@@ -1076,21 +1076,54 @@
     });
   }
   /* The tracker token is returned once by the server (only its hash is stored) and is never kept in page state. */
-  function showToken(name, token) {
+  /* 2026-10-23 DRIVER TRACKER: the driver link is <site>/track/#v=<vehicle id>&t=<token>. The hash never reaches a server
+     (the track page moves it into sessionStorage and clears it), and the QR lets the driver's phone open it with one scan. */
+  function trackerLink(vehicleId, token) {
+    return new URL("../track/", location.href).href + "#v=" + encodeURIComponent(vehicleId) + "&t=" + encodeURIComponent(token);
+  }
+  var passLib = null;
+  function loadPassLib() {   // shared/pass.js holds the QR helper (renderQR over the vendored qrcode-generator)
+    if (window.AudrainPass) return Promise.resolve(window.AudrainPass);
+    if (!passLib) passLib = new Promise(function (res, rej) {
+      var s = document.createElement("script"); s.src = "../shared/pass.js"; s.async = true;
+      s.onload = function () { window.AudrainPass ? res(window.AudrainPass) : rej(new Error("QR helper missing")); };
+      s.onerror = function () { passLib = null; rej(new Error("QR helper failed to load")); };
+      document.head.appendChild(s);
+    });
+    return passLib;
+  }
+  function copyFrom(b, btnId, boxId, outId, text, what) {
+    $("#" + btnId, b).addEventListener("click", function () {
+      var out = $("#" + outId, b), done = function () { out.textContent = what + " copied"; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { out.textContent = "Copy failed. Select the " + what.toLowerCase() + " and copy it by hand."; });
+      else { var r = document.createRange(); r.selectNodeContents($("#" + boxId, b)); getSelection().removeAllRanges(); getSelection().addRange(r); out.textContent = "Selected. Press Ctrl+C to copy."; }
+    });
+  }
+  function showToken(name, token, vehicleId, kind) {
+    var link = vehicleId ? trackerLink(vehicleId, token) : null, gps = kind === "gps_device";
+    var linkPart = link ? '<div class="trkbox"><div class="trkqr" id="trkQr" aria-live="polite"><span class="hint">Drawing QR...</span></div><div class="trkside">' +
+        '<p class="hint"><b>Driver phone:</b> scan this QR with the phone that rides on the trolley, then tap Start. The link opens the tracker page; the key is not kept in the address bar.</p>' +
+        '<div class="tokenbox" id="linkVal">' + esc(link) + '</div><div class="btns"><button type="button" class="btn" id="linkCopy">Copy link</button><span id="linkCopied" role="status" class="hint"></span></div></div></div>' : "";
+    var tokenPart = '<p class="hint">' + (gps ? "<b>GPS device:</b> load the vehicle id and token, and POST positions to " + esc((window.SB_CONFIG && window.SB_CONFIG.url || "") + "/functions/v1/ops-position") + "." : "Token on its own (for a GPS device):") + "</p>" +
+        (vehicleId ? '<div class="hint">Vehicle id <span class="mono">' + esc(vehicleId) + "</span></div>" : "") +
+        '<div class="tokenbox" id="tokenVal">' + esc(token) + '</div><div class="btns"><button type="button" class="btn ghost" id="tokenCopy">Copy token</button><span id="tokenCopied" role="status" class="hint"></span></div>';
     return openDialog({
-      title: "Tracker token for " + name,
-      body: '<div class="notice warn" role="alert"><b>Copy this token now. It is shown only once</b> and cannot be looked up again. Anyone with it can move this vehicle on the guest map, so send it only to the driver or load it into the GPS device.</div>' +
-        '<div class="tokenbox" id="tokenVal">' + esc(token) + '</div><div class="btns"><button type="button" class="btn" id="tokenCopy">Copy token</button><span id="tokenCopied" role="status" class="hint"></span></div>',
+      title: "Tracker for " + name,
+      wide: !!link,
+      body: '<div class="notice warn" role="alert"><b>Save this now. The token' + (link ? " and the driver link are" : " is") + ' shown only once</b> and cannot be looked up again. Anyone with it can move this vehicle on the guest map, so send it only to the driver or load it into the GPS device. Lost it? Issue a new token.</div>' +
+        (gps ? tokenPart + linkPart : linkPart + tokenPart),
       buttons: [{ label: "I have saved it", value: "cancel", cls: "ghost" }],
       focusButton: true,
       onOpen: function (b) {
-        $("#tokenCopy", b).addEventListener("click", function () {
-          var done = function () { $("#tokenCopied", b).textContent = "Copied"; };
-          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(token).then(done, function () { $("#tokenCopied", b).textContent = "Copy failed. Select the token and copy it by hand."; });
-          else { var r = document.createRange(); r.selectNodeContents($("#tokenVal", b)); getSelection().removeAllRanges(); getSelection().addRange(r); $("#tokenCopied", b).textContent = "Selected. Press Ctrl+C to copy."; }
-        });
+        copyFrom(b, "tokenCopy", "tokenVal", "tokenCopied", token, "Token");
+        if (!link) return;
+        copyFrom(b, "linkCopy", "linkVal", "linkCopied", link, "Link");
+        loadPassLib().then(function (P) {
+          var box = $("#trkQr", b); if (!box) return;   // dialog already closed
+          return P.renderQR(box, link, { size: 220, ecc: "M", label: "QR code of the driver link for " + name }).then(function (c) { c.dataset.text = link; });
+        }).catch(function () { var box = $("#trkQr", b); if (box) box.innerHTML = '<span class="hint">The QR could not be drawn. Copy the link and send it to the driver instead.</span>'; });
       }
-    }).then(function () { $("#dlgBody").innerHTML = ""; token = null; });
+    }).then(function () { $("#dlgBody").innerHTML = ""; token = null; link = null; });
   }
   function addVehicle(routes) {
     return openDialog({
@@ -1105,7 +1138,7 @@
       if (!vh) return;
       return rpc("ops", "admin_upsert_vehicle", { p_app: APP, p_vehicle: vh }).then(function (res) {
         var token = res && res.tracker_token;
-        return (token ? showToken(vh.name, token) : Promise.resolve(toast("Vehicle saved"))).then(function () { return VIEWS.ops(); });
+        return (token ? showToken(vh.name, token, res.id, res.tracker_kind || vh.tracker_kind) : Promise.resolve(toast("Vehicle saved"))).then(function () { return VIEWS.ops(); });
       });
     });
   }
@@ -1115,7 +1148,7 @@
       .then(function (reason) {
         if (!reason) return;
         return rpc("ops", "admin_upsert_vehicle", { p_app: APP, p_vehicle: { id: vh.id, rotate_token: true, _reason: reason } }).then(function (res) {
-          return res && res.tracker_token ? showToken(vh.name, res.tracker_token) : toast("Token reset");
+          return res && res.tracker_token ? showToken(vh.name, res.tracker_token, res.id || vh.id, res.tracker_kind || vh.tracker_kind) : toast("Token reset");
         });
       });
   }

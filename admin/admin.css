@@ -133,6 +133,11 @@ textarea{min-height:70px;resize:vertical}
 .notice{border:1px solid var(--line);border-left:5px solid var(--gold);background:var(--panel);border-radius:10px;padding:10px 14px;font-size:14px}
 .notice.warn{border-left-color:var(--danger);background:var(--danger-bg)}
 .tokenbox{font-family:var(--mono);font-size:15px;word-break:break-all;background:var(--panel-2);border:1px dashed var(--line);border-radius:8px;padding:12px}
+.trkbox{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.trkqr{flex:0 0 auto;min-width:220px;min-height:220px;display:grid;place-items:center;background:#fff;border-radius:8px}
+.trkqr canvas{display:block}
+.trkside{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.trkside .hint{margin:0}
 .segmented{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .segmented button{border:0;background:var(--panel);padding:7px 12px;font-weight:600}
 .segmented button[aria-pressed="true"]{background:var(--navy);color:#fff}
